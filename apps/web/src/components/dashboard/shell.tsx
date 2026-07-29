@@ -24,6 +24,8 @@ import {
   Users,
   Wallet,
   BarChart3,
+  Bot,
+  ShieldAlert,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/auth";
@@ -32,6 +34,7 @@ import { Button } from "@/components/ui/button";
 const NAV = [
   { href: "/dashboard", label: "Overview", icon: LayoutDashboard },
   { href: "/dashboard/analytics", label: "Analytics", icon: BarChart3 },
+  { href: "/dashboard/ai", label: "AI", icon: Bot },
   { href: "/dashboard/trade", label: "Trade", icon: Handshake },
   { href: "/dashboard/rfqs", label: "RFQs", icon: ClipboardList },
   { href: "/dashboard/contracts", label: "Contracts", icon: FileSignature },
@@ -49,6 +52,12 @@ const NAV = [
   { href: "/dashboard/audit", label: "Audit logs", icon: ScrollText },
   { href: "/dashboard/settings", label: "Settings", icon: Settings },
 ];
+
+const ADMIN_NAV = {
+  href: "/dashboard/admin",
+  label: "Administration",
+  icon: ShieldAlert,
+};
 
 const KYB_NAV = {
   href: "/dashboard/reviews",
@@ -88,7 +97,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
 
   const items = [
     ...NAV,
-    ...(isAdmin ? [KYB_NAV] : []),
+    ...(isAdmin ? [KYB_NAV, ADMIN_NAV] : []),
     ...(canReviewCompliance ? [COMPLIANCE_APPROVALS_NAV] : []),
   ];
 

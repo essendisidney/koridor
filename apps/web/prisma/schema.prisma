@@ -1484,3 +1484,117 @@ model CommodityStat {
   @@index([commodity])
   @@map("commodity_stats")
 }
+
+// ─────────────────────────────────────────────────────────────
+// Stage 8 – AI
+// ─────────────────────────────────────────────────────────────
+
+enum AiJobType {
+  DOCUMENT_ANALYSIS
+  TRADE_RISK
+  ASSISTANT
+}
+
+enum AiJobStatus {
+  QUEUED
+  RUNNING
+  COMPLETED
+  FAILED
+}
+
+enum AiInsightKind {
+  SUMMARY
+  RISK_FLAG
+  MISSING_FIELD
+  COMPLIANCE
+  NEXT_ACTION
+  ANSWER
+}
+
+model AiJob {
+  id             String      @id @default(uuid()) @db.Uuid
+  organisationId String?     @map("organisation_id") @db.Uuid
+  tradeId        String?     @map("trade_id") @db.Uuid
+  documentId     String?     @map("document_id") @db.Uuid
+  type           AiJobType
+  status         AiJobStatus @default(QUEUED)
+  prompt         String?
+  input          Json?
+  result         Json?
+  error          String?
+  model          String?     @default("koridor-heuristic-v1")
+  startedAt      DateTime?   @map("started_at")
+  completedAt    DateTime?   @map("completed_at")
+  createdAt      DateTime    @default(now()) @map("created_at")
+  updatedAt      DateTime    @updatedAt @map("updated_at")
+  createdBy      String?     @map("created_by") @db.Uuid
+  updatedBy      String?     @map("updated_by") @db.Uuid
+  deletedAt      DateTime?   @map("deleted_at")
+
+  insights AiInsight[]
+
+  @@index([organisationId])
+  @@index([tradeId])
+  @@index([documentId])
+  @@index([type])
+  @@index([status])
+  @@index([deletedAt])
+  @@map("ai_jobs")
+}
+
+model AiInsight {
+  id        String        @id @default(uuid()) @db.Uuid
+  jobId     String        @map("job_id") @db.Uuid
+  kind      AiInsightKind
+  title     String
+  body      String
+  severity  String        @default("info")
+  score     Int?
+  metadata  Json?
+  createdAt DateTime      @default(now()) @map("created_at")
+  updatedAt DateTime      @updatedAt @map("updated_at")
+  deletedAt DateTime?     @map("deleted_at")
+
+  job AiJob @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  @@index([jobId])
+  @@index([kind])
+  @@map("ai_insights")
+}
+
+// ─────────────────────────────────────────────────────────────
+// Stage 9 – Administration
+// ─────────────────────────────────────────────────────────────
+
+model FeatureFlag {
+  id          String   @id @default(uuid()) @db.Uuid
+  key         String   @unique
+  name        String
+  description String?
+  enabled     Boolean  @default(false)
+  percentage  Int      @default(100)
+  audience    Json?
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  createdBy   String?  @map("created_by") @db.Uuid
+  updatedBy   String?  @map("updated_by") @db.Uuid
+  deletedAt   DateTime? @map("deleted_at")
+
+  @@index([enabled])
+  @@index([deletedAt])
+  @@map("feature_flags")
+}
+
+model SystemHealthLog {
+  id        String   @id @default(uuid()) @db.Uuid
+  service   String
+  status    String
+  latencyMs Int?     @map("latency_ms")
+  detail    Json?
+  checkedAt DateTime @default(now()) @map("checked_at")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([service])
+  @@index([checkedAt])
+  @@map("system_health_logs")
+}

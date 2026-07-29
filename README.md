@@ -67,6 +67,17 @@ Usable vertical slice:
 - Daily snapshot rollups (`analytics_snapshots`, corridor & commodity stats)
 - Org-scoped by default; platform-wide for admins
 
+## Phase 8 — AI (shipped)
+
+- Heuristic document analysis + trade risk scoring
+- Ops assistant (optional OpenAI via `OPENAI_API_KEY`)
+- `AiJob` / `AiInsight` persistence when tables are migrated
+
+## Phase 9 — Administration (shipped)
+
+- Feature flags + health checks
+- Admin overview (`/dashboard/admin`) for system admins
+
 ## Architecture
 
 ```
@@ -148,8 +159,8 @@ Schema for project `koridor` (`qfptnyifzdwmuxfkgpmv`) is already applied on Supa
 5. **Compliance** — certificates, government workflows *(shipped)*
 6. **Logistics** — shipping, tracking, PoD *(shipped)*
 7. **Analytics** — trade / risk dashboards *(shipped)*
-8. **AI** — assistant, document analysis
-9. **Administration** — feature flags, monitoring
+8. **AI** — assistant, document analysis *(shipped)*
+9. **Administration** — feature flags, monitoring *(shipped)*
 
 ## Documentation
 
