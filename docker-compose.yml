@@ -1,0 +1,64 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: koridor-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: koridor
+      POSTGRES_PASSWORD: koridor
+      POSTGRES_DB: koridor
+    ports:
+      - "5432:5432"
+    volumes:
+      - koridor_pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U koridor -d koridor"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    container_name: koridor-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - koridor_redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  minio:
+    image: minio/minio:latest
+    container_name: koridor-minio
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: koridor
+      MINIO_ROOT_PASSWORD: koridorsecret
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - koridor_minio_data:/data
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: koridor-mailpit
+    restart: unless-stopped
+    ports:
+      - "8025:8025"
+      - "1025:1025"
+
+volumes:
+  koridor_pg_data:
+  koridor_redis_data:
+  koridor_minio_data:

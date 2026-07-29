@@ -1,0 +1,1206 @@
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "rhel-openssl-3.0.x"]
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// ─────────────────────────────────────────────────────────────
+// Enums
+// ─────────────────────────────────────────────────────────────
+
+enum SystemRole {
+  SYSTEM_ADMIN
+  BUYER
+  EXPORTER
+  FARMER
+  COOPERATIVE
+  LOGISTICS_PROVIDER
+  BANK
+  INSURANCE
+  GOVERNMENT_OFFICER
+  CHAMBER_OF_COMMERCE
+}
+
+enum OrganisationType {
+  BUYER
+  EXPORTER
+  FARMER
+  COOPERATIVE
+  LOGISTICS_PROVIDER
+  BANK
+  INSURANCE
+  GOVERNMENT
+  CHAMBER_OF_COMMERCE
+  OTHER
+}
+
+enum OrganisationStatus {
+  PENDING
+  ACTIVE
+  SUSPENDED
+  REJECTED
+}
+
+enum VerificationStatus {
+  UNVERIFIED
+  PENDING
+  VERIFIED
+  REJECTED
+}
+
+enum OrganisationMemberRole {
+  OWNER
+  ADMIN
+  MEMBER
+  VIEWER
+}
+
+enum NotificationChannel {
+  IN_APP
+  EMAIL
+  SMS
+}
+
+enum NotificationStatus {
+  UNREAD
+  READ
+  ARCHIVED
+}
+
+enum ActivityType {
+  USER_REGISTERED
+  USER_LOGIN
+  USER_LOGOUT
+  ORG_CREATED
+  ORG_UPDATED
+  MEMBER_INVITED
+  MEMBER_JOINED
+  MEMBER_REMOVED
+  ROLE_ASSIGNED
+  ROLE_REMOVED
+  SETTINGS_UPDATED
+  PROFILE_UPDATED
+  DOCUMENT_UPLOADED
+  VERIFICATION_SUBMITTED
+  VERIFICATION_APPROVED
+  VERIFICATION_REJECTED
+  TRUST_SCORE_UPDATED
+  KYC_SUBMITTED
+  RFQ_CREATED
+  RFQ_PUBLISHED
+  OFFER_SUBMITTED
+  OFFER_ACCEPTED
+  OFFER_REJECTED
+  CONTRACT_CREATED
+  CONTRACT_SIGNED
+  MILESTONE_UPDATED
+  ESCROW_REQUESTED
+  ESCROW_FUNDED
+  ESCROW_RELEASED
+  SHIPMENT_REQUESTED
+  SHIPMENT_BOOKED
+  SHIPMENT_IN_TRANSIT
+  SHIPMENT_DELIVERED
+  WALLET_CREDITED
+  CERTIFICATE_CREATED
+  CERTIFICATE_SUBMITTED
+  CERTIFICATE_APPROVED
+  CERTIFICATE_REJECTED
+  CERTIFICATE_EXPIRED
+  SYSTEM
+}
+
+enum DocumentType {
+  TRADE_LICENSE
+  TAX_CERTIFICATE
+  BUSINESS_CERTIFICATE
+  ID_DOCUMENT
+  OTHER
+}
+
+enum DocumentStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  ARCHIVED
+}
+
+enum VerificationCaseStatus {
+  DRAFT
+  PENDING
+  APPROVED
+  REJECTED
+  WITHDRAWN
+}
+
+enum VerificationEventType {
+  CREATED
+  SUBMITTED
+  DOCUMENT_ADDED
+  APPROVED
+  REJECTED
+  NOTE_ADDED
+}
+
+enum KycStatus {
+  UNVERIFIED
+  PENDING
+  VERIFIED
+  REJECTED
+}
+
+enum IdDocumentType {
+  NATIONAL_ID
+  PASSPORT
+  DRIVERS_LICENSE
+  OTHER
+}
+
+enum RfqStatus {
+  DRAFT
+  OPEN
+  CLOSED
+  AWARDED
+  CANCELLED
+}
+
+enum OfferStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  WITHDRAWN
+}
+
+enum ContractStatus {
+  DRAFT
+  PENDING_SIGNATURES
+  ACTIVE
+  COMPLETED
+  CANCELLED
+}
+
+enum MilestoneStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  DELAYED
+  CANCELLED
+}
+
+enum EscrowRequestStatus {
+  REQUESTED
+  FUNDED
+  RELEASED
+  CANCELLED
+}
+
+enum ShipmentRequestStatus {
+  REQUESTED
+  BOOKED
+  IN_TRANSIT
+  DELIVERED
+  CANCELLED
+}
+
+enum TradeEventType {
+  RFQ_CREATED
+  RFQ_PUBLISHED
+  RFQ_CLOSED
+  OFFER_SUBMITTED
+  OFFER_ACCEPTED
+  OFFER_REJECTED
+  CONTRACT_CREATED
+  CONTRACT_SIGNED
+  MILESTONE_UPDATED
+  ESCROW_REQUESTED
+  ESCROW_FUNDED
+  ESCROW_RELEASED
+  SHIPMENT_REQUESTED
+  SHIPMENT_BOOKED
+  SHIPMENT_IN_TRANSIT
+  SHIPMENT_DELIVERED
+  NOTE
+}
+
+enum WalletStatus {
+  ACTIVE
+  FROZEN
+  CLOSED
+}
+
+enum LedgerEntryType {
+  CREDIT
+  DEBIT
+}
+
+enum LedgerEntryKind {
+  TOP_UP
+  ESCROW_HOLD
+  ESCROW_RELEASE
+  ESCROW_REFUND
+  ADJUSTMENT
+}
+
+enum EscrowAccountStatus {
+  OPEN
+  FUNDED
+  RELEASED
+  CANCELLED
+}
+
+enum ShipmentStatus {
+  DRAFT
+  BOOKED
+  IN_TRANSIT
+  DELIVERED
+  CANCELLED
+}
+
+// ─────────────────────────────────────────────────────────────
+// Users & Auth
+// ─────────────────────────────────────────────────────────────
+
+model User {
+  id              String    @id @default(uuid()) @db.Uuid
+  email           String    @unique
+  passwordHash    String    @map("password_hash")
+  firstName       String    @map("first_name")
+  lastName        String    @map("last_name")
+  phone           String?
+  avatarUrl       String?   @map("avatar_url")
+  emailVerified   Boolean   @default(false) @map("email_verified")
+  emailVerifiedAt DateTime? @map("email_verified_at")
+  mfaEnabled      Boolean   @default(false) @map("mfa_enabled")
+  mfaSecret       String?   @map("mfa_secret")
+  isActive        Boolean   @default(true) @map("is_active")
+  lastLoginAt     DateTime? @map("last_login_at")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+  createdBy       String?   @map("created_by") @db.Uuid
+  updatedBy       String?   @map("updated_by") @db.Uuid
+  deletedAt       DateTime? @map("deleted_at")
+
+  roles              UserRole[]
+  refreshTokens      RefreshToken[]
+  memberships        OrganisationMember[]
+  ownedOrganisations Organisation[]       @relation("OrganisationOwner")
+  notifications      Notification[]
+  activities         Activity[]           @relation("ActivityActor")
+  auditLogs          AuditLog[]           @relation("AuditActor")
+  settings           UserSettings?
+  kycProfiles        KycProfile[]
+  uploadedDocuments  Document[]           @relation("DocumentUploader")
+  submittedCases     VerificationCase[]   @relation("CaseSubmitter")
+  reviewedCases      VerificationCase[]   @relation("CaseReviewer")
+
+  @@index([email])
+  @@index([deletedAt])
+  @@map("users")
+}
+
+model UserRole {
+  id        String     @id @default(uuid()) @db.Uuid
+  userId    String     @map("user_id") @db.Uuid
+  role      SystemRole
+  createdAt DateTime   @default(now()) @map("created_at")
+  updatedAt DateTime   @updatedAt @map("updated_at")
+  createdBy String?    @map("created_by") @db.Uuid
+  updatedBy String?    @map("updated_by") @db.Uuid
+  deletedAt DateTime?  @map("deleted_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, role])
+  @@index([userId])
+  @@map("user_roles")
+}
+
+model RefreshToken {
+  id        String    @id @default(uuid()) @db.Uuid
+  userId    String    @map("user_id") @db.Uuid
+  tokenHash String    @map("token_hash")
+  expiresAt DateTime  @map("expires_at")
+  revokedAt DateTime? @map("revoked_at")
+  userAgent String?   @map("user_agent")
+  ipAddress String?   @map("ip_address")
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  createdBy String?   @map("created_by") @db.Uuid
+  updatedBy String?   @map("updated_by") @db.Uuid
+  deletedAt DateTime? @map("deleted_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([tokenHash])
+  @@map("refresh_tokens")
+}
+
+model UserSettings {
+  id                String    @id @default(uuid()) @db.Uuid
+  userId            String    @unique @map("user_id") @db.Uuid
+  locale            String    @default("en")
+  timezone          String    @default("UTC")
+  emailNotifications Boolean  @default(true) @map("email_notifications")
+  smsNotifications  Boolean   @default(false) @map("sms_notifications")
+  theme             String    @default("system")
+  createdAt         DateTime  @default(now()) @map("created_at")
+  updatedAt         DateTime  @updatedAt @map("updated_at")
+  createdBy         String?   @map("created_by") @db.Uuid
+  updatedBy         String?   @map("updated_by") @db.Uuid
+  deletedAt         DateTime? @map("deleted_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_settings")
+}
+
+// ─────────────────────────────────────────────────────────────
+// Organisations
+// ─────────────────────────────────────────────────────────────
+
+model Organisation {
+  id                 String             @id @default(uuid()) @db.Uuid
+  name               String
+  slug               String             @unique
+  type               OrganisationType
+  status             OrganisationStatus @default(PENDING)
+  verificationStatus VerificationStatus @default(UNVERIFIED) @map("verification_status")
+  registrationNumber String?            @map("registration_number")
+  taxId              String?            @map("tax_id")
+  countryCode        String             @map("country_code") @db.Char(2)
+  city               String?
+  addressLine1       String?            @map("address_line1")
+  addressLine2       String?            @map("address_line2")
+  postalCode         String?            @map("postal_code")
+  website            String?
+  description        String?
+  logoUrl            String?            @map("logo_url")
+  ownerId            String             @map("owner_id") @db.Uuid
+  createdAt          DateTime           @default(now()) @map("created_at")
+  updatedAt          DateTime           @updatedAt @map("updated_at")
+  createdBy          String?            @map("created_by") @db.Uuid
+  updatedBy          String?            @map("updated_by") @db.Uuid
+  deletedAt          DateTime?          @map("deleted_at")
+
+  owner              User                 @relation("OrganisationOwner", fields: [ownerId], references: [id])
+  members            OrganisationMember[]
+  invites            OrganisationInvite[]
+  trustProfile       TrustProfile?
+  documents          Document[]
+  contacts           OrgContact[]
+  verificationCases  VerificationCase[]
+  registryProfile    RegistryProfile?
+  rfqsCreated        Rfq[]                @relation("RfqBuyer")
+  offersSubmitted    Offer[]              @relation("OfferSeller")
+  contractsAsBuyer   Contract[]           @relation("ContractBuyer")
+  contractsAsSeller  Contract[]           @relation("ContractSeller")
+  certificates       ComplianceCertificate[]
+  wallets            Wallet[]
+  escrowAccountsAsBuyer  EscrowAccount[]  @relation("EscrowBuyer")
+  escrowAccountsAsSeller EscrowAccount[]  @relation("EscrowSeller")
+  shipmentsAsProvider    Shipment[]       @relation("ShipmentProvider")
+  shipmentsAsBuyer       Shipment[]       @relation("ShipmentBuyer")
+  shipmentsAsSeller      Shipment[]       @relation("ShipmentSeller")
+
+  @@index([slug])
+  @@index([type])
+  @@index([status])
+  @@index([countryCode])
+  @@index([deletedAt])
+  @@map("organisations")
+}
+
+model OrganisationMember {
+  id             String                 @id @default(uuid()) @db.Uuid
+  organisationId String                 @map("organisation_id") @db.Uuid
+  userId         String                 @map("user_id") @db.Uuid
+  role           OrganisationMemberRole @default(MEMBER)
+  joinedAt       DateTime               @default(now()) @map("joined_at")
+  createdAt      DateTime               @default(now()) @map("created_at")
+  updatedAt      DateTime               @updatedAt @map("updated_at")
+  createdBy      String?                @map("created_by") @db.Uuid
+  updatedBy      String?                @map("updated_by") @db.Uuid
+  deletedAt      DateTime?              @map("deleted_at")
+
+  organisation Organisation @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([organisationId, userId])
+  @@index([organisationId])
+  @@index([userId])
+  @@map("organisation_members")
+}
+
+model OrganisationInvite {
+  id             String                 @id @default(uuid()) @db.Uuid
+  organisationId String                 @map("organisation_id") @db.Uuid
+  email          String
+  role           OrganisationMemberRole @default(MEMBER)
+  token          String                 @unique
+  expiresAt      DateTime               @map("expires_at")
+  acceptedAt     DateTime?              @map("accepted_at")
+  createdAt      DateTime               @default(now()) @map("created_at")
+  updatedAt      DateTime               @updatedAt @map("updated_at")
+  createdBy      String?                @map("created_by") @db.Uuid
+  updatedBy      String?                @map("updated_by") @db.Uuid
+  deletedAt      DateTime?              @map("deleted_at")
+
+  organisation Organisation @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+
+  @@index([organisationId])
+  @@index([email])
+  @@map("organisation_invites")
+}
+
+// ─────────────────────────────────────────────────────────────
+// Notifications
+// ─────────────────────────────────────────────────────────────
+
+model Notification {
+  id        String              @id @default(uuid()) @db.Uuid
+  userId    String              @map("user_id") @db.Uuid
+  title     String
+  body      String
+  channel   NotificationChannel @default(IN_APP)
+  status    NotificationStatus  @default(UNREAD)
+  link      String?
+  metadata  Json?
+  readAt    DateTime?           @map("read_at")
+  createdAt DateTime            @default(now()) @map("created_at")
+  updatedAt DateTime            @updatedAt @map("updated_at")
+  createdBy String?             @map("created_by") @db.Uuid
+  updatedBy String?             @map("updated_by") @db.Uuid
+  deletedAt DateTime?           @map("deleted_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, status])
+  @@index([createdAt])
+  @@map("notifications")
+}
+
+// ─────────────────────────────────────────────────────────────
+// Activity Timeline
+// ─────────────────────────────────────────────────────────────
+
+model Activity {
+  id             String       @id @default(uuid()) @db.Uuid
+  type           ActivityType
+  title          String
+  description    String?
+  actorId        String?      @map("actor_id") @db.Uuid
+  organisationId String?      @map("organisation_id") @db.Uuid
+  entityType     String?      @map("entity_type")
+  entityId       String?      @map("entity_id") @db.Uuid
+  metadata       Json?
+  createdAt      DateTime     @default(now()) @map("created_at")
+  updatedAt      DateTime     @updatedAt @map("updated_at")
+  createdBy      String?      @map("created_by") @db.Uuid
+  updatedBy      String?      @map("updated_by") @db.Uuid
+  deletedAt      DateTime?    @map("deleted_at")
+
+  actor User? @relation("ActivityActor", fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([actorId])
+  @@index([organisationId])
+  @@index([type])
+  @@index([createdAt])
+  @@map("activities")
+}
+
+// ─────────────────────────────────────────────────────────────
+// Audit Logs
+// ─────────────────────────────────────────────────────────────
+
+model AuditLog {
+  id             String    @id @default(uuid()) @db.Uuid
+  action         String
+  entityType     String    @map("entity_type")
+  entityId       String?   @map("entity_id") @db.Uuid
+  actorId        String?   @map("actor_id") @db.Uuid
+  organisationId String?   @map("organisation_id") @db.Uuid
+  ipAddress      String?   @map("ip_address")
+  userAgent      String?   @map("user_agent")
+  before         Json?
+  after          Json?
+  metadata       Json?
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+  createdBy      String?   @map("created_by") @db.Uuid
+  updatedBy      String?   @map("updated_by") @db.Uuid
+  deletedAt      DateTime? @map("deleted_at")
+
+  actor User? @relation("AuditActor", fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([actorId])
+  @@index([organisationId])
+  @@index([entityType, entityId])
+  @@index([action])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
+
+// ─────────────────────────────────────────────────────────────
+// Trust Engine
+// ─────────────────────────────────────────────────────────────
+
+model TrustProfile {
+  id               String    @id @default(uuid()) @db.Uuid
+  organisationId   String    @unique @map("organisation_id") @db.Uuid
+  trustScore       Int       @default(0) @map("trust_score")
+  scoreBreakdown   Json      @default("{}") @map("score_breakdown")
+  lastScoredAt     DateTime? @map("last_scored_at")
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
+  createdBy        String?   @map("created_by") @db.Uuid
+  updatedBy        String?   @map("updated_by") @db.Uuid
+  deletedAt        DateTime? @map("deleted_at")
+
+  organisation Organisation @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+
+  @@index([trustScore])
+  @@map("trust_profiles")
+}
+
+model Document {
+  id                 String         @id @default(uuid()) @db.Uuid
+  organisationId     String         @map("organisation_id") @db.Uuid
+  uploadedById       String         @map("uploaded_by_id") @db.Uuid
+  verificationCaseId String?        @map("verification_case_id") @db.Uuid
+  type               DocumentType
+  status             DocumentStatus @default(PENDING)
+  fileName           String         @map("file_name")
+  mimeType           String         @map("mime_type")
+  sizeBytes          Int            @map("size_bytes")
+  storagePath        String         @map("storage_path")
+  checksum           String?
+  notes              String?
+  createdAt          DateTime       @default(now()) @map("created_at")
+  updatedAt          DateTime       @updatedAt @map("updated_at")
+  createdBy          String?        @map("created_by") @db.Uuid
+  updatedBy          String?        @map("updated_by") @db.Uuid
+  deletedAt          DateTime?      @map("deleted_at")
+
+  organisation     Organisation      @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  uploadedBy       User              @relation("DocumentUploader", fields: [uploadedById], references: [id])
+  verificationCase VerificationCase? @relation(fields: [verificationCaseId], references: [id], onDelete: SetNull)
+
+  @@index([organisationId])
+  @@index([type])
+  @@index([status])
+  @@index([verificationCaseId])
+  @@index([deletedAt])
+  @@map("documents")
+}
+
+model OrgContact {
+  id             String    @id @default(uuid()) @db.Uuid
+  organisationId String    @map("organisation_id") @db.Uuid
+  name           String
+  email          String?
+  phone          String?
+  title          String?
+  isPrimary      Boolean   @default(false) @map("is_primary")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+  createdBy      String?   @map("created_by") @db.Uuid
+  updatedBy      String?   @map("updated_by") @db.Uuid
+  deletedAt      DateTime? @map("deleted_at")
+
+  organisation Organisation @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+
+  @@index([organisationId])
+  @@index([deletedAt])
+  @@map("org_contacts")
+}
+
+model KycProfile {
+  id              String         @id @default(uuid()) @db.Uuid
+  userId          String         @map("user_id") @db.Uuid
+  status          KycStatus      @default(UNVERIFIED)
+  idDocumentType  IdDocumentType? @map("id_document_type")
+  idNumberHash    String?        @map("id_number_hash")
+  idNumberLast4   String?        @map("id_number_last4")
+  countryCode     String?        @map("country_code") @db.Char(2)
+  reviewedById    String?        @map("reviewed_by_id") @db.Uuid
+  reviewedAt      DateTime?      @map("reviewed_at")
+  reviewNotes     String?        @map("review_notes")
+  submittedAt     DateTime?      @map("submitted_at")
+  createdAt       DateTime       @default(now()) @map("created_at")
+  updatedAt       DateTime       @updatedAt @map("updated_at")
+  createdBy       String?        @map("created_by") @db.Uuid
+  updatedBy       String?        @map("updated_by") @db.Uuid
+  deletedAt       DateTime?      @map("deleted_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([status])
+  @@index([deletedAt])
+  @@map("kyc_profiles")
+}
+
+model VerificationCase {
+  id             String                 @id @default(uuid()) @db.Uuid
+  organisationId String                 @map("organisation_id") @db.Uuid
+  status         VerificationCaseStatus @default(DRAFT)
+  submittedById  String?                @map("submitted_by_id") @db.Uuid
+  reviewerId     String?                @map("reviewer_id") @db.Uuid
+  submittedAt    DateTime?              @map("submitted_at")
+  reviewedAt     DateTime?              @map("reviewed_at")
+  notes          String?
+  reviewNotes    String?                @map("review_notes")
+  createdAt      DateTime               @default(now()) @map("created_at")
+  updatedAt      DateTime               @updatedAt @map("updated_at")
+  createdBy      String?                @map("created_by") @db.Uuid
+  updatedBy      String?                @map("updated_by") @db.Uuid
+  deletedAt      DateTime?              @map("deleted_at")
+
+  organisation Organisation        @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  submittedBy  User?               @relation("CaseSubmitter", fields: [submittedById], references: [id], onDelete: SetNull)
+  reviewer     User?               @relation("CaseReviewer", fields: [reviewerId], references: [id], onDelete: SetNull)
+  documents    Document[]
+  events       VerificationEvent[]
+
+  @@index([organisationId])
+  @@index([status])
+  @@index([deletedAt])
+  @@map("verification_cases")
+}
+
+model VerificationEvent {
+  id                 String                @id @default(uuid()) @db.Uuid
+  verificationCaseId String                @map("verification_case_id") @db.Uuid
+  type               VerificationEventType
+  message            String?
+  actorId            String?               @map("actor_id") @db.Uuid
+  metadata           Json?
+  createdAt          DateTime              @default(now()) @map("created_at")
+  updatedAt          DateTime              @updatedAt @map("updated_at")
+  createdBy          String?               @map("created_by") @db.Uuid
+  updatedBy          String?               @map("updated_by") @db.Uuid
+  deletedAt          DateTime?             @map("deleted_at")
+
+  verificationCase VerificationCase @relation(fields: [verificationCaseId], references: [id], onDelete: Cascade)
+
+  @@index([verificationCaseId])
+  @@index([createdAt])
+  @@map("verification_events")
+}
+
+model RegistryProfile {
+  id                String           @id @default(uuid()) @db.Uuid
+  organisationId    String           @unique @map("organisation_id") @db.Uuid
+  organisationType  OrganisationType @map("organisation_type")
+  summary           String?
+  commodities       String[]         @default([])
+  exportMarkets     String[]         @default([]) @map("export_markets")
+  yearsInOperation  Int?             @map("years_in_operation")
+  attributes        Json             @default("{}")
+  isListed          Boolean          @default(true) @map("is_listed")
+  createdAt         DateTime         @default(now()) @map("created_at")
+  updatedAt         DateTime         @updatedAt @map("updated_at")
+  createdBy         String?          @map("created_by") @db.Uuid
+  updatedBy         String?          @map("updated_by") @db.Uuid
+  deletedAt         DateTime?        @map("deleted_at")
+
+  organisation Organisation @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+
+  @@index([organisationType])
+  @@index([isListed])
+  @@index([deletedAt])
+  @@map("registry_profiles")
+}
+
+// ─────────────────────────────────────────────────────────────
+// Trade Engine
+// ─────────────────────────────────────────────────────────────
+
+model Rfq {
+  id               String    @id @default(uuid()) @db.Uuid
+  reference        String    @unique
+  buyerOrgId       String    @map("buyer_org_id") @db.Uuid
+  createdById      String    @map("created_by_id") @db.Uuid
+  title            String
+  commodity        String
+  quantity         Decimal   @db.Decimal(18, 4)
+  unit             String    @default("MT")
+  targetPrice      Decimal?  @map("target_price") @db.Decimal(18, 4)
+  currency         String    @default("USD") @db.Char(3)
+  originCountry    String?   @map("origin_country") @db.Char(2)
+  destinationCountry String? @map("destination_country") @db.Char(2)
+  incoterm         String?
+  neededBy         DateTime? @map("needed_by")
+  status           RfqStatus @default(DRAFT)
+  notes            String?
+  publishedAt      DateTime? @map("published_at")
+  closedAt         DateTime? @map("closed_at")
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
+  createdBy        String?   @map("created_by") @db.Uuid
+  updatedBy        String?   @map("updated_by") @db.Uuid
+  deletedAt        DateTime? @map("deleted_at")
+
+  buyerOrg  Organisation @relation("RfqBuyer", fields: [buyerOrgId], references: [id])
+  offers    Offer[]
+  contracts Contract[]
+  events    TradeEvent[]
+
+  @@index([buyerOrgId])
+  @@index([status])
+  @@index([commodity])
+  @@index([deletedAt])
+  @@map("rfqs")
+}
+
+model Offer {
+  id            String      @id @default(uuid()) @db.Uuid
+  rfqId         String      @map("rfq_id") @db.Uuid
+  sellerOrgId   String      @map("seller_org_id") @db.Uuid
+  createdById   String      @map("created_by_id") @db.Uuid
+  unitPrice     Decimal     @map("unit_price") @db.Decimal(18, 4)
+  currency      String      @default("USD") @db.Char(3)
+  quantity      Decimal     @db.Decimal(18, 4)
+  unit          String      @default("MT")
+  incoterm      String?
+  leadTimeDays  Int?        @map("lead_time_days")
+  validUntil    DateTime?   @map("valid_until")
+  status        OfferStatus @default(PENDING)
+  notes         String?
+  createdAt     DateTime    @default(now()) @map("created_at")
+  updatedAt     DateTime    @updatedAt @map("updated_at")
+  createdBy     String?     @map("created_by") @db.Uuid
+  updatedBy     String?     @map("updated_by") @db.Uuid
+  deletedAt     DateTime?   @map("deleted_at")
+
+  rfq       Rfq          @relation(fields: [rfqId], references: [id], onDelete: Cascade)
+  sellerOrg Organisation @relation("OfferSeller", fields: [sellerOrgId], references: [id])
+  contract  Contract?
+
+  @@index([rfqId])
+  @@index([sellerOrgId])
+  @@index([status])
+  @@index([deletedAt])
+  @@map("offers")
+}
+
+model Contract {
+  id               String         @id @default(uuid()) @db.Uuid
+  reference        String         @unique
+  rfqId            String?        @map("rfq_id") @db.Uuid
+  offerId          String?        @unique @map("offer_id") @db.Uuid
+  buyerOrgId       String         @map("buyer_org_id") @db.Uuid
+  sellerOrgId      String         @map("seller_org_id") @db.Uuid
+  title            String
+  commodity        String
+  quantity         Decimal        @db.Decimal(18, 4)
+  unit             String         @default("MT")
+  unitPrice        Decimal        @map("unit_price") @db.Decimal(18, 4)
+  currency         String         @default("USD") @db.Char(3)
+  totalValue       Decimal        @map("total_value") @db.Decimal(18, 4)
+  incoterm         String?
+  status           ContractStatus @default(DRAFT)
+  buyerSignedAt    DateTime?      @map("buyer_signed_at")
+  sellerSignedAt   DateTime?      @map("seller_signed_at")
+  activatedAt      DateTime?      @map("activated_at")
+  completedAt      DateTime?      @map("completed_at")
+  terms            String?
+  createdAt        DateTime       @default(now()) @map("created_at")
+  updatedAt        DateTime       @updatedAt @map("updated_at")
+  createdBy        String?        @map("created_by") @db.Uuid
+  updatedBy        String?        @map("updated_by") @db.Uuid
+  deletedAt        DateTime?      @map("deleted_at")
+
+  rfq       Rfq?              @relation(fields: [rfqId], references: [id], onDelete: SetNull)
+  offer     Offer?            @relation(fields: [offerId], references: [id], onDelete: SetNull)
+  buyerOrg  Organisation      @relation("ContractBuyer", fields: [buyerOrgId], references: [id])
+  sellerOrg Organisation      @relation("ContractSeller", fields: [sellerOrgId], references: [id])
+  milestones Milestone[]
+  escrowRequests EscrowRequest[]
+  shipmentRequests ShipmentRequest[]
+  events    TradeEvent[]
+  certificates ComplianceCertificate[]
+
+  @@index([buyerOrgId])
+  @@index([sellerOrgId])
+  @@index([status])
+  @@index([deletedAt])
+  @@map("contracts")
+}
+
+model Milestone {
+  id          String          @id @default(uuid()) @db.Uuid
+  contractId  String          @map("contract_id") @db.Uuid
+  title       String
+  description String?
+  sequence    Int             @default(1)
+  dueDate     DateTime?       @map("due_date")
+  status      MilestoneStatus @default(PENDING)
+  completedAt DateTime?       @map("completed_at")
+  createdAt   DateTime        @default(now()) @map("created_at")
+  updatedAt   DateTime        @updatedAt @map("updated_at")
+  createdBy   String?         @map("created_by") @db.Uuid
+  updatedBy   String?         @map("updated_by") @db.Uuid
+  deletedAt   DateTime?       @map("deleted_at")
+
+  contract Contract @relation(fields: [contractId], references: [id], onDelete: Cascade)
+
+  @@index([contractId])
+  @@index([status])
+  @@map("milestones")
+}
+
+model EscrowRequest {
+  id          String              @id @default(uuid()) @db.Uuid
+  contractId  String              @map("contract_id") @db.Uuid
+  amount      Decimal             @db.Decimal(18, 4)
+  currency    String              @default("USD") @db.Char(3)
+  status      EscrowRequestStatus @default(REQUESTED)
+  notes       String?
+  requestedById String            @map("requested_by_id") @db.Uuid
+  createdAt   DateTime            @default(now()) @map("created_at")
+  updatedAt   DateTime            @updatedAt @map("updated_at")
+  createdBy   String?             @map("created_by") @db.Uuid
+  updatedBy   String?             @map("updated_by") @db.Uuid
+  deletedAt   DateTime?           @map("deleted_at")
+
+  contract      Contract       @relation(fields: [contractId], references: [id], onDelete: Cascade)
+  escrowAccount EscrowAccount?
+
+  @@index([contractId])
+  @@index([status])
+  @@map("escrow_requests")
+}
+
+model ShipmentRequest {
+  id            String                @id @default(uuid()) @db.Uuid
+  contractId    String                @map("contract_id") @db.Uuid
+  origin        String?
+  destination   String?
+  readyDate     DateTime?             @map("ready_date")
+  status        ShipmentRequestStatus @default(REQUESTED)
+  notes         String?
+  requestedById String                @map("requested_by_id") @db.Uuid
+  createdAt     DateTime              @default(now()) @map("created_at")
+  updatedAt     DateTime              @updatedAt @map("updated_at")
+  createdBy     String?               @map("created_by") @db.Uuid
+  updatedBy     String?               @map("updated_by") @db.Uuid
+  deletedAt     DateTime?             @map("deleted_at")
+
+  contract Contract  @relation(fields: [contractId], references: [id], onDelete: Cascade)
+  shipment Shipment?
+
+  @@index([contractId])
+  @@index([status])
+  @@map("shipment_requests")
+}
+
+model TradeEvent {
+  id         String         @id @default(uuid()) @db.Uuid
+  rfqId      String?        @map("rfq_id") @db.Uuid
+  contractId String?        @map("contract_id") @db.Uuid
+  type       TradeEventType
+  message    String?
+  actorId    String?        @map("actor_id") @db.Uuid
+  metadata   Json?
+  createdAt  DateTime       @default(now()) @map("created_at")
+  updatedAt  DateTime       @updatedAt @map("updated_at")
+  createdBy  String?        @map("created_by") @db.Uuid
+  updatedBy  String?        @map("updated_by") @db.Uuid
+  deletedAt  DateTime?      @map("deleted_at")
+
+  rfq      Rfq?      @relation(fields: [rfqId], references: [id], onDelete: Cascade)
+  contract Contract? @relation(fields: [contractId], references: [id], onDelete: Cascade)
+
+  @@index([rfqId])
+  @@index([contractId])
+  @@index([createdAt])
+  @@map("trade_events")
+}
+
+// ─────────────────────────────────────────────────────────────
+// Compliance Engine
+// ─────────────────────────────────────────────────────────────
+
+enum CertificateType {
+  CERTIFICATE_OF_ORIGIN
+  EXPORT_PERMIT
+  IMPORT_DOCUMENT
+  PACKING_LIST
+  COMMERCIAL_INVOICE
+  INSPECTION_CERTIFICATE
+  HALAL_CERTIFICATE
+  OTHER
+}
+
+enum CertificateStatus {
+  DRAFT
+  PENDING_APPROVAL
+  APPROVED
+  REJECTED
+  EXPIRED
+  REVOKED
+}
+
+enum ComplianceApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model ComplianceCertificate {
+  id               String            @id @default(uuid()) @db.Uuid
+  reference        String            @unique
+  organisationId   String            @map("organisation_id") @db.Uuid
+  contractId       String?           @map("contract_id") @db.Uuid
+  type             CertificateType
+  title            String
+  status           CertificateStatus @default(DRAFT)
+  issuingCountry   String?           @map("issuing_country") @db.Char(2)
+  destinationCountry String?         @map("destination_country") @db.Char(2)
+  commodity        String?
+  quantity         Decimal?          @db.Decimal(18, 4)
+  unit             String?
+  issuedAt         DateTime?         @map("issued_at")
+  expiresAt        DateTime?         @map("expires_at")
+  submittedAt      DateTime?         @map("submitted_at")
+  approvedAt       DateTime?         @map("approved_at")
+  payload          Json              @default("{}")
+  notes            String?
+  createdById      String            @map("created_by_id") @db.Uuid
+  createdAt        DateTime          @default(now()) @map("created_at")
+  updatedAt        DateTime          @updatedAt @map("updated_at")
+  createdBy        String?           @map("created_by") @db.Uuid
+  updatedBy        String?           @map("updated_by") @db.Uuid
+  deletedAt        DateTime?         @map("deleted_at")
+
+  organisation Organisation              @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  contract     Contract?                 @relation(fields: [contractId], references: [id], onDelete: SetNull)
+  approvals    ComplianceApproval[]
+  events       ComplianceEvent[]
+
+  @@index([organisationId])
+  @@index([contractId])
+  @@index([type])
+  @@index([status])
+  @@index([expiresAt])
+  @@index([deletedAt])
+  @@map("compliance_certificates")
+}
+
+model ComplianceApproval {
+  id            String                   @id @default(uuid()) @db.Uuid
+  certificateId String                   @map("certificate_id") @db.Uuid
+  status        ComplianceApprovalStatus @default(PENDING)
+  reviewerId    String?                  @map("reviewer_id") @db.Uuid
+  reviewNotes   String?                  @map("review_notes")
+  reviewedAt    DateTime?                @map("reviewed_at")
+  createdAt     DateTime                 @default(now()) @map("created_at")
+  updatedAt     DateTime                 @updatedAt @map("updated_at")
+  createdBy     String?                  @map("created_by") @db.Uuid
+  updatedBy     String?                  @map("updated_by") @db.Uuid
+  deletedAt     DateTime?                @map("deleted_at")
+
+  certificate ComplianceCertificate @relation(fields: [certificateId], references: [id], onDelete: Cascade)
+
+  @@index([certificateId])
+  @@index([status])
+  @@map("compliance_approvals")
+}
+
+model ComplianceEvent {
+  id            String    @id @default(uuid()) @db.Uuid
+  certificateId String    @map("certificate_id") @db.Uuid
+  type          String
+  message       String?
+  actorId       String?   @map("actor_id") @db.Uuid
+  metadata      Json?
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+  createdBy     String?   @map("created_by") @db.Uuid
+  updatedBy     String?   @map("updated_by") @db.Uuid
+  deletedAt     DateTime? @map("deleted_at")
+
+  certificate ComplianceCertificate @relation(fields: [certificateId], references: [id], onDelete: Cascade)
+
+  @@index([certificateId])
+  @@index([createdAt])
+  @@map("compliance_events")
+}
+
+// ─────────────────────────────────────────────────────────────
+// Finance Engine
+// ─────────────────────────────────────────────────────────────
+
+model Wallet {
+  id             String       @id @default(uuid()) @db.Uuid
+  organisationId String       @map("organisation_id") @db.Uuid
+  currency       String       @default("USD") @db.Char(3)
+  availableBalance Decimal    @default(0) @map("available_balance") @db.Decimal(18, 4)
+  heldBalance    Decimal      @default(0) @map("held_balance") @db.Decimal(18, 4)
+  status         WalletStatus @default(ACTIVE)
+  createdAt      DateTime     @default(now()) @map("created_at")
+  updatedAt      DateTime     @updatedAt @map("updated_at")
+  createdBy      String?      @map("created_by") @db.Uuid
+  updatedBy      String?      @map("updated_by") @db.Uuid
+  deletedAt      DateTime?    @map("deleted_at")
+
+  organisation Organisation  @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  ledgerEntries LedgerEntry[]
+  escrowHolds   EscrowAccount[] @relation("EscrowHoldWallet")
+
+  @@unique([organisationId, currency])
+  @@index([organisationId])
+  @@index([status])
+  @@index([deletedAt])
+  @@map("wallets")
+}
+
+model LedgerEntry {
+  id             String          @id @default(uuid()) @db.Uuid
+  walletId       String          @map("wallet_id") @db.Uuid
+  type           LedgerEntryType
+  kind           LedgerEntryKind
+  amount         Decimal         @db.Decimal(18, 4)
+  balanceAfter   Decimal         @map("balance_after") @db.Decimal(18, 4)
+  currency       String          @default("USD") @db.Char(3)
+  reference      String?
+  description    String?
+  escrowAccountId String?        @map("escrow_account_id") @db.Uuid
+  createdAt      DateTime        @default(now()) @map("created_at")
+  updatedAt      DateTime        @updatedAt @map("updated_at")
+  createdBy      String?         @map("created_by") @db.Uuid
+  updatedBy      String?         @map("updated_by") @db.Uuid
+  deletedAt      DateTime?       @map("deleted_at")
+
+  wallet        Wallet         @relation(fields: [walletId], references: [id], onDelete: Cascade)
+  escrowAccount EscrowAccount? @relation(fields: [escrowAccountId], references: [id], onDelete: SetNull)
+
+  @@index([walletId])
+  @@index([escrowAccountId])
+  @@index([kind])
+  @@index([createdAt])
+  @@map("ledger_entries")
+}
+
+model EscrowAccount {
+  id              String              @id @default(uuid()) @db.Uuid
+  reference       String              @unique
+  escrowRequestId String              @unique @map("escrow_request_id") @db.Uuid
+  contractId      String              @map("contract_id") @db.Uuid
+  buyerOrgId      String              @map("buyer_org_id") @db.Uuid
+  sellerOrgId     String              @map("seller_org_id") @db.Uuid
+  holdWalletId    String              @map("hold_wallet_id") @db.Uuid
+  amount          Decimal             @db.Decimal(18, 4)
+  currency        String              @default("USD") @db.Char(3)
+  status          EscrowAccountStatus @default(OPEN)
+  fundedAt        DateTime?           @map("funded_at")
+  releasedAt      DateTime?           @map("released_at")
+  notes           String?
+  createdAt       DateTime            @default(now()) @map("created_at")
+  updatedAt       DateTime            @updatedAt @map("updated_at")
+  createdBy       String?             @map("created_by") @db.Uuid
+  updatedBy       String?             @map("updated_by") @db.Uuid
+  deletedAt       DateTime?           @map("deleted_at")
+
+  escrowRequest EscrowRequest @relation(fields: [escrowRequestId], references: [id], onDelete: Cascade)
+  buyerOrg      Organisation  @relation("EscrowBuyer", fields: [buyerOrgId], references: [id])
+  sellerOrg     Organisation  @relation("EscrowSeller", fields: [sellerOrgId], references: [id])
+  holdWallet    Wallet        @relation("EscrowHoldWallet", fields: [holdWalletId], references: [id])
+  ledgerEntries LedgerEntry[]
+
+  @@index([contractId])
+  @@index([buyerOrgId])
+  @@index([sellerOrgId])
+  @@index([status])
+  @@index([deletedAt])
+  @@map("escrow_accounts")
+}
+
+// ─────────────────────────────────────────────────────────────
+// Logistics Engine
+// ─────────────────────────────────────────────────────────────
+
+model Shipment {
+  id                String         @id @default(uuid()) @db.Uuid
+  reference         String         @unique
+  shipmentRequestId String         @unique @map("shipment_request_id") @db.Uuid
+  contractId        String         @map("contract_id") @db.Uuid
+  buyerOrgId        String         @map("buyer_org_id") @db.Uuid
+  sellerOrgId       String         @map("seller_org_id") @db.Uuid
+  providerOrgId     String?        @map("provider_org_id") @db.Uuid
+  status            ShipmentStatus @default(DRAFT)
+  origin            String?
+  destination       String?
+  carrierName       String?        @map("carrier_name")
+  trackingNumber    String?        @map("tracking_number")
+  bookedAt          DateTime?      @map("booked_at")
+  departedAt        DateTime?      @map("departed_at")
+  deliveredAt       DateTime?      @map("delivered_at")
+  notes             String?
+  createdAt         DateTime       @default(now()) @map("created_at")
+  updatedAt         DateTime       @updatedAt @map("updated_at")
+  createdBy         String?        @map("created_by") @db.Uuid
+  updatedBy         String?        @map("updated_by") @db.Uuid
+  deletedAt         DateTime?      @map("deleted_at")
+
+  shipmentRequest ShipmentRequest @relation(fields: [shipmentRequestId], references: [id], onDelete: Cascade)
+  buyerOrg        Organisation    @relation("ShipmentBuyer", fields: [buyerOrgId], references: [id])
+  sellerOrg       Organisation    @relation("ShipmentSeller", fields: [sellerOrgId], references: [id])
+  providerOrg     Organisation?   @relation("ShipmentProvider", fields: [providerOrgId], references: [id])
+  trackingEvents  TrackingEvent[]
+  proofOfDelivery ProofOfDelivery?
+
+  @@index([contractId])
+  @@index([buyerOrgId])
+  @@index([sellerOrgId])
+  @@index([providerOrgId])
+  @@index([status])
+  @@index([deletedAt])
+  @@map("shipments")
+}
+
+model TrackingEvent {
+  id          String   @id @default(uuid()) @db.Uuid
+  shipmentId  String   @map("shipment_id") @db.Uuid
+  status      String
+  location    String?
+  message     String?
+  occurredAt  DateTime @default(now()) @map("occurred_at")
+  actorId     String?  @map("actor_id") @db.Uuid
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  createdBy   String?  @map("created_by") @db.Uuid
+  updatedBy   String?  @map("updated_by") @db.Uuid
+  deletedAt   DateTime? @map("deleted_at")
+
+  shipment Shipment @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
+
+  @@index([shipmentId])
+  @@index([occurredAt])
+  @@map("tracking_events")
+}
+
+model ProofOfDelivery {
+  id             String   @id @default(uuid()) @db.Uuid
+  shipmentId     String   @unique @map("shipment_id") @db.Uuid
+  receivedByName String   @map("received_by_name")
+  receivedAt     DateTime @default(now()) @map("received_at")
+  notes          String?
+  signatureRef   String?  @map("signature_ref")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+  createdBy      String?  @map("created_by") @db.Uuid
+  updatedBy      String?  @map("updated_by") @db.Uuid
+  deletedAt      DateTime? @map("deleted_at")
+
+  shipment Shipment @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
+
+  @@map("proofs_of_delivery")
+}

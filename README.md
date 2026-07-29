@@ -1,0 +1,143 @@
+# Koridor
+
+**The operating system for cross-border trade.**
+
+Koridor is infrastructure — not a marketplace, not a bank, not a logistics company. It connects producers, cooperatives, exporters, buyers, banks, insurers, logistics providers, and governments into one trusted digital ecosystem.
+
+## Phase 1 — Foundation (shipped)
+
+Usable vertical slice:
+
+- Landing page
+- Authentication (JWT + refresh tokens, RBAC, MFA-ready fields)
+- Organisation registration
+- User registration & role assignment
+- Dashboard
+- Settings
+- Notifications
+- Audit logs
+- Activity timeline
+
+## Phase 2 — Trust Engine (shipped)
+
+- KYB verification cases + admin review queue
+- Member KYC submission
+- Document upload (Supabase Storage bucket `org-documents`)
+- Deterministic trust score (0–100)
+- Farmer / Cooperative / Exporter / Buyer registry listings
+- Organisation contacts on profiles
+
+## Phase 3 — Trade Engine (shipped)
+
+- RFQs (draft / publish / close)
+- Offers (submit / accept / reject)
+- Contracts formed on acceptance + dual signature
+- Milestones, escrow requests, shipment requests
+- Trade timeline events
+
+## Phase 4 — Finance Engine (shipped)
+
+- Organisation wallets (available + held balances)
+- Ledger entries (top-up, escrow hold/release)
+- Escrow accounts linked to trade escrow requests (open → fund → release)
+
+## Phase 5 — Compliance (shipped)
+
+- Certificate types (COO, export permit, packing list, invoice, inspection, Halal, …)
+- Document generator (structured printable payload)
+- Expiry tracking dashboard
+- Government / chamber approval workflow
+
+## Phase 6 — Logistics (shipped)
+
+- Shipments from trade shipment requests
+- Tracking timeline events
+- Proof of delivery
+
+## Architecture
+
+```
+koridor/
+├── apps/
+│   ├── api/          NestJS + Prisma + PostgreSQL
+│   └── web/          Next.js + Tailwind
+├── packages/
+│   └── shared/       Shared types, roles, permissions
+├── docs/
+├── docker-compose.yml
+└── .github/workflows/
+```
+
+**Principles:** API-first, modular domains, soft deletes, audit on mutations, clean architecture.
+
+## Prerequisites
+
+- Node.js 20+
+- pnpm 9+
+- Supabase project (Postgres) — see [`docs/supabase.md`](./docs/supabase.md)
+- Optional: Docker for local Redis / Mailpit only
+
+## Quick start
+
+```bash
+# 1. Install
+pnpm install
+
+# 2. Environment — paste Supabase DATABASE_URL + DIRECT_URL
+cp .env.example .env
+
+# 3. Shared package + Prisma client
+pnpm --filter @koridor/shared build
+pnpm --filter @koridor/api prisma:generate
+
+# 4. Seed (if not already applied remotely)
+pnpm db:seed
+
+# 5. Run
+pnpm dev
+```
+
+Schema for project `koridor` (`qfptnyifzdwmuxfkgpmv`) is already applied on Supabase with RLS enabled.
+
+| Service | URL |
+|---------|-----|
+| Web | http://localhost:3000 |
+| API | http://localhost:4000/api/v1 |
+| Swagger | http://localhost:4000/docs |
+| Mailpit | http://localhost:8025 |
+| MinIO | http://localhost:9001 |
+
+### Demo accounts
+
+| Email | Password | Role |
+|-------|----------|------|
+| `admin@koridor.io` | `Admin123!` | System Admin |
+| `exporter@demo.koridor.io` | `Demo123!` | Exporter |
+| `buyer@demo.koridor.io` | `Demo123!` | Buyer |
+
+## Scripts
+
+| Command | Description |
+|---------|-------------|
+| `pnpm dev` | Start API + web |
+| `pnpm build` | Build all packages |
+| `pnpm test` | Run tests |
+| `pnpm docker:up` | Start Postgres, Redis, MinIO, Mailpit |
+| `pnpm db:migrate` | Run Prisma migrations |
+| `pnpm db:seed` | Seed demo data |
+
+## Phase roadmap
+
+1. **Foundation** — auth, orgs, RBAC, dashboard, audit *(shipped)*
+2. **Trust Engine** — KYB/KYC, registries, trust score *(shipped)*
+3. **Trade Engine** — RFQs, contracts, milestones *(shipped)*
+4. **Finance Engine** — wallets, escrow, ledger *(shipped)*
+5. **Compliance** — certificates, government workflows *(shipped)*
+6. **Logistics** — shipping, tracking, PoD *(shipped)*
+7. **Analytics** — trade / risk dashboards
+8. **AI** — assistant, document analysis
+9. **Administration** — feature flags, monitoring
+
+## Documentation
+
+See [`docs/`](./docs/) for architecture notes, ER overview, and deployment guide.

@@ -1,0 +1,120 @@
+@import "tailwindcss";
+
+:root {
+  --bg: #f3f5f7;
+  --bg-elevated: #ffffff;
+  --fg: #0b1f33;
+  --fg-muted: #5a6b7b;
+  --border: #d5dde5;
+  --primary: #0b1f33;
+  --primary-fg: #f7f9fb;
+  --accent: #0f6e6a;
+  --accent-soft: #e6f3f2;
+  --danger: #9b2c2c;
+  --success: #1f6f4a;
+  --warning: #9a6700;
+  --ring: #0f6e6a;
+  --sidebar: #0b1f33;
+  --sidebar-fg: #e8eef4;
+  --sidebar-muted: #9fb0c0;
+  --hero-overlay: linear-gradient(
+    115deg,
+    rgba(11, 31, 51, 0.92) 0%,
+    rgba(11, 31, 51, 0.72) 48%,
+    rgba(15, 110, 106, 0.45) 100%
+  );
+  --surface-pattern: radial-gradient(
+      circle at 12% 18%,
+      rgba(15, 110, 106, 0.08),
+      transparent 36%
+    ),
+    radial-gradient(circle at 88% 0%, rgba(11, 31, 51, 0.08), transparent 42%),
+    linear-gradient(180deg, #f7f9fb 0%, #eef2f5 100%);
+}
+
+@theme inline {
+  --color-background: var(--bg);
+  --color-foreground: var(--fg);
+  --color-muted: var(--fg-muted);
+  --color-border: var(--border);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-fg);
+  --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
+  --color-danger: var(--danger);
+  --color-success: var(--success);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-fg);
+  --color-sidebar-muted: var(--sidebar-muted);
+  --font-sans: var(--font-sans);
+  --font-display: var(--font-display);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--surface-pattern);
+  color: var(--fg);
+  font-family: var(--font-sans), "IBM Plex Sans", sans-serif;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+::selection {
+  background: color-mix(in srgb, var(--accent) 28%, white);
+}
+
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes draw-line {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+.animate-fade-up {
+  animation: fade-up 0.7s ease-out both;
+}
+
+.animate-fade-in {
+  animation: fade-in 0.8s ease-out both;
+}
+
+.animate-draw-line {
+  transform-origin: left;
+  animation: draw-line 0.9s ease-out both;
+}
