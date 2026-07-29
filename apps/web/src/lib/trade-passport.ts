@@ -1,5 +1,4 @@
 import {
-  ContractStatus,
   Prisma,
   TradeEvidenceType,
   TradeMilestoneStatus,
@@ -199,76 +198,47 @@ export async function computeReadiness(tradeId: string) {
   const trade = await prisma.trade.findFirst({
     where: { id: tradeId, deletedAt: null },
     include: {
-      buyerOrg: { select: { verificationStatus: true } },
-      sellerOrg: { select: { verificationStatus: true } },
-      contracts: {
+      milestones: {
         where: { deletedAt: null },
-        include: {
-          escrowRequests: {
-            where: { deletedAt: null },
-            include: { escrowAccount: true },
-          },
-          shipmentRequests: {
-            where: { deletedAt: null },
-            include: { shipment: true },
-          },
-        },
-        take: 5,
-      },
-      certificates: {
-        where: { deletedAt: null, status: "APPROVED" },
-        take: 5,
+        include: { evidence: { where: { deletedAt: null } } },
+        orderBy: { sequence: "asc" },
       },
     },
   });
   if (!trade) throw new Error("Trade not found");
 
-  const contract = trade.contracts[0];
-  const signed =
-    contract &&
-    (contract.status === ContractStatus.ACTIVE ||
-      contract.status === ContractStatus.COMPLETED ||
-      (Boolean(contract.buyerSignedAt) && Boolean(contract.sellerSignedAt)));
-
-  const funded = Boolean(
-    contract?.escrowRequests.some(
-      (e) =>
-        e.status === "FUNDED" ||
-        e.status === "RELEASED" ||
-        e.escrowAccount?.status === "FUNDED" ||
-        e.escrowAccount?.status === "RELEASED",
-    ),
+  const milestoneByCode = new Map(
+    trade.milestones.map((m) => [m.code, m]),
   );
 
-  const shipmentBooked = Boolean(
-    contract?.shipmentRequests.some(
-      (s) =>
-        s.shipment &&
-        (s.shipment.status === "BOOKED" ||
-          s.shipment.status === "IN_TRANSIT" ||
-          s.shipment.status === "DELIVERED"),
-    ),
-  );
+  const milestoneOk = (code: string) =>
+    milestoneByCode.get(code)?.status === TradeMilestoneStatus.COMPLETED;
 
   const items = [
     {
       key: "buyer_verified",
       label: "Buyer Verified",
-      ok: trade.buyerOrg.verificationStatus === VerificationStatus.VERIFIED,
+      ok: milestoneOk("BUYER_VERIFIED"),
     },
     {
       key: "supplier_verified",
       label: "Supplier Verified",
-      ok:
-        trade.sellerOrg?.verificationStatus === VerificationStatus.VERIFIED ||
-        false,
+      ok: milestoneOk("SUPPLIER_VERIFIED"),
     },
-    { key: "contract_signed", label: "Contract Signed", ok: Boolean(signed) },
-    { key: "financing", label: "Financing Available", ok: funded },
+    {
+      key: "contract_signed",
+      label: "Contract Signed",
+      ok: milestoneOk("CONTRACT_SIGNED"),
+    },
+    {
+      key: "financing",
+      label: "Financing Available",
+      ok: milestoneOk("DEPOSIT_RECEIVED"),
+    },
     {
       key: "certificates",
       label: "Certificates Ready",
-      ok: trade.certificates.length > 0,
+      ok: milestoneOk("CERTIFICATE_APPROVED"),
     },
     {
       key: "insurance",
@@ -276,14 +246,22 @@ export async function computeReadiness(tradeId: string) {
       ok: false,
       stub: true,
     },
-    { key: "shipment", label: "Shipment Booked", ok: shipmentBooked },
-  ];
+    {
+      key: "shipment",
+      label: "Shipment Booked",
+      ok: milestoneOk("SHIPMENT_BOOKED"),
+    },
+  ] as const;
 
-  const scored = items.filter((i) => !i.stub);
-  const ready = scored.filter((i) => i.ok).length;
+  const scored = items.filter((i) => !("stub" in i));
+  const ready = scored.filter((i) => (i as any).ok).length;
   const pct = Math.round((ready / Math.max(scored.length, 1)) * 100);
 
-  return { pct, items, missing: items.filter((i) => !i.ok).map((i) => i.label) };
+  return {
+    pct,
+    items: items.map((i) => ({ ...i, stub: (i as any).stub ?? false })),
+    missing: items.filter((i) => !(i as any).ok).map((i) => i.label),
+  };
 }
 
 export async function computeCompletion(tradeId: string) {
@@ -417,6 +395,58 @@ export async function completeMilestoneIfReady(input: {
 }
 
 export async function syncMilestonesFromWorld(tradeId: string, actorId?: string) {
+  async function ensureTradeEvidence(input: {
+    tradeId: string;
+    milestoneCode?: string;
+    type: TradeEvidenceType;
+    title: string;
+    referenceRef?: string | null;
+    metadata?: Prisma.InputJsonValue;
+  }) {
+    const evidenceWhere: Record<string, unknown> = {
+      tradeId: input.tradeId,
+      type: input.type,
+      deletedAt: null,
+    };
+    if (input.referenceRef) {
+      Object.assign(evidenceWhere, { referenceRef: input.referenceRef });
+    }
+
+    const existing = await prisma.tradeEvidence.findFirst({
+      where: evidenceWhere as any,
+      select: { id: true },
+    });
+    if (existing) return existing.id;
+
+    const milestone = input.milestoneCode
+      ? await prisma.tradeMilestone.findFirst({
+          where: {
+            tradeId: input.tradeId,
+            code: input.milestoneCode,
+            deletedAt: null,
+          },
+          select: { id: true },
+        })
+      : null;
+
+    const created = await prisma.tradeEvidence.create({
+      data: {
+        tradeId: input.tradeId,
+        milestoneId: milestone?.id ?? null,
+        type: input.type,
+        title: input.title,
+        referenceRef: input.referenceRef ?? null,
+        metadata: input.metadata,
+        actorId: actorId ?? undefined,
+        createdBy: actorId ?? undefined,
+        updatedBy: actorId ?? undefined,
+      },
+      select: { id: true },
+    });
+
+    return created.id;
+  }
+
   const trade = await prisma.trade.findFirst({
     where: { id: tradeId, deletedAt: null },
     include: {
@@ -440,80 +470,193 @@ export async function syncMilestonesFromWorld(tradeId: string, actorId?: string)
   });
   if (!trade) return;
 
-  const mark = async (code: string) => {
-    await prisma.tradeMilestone.updateMany({
-      where: { tradeId, code, deletedAt: null, status: { not: "COMPLETED" } },
-      data: {
-        status: TradeMilestoneStatus.COMPLETED,
-        completedAt: new Date(),
-        updatedBy: actorId,
-      },
-    });
-  };
-
+  // 1) Parties (no evidence required in template)
   if (trade.buyerOrg.verificationStatus === VerificationStatus.VERIFIED) {
-    await mark("BUYER_VERIFIED");
+    await completeMilestoneIfReady({
+      tradeId,
+      code: "BUYER_VERIFIED",
+      actorId,
+    });
   }
   if (trade.sellerOrg?.verificationStatus === VerificationStatus.VERIFIED) {
-    await mark("SUPPLIER_VERIFIED");
+    await completeMilestoneIfReady({
+      tradeId,
+      code: "SUPPLIER_VERIFIED",
+      actorId,
+    });
   }
 
   const contract = trade.contracts[0];
-  if (
-    contract &&
-    contract.buyerSignedAt &&
-    contract.sellerSignedAt
-  ) {
-    await mark("CONTRACT_SIGNED");
+
+  // 2) Contract signed (requires CONTRACT_PDF + DIGITAL_SIGNATURE)
+  if (contract?.buyerSignedAt && contract?.sellerSignedAt) {
+    const contractRef = contract.reference ?? contract.id;
+    await ensureTradeEvidence({
+      tradeId,
+      milestoneCode: "CONTRACT_SIGNED",
+      type: TradeEvidenceType.CONTRACT_PDF,
+      title: `Contract PDF for ${contractRef}`,
+      referenceRef: contractRef,
+      metadata: { contractId: contract.id },
+    });
+    await ensureTradeEvidence({
+      tradeId,
+      milestoneCode: "CONTRACT_SIGNED",
+      type: TradeEvidenceType.DIGITAL_SIGNATURE,
+      title: `Digital signatures for ${contractRef}`,
+      referenceRef: contractRef,
+      metadata: {
+        contractId: contract.id,
+        buyerSignedAt: contract.buyerSignedAt,
+        sellerSignedAt: contract.sellerSignedAt,
+      },
+    });
+    await completeMilestoneIfReady({
+      tradeId,
+      code: "CONTRACT_SIGNED",
+      actorId,
+    });
   }
 
-  if (
-    contract?.escrowRequests.some(
+  // 3) Deposit (requires PAYMENT_PROOF)
+  if (contract?.escrowRequests?.length) {
+    const funded = contract.escrowRequests.filter(
       (e) =>
         e.status === "FUNDED" ||
         e.status === "RELEASED" ||
         e.escrowAccount?.status === "FUNDED" ||
         e.escrowAccount?.status === "RELEASED",
-    )
-  ) {
-    await mark("DEPOSIT_RECEIVED");
+    );
+
+    for (const e of funded) {
+      const ref = e.escrowAccount?.reference ?? e.id;
+      await ensureTradeEvidence({
+        tradeId,
+        milestoneCode: "DEPOSIT_RECEIVED",
+        type: TradeEvidenceType.PAYMENT_PROOF,
+        title: `Payment proof (${ref})`,
+        referenceRef: ref,
+        metadata: {
+          escrowRequestId: e.id,
+          escrowAccountId: e.escrowAccount?.id ?? null,
+          escrowStatus: e.status,
+          escrowAccountStatus: e.escrowAccount?.status ?? null,
+        },
+      });
+    }
+
+    await completeMilestoneIfReady({
+      tradeId,
+      code: "DEPOSIT_RECEIVED",
+      actorId,
+    });
   }
 
+  // 4) Certificates (requires CERTIFICATE evidence, but depends on inspection)
   if (trade.certificates.length > 0) {
-    await mark("CERTIFICATE_APPROVED");
+    for (const c of trade.certificates) {
+      await ensureTradeEvidence({
+        tradeId,
+        milestoneCode: "CERTIFICATE_APPROVED",
+        type: TradeEvidenceType.CERTIFICATE,
+        title: `Certificate approved: ${c.reference}`,
+        referenceRef: c.reference,
+        metadata: { certificateId: c.id, type: c.type },
+      });
+    }
+    await completeMilestoneIfReady({
+      tradeId,
+      code: "CERTIFICATE_APPROVED",
+      actorId,
+    });
   }
 
   const shipment = contract?.shipmentRequests
-    .map((s) => s.shipment)
+    ?.map((s) => s.shipment)
     .find(Boolean);
-  if (shipment) {
+
+  // 5) Shipment booked (requires BILL_OF_LADING evidence)
+  if (shipment && shipment.status) {
     if (
       shipment.status === "BOOKED" ||
       shipment.status === "IN_TRANSIT" ||
       shipment.status === "DELIVERED"
     ) {
-      await mark("SHIPMENT_BOOKED");
+      const ref = shipment.reference ?? shipment.id;
+      await ensureTradeEvidence({
+        tradeId,
+        milestoneCode: "SHIPMENT_BOOKED",
+        type: TradeEvidenceType.BILL_OF_LADING,
+        title: `Bill of lading for ${ref}`,
+        referenceRef: ref,
+        metadata: { shipmentId: shipment.id, status: shipment.status },
+      });
+
+      await completeMilestoneIfReady({
+        tradeId,
+        code: "SHIPMENT_BOOKED",
+        actorId,
+      });
     }
-    if (
-      shipment.status === "IN_TRANSIT" ||
-      shipment.status === "DELIVERED"
-    ) {
-      await mark("BORDER_EXIT");
-      await mark("BORDER_ENTRY");
+
+    // Border events have no evidence in template; they still depend on SHIPMENT_BOOKED.
+    if (shipment.status === "IN_TRANSIT" || shipment.status === "DELIVERED") {
+      await completeMilestoneIfReady({
+        tradeId,
+        code: "BORDER_EXIT",
+        actorId,
+      });
     }
-    if (shipment.status === "DELIVERED" || shipment.proofOfDelivery) {
-      await mark("DELIVERED");
+    if (shipment.status === "DELIVERED") {
+      await completeMilestoneIfReady({
+        tradeId,
+        code: "BORDER_ENTRY",
+        actorId,
+      });
     }
   }
 
+  // 6) Delivered (requires PROOF_OF_DELIVERY)
+  if (shipment && (shipment.status === "DELIVERED" || shipment.proofOfDelivery)) {
+    const pod = shipment.proofOfDelivery;
+    const ref = pod?.id ?? shipment.id;
+    await ensureTradeEvidence({
+      tradeId,
+      milestoneCode: "DELIVERED",
+      type: TradeEvidenceType.PROOF_OF_DELIVERY,
+      title: `Proof of delivery for ${shipment.reference ?? shipment.id}`,
+      referenceRef: ref,
+      metadata: { proofOfDeliveryId: pod?.id ?? null },
+    });
+
+    await completeMilestoneIfReady({
+      tradeId,
+      code: "DELIVERED",
+      actorId,
+    });
+  }
+
+  // 7) Settlement complete (requires PAYMENT_PROOF, depends on DELIVERED)
   if (
-    contract?.escrowRequests.some(
+    contract?.escrowRequests?.some(
       (e) =>
         e.status === "RELEASED" || e.escrowAccount?.status === "RELEASED",
     )
   ) {
-    await mark("SETTLEMENT_COMPLETE");
+    // Evidence might already exist from deposit sync; attempting completion will re-check dependencies.
+    await completeMilestoneIfReady({
+      tradeId,
+      code: "SETTLEMENT_COMPLETE",
+      actorId,
+    });
   }
+
+  // 8) Closed (no evidence, depends on settlement)
+  await completeMilestoneIfReady({
+    tradeId,
+    code: "CLOSED",
+    actorId,
+  });
 }
 
 export type CreateTradeInput = {

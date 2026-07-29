@@ -96,6 +96,7 @@ export async function POST(req: NextRequest) {
 
     let contractReference: string | null = null;
     let contractId: string | null = null;
+    let tradeId: string | null = null;
     if (body.contractId) {
       const contract = await prisma.contract.findFirst({
         where: {
@@ -110,6 +111,7 @@ export async function POST(req: NextRequest) {
       if (!contract) return fail("Contract not found", 404);
       contractId = contract.id;
       contractReference = contract.reference;
+      tradeId = contract.tradeId ?? null;
     }
 
     const quantity =
@@ -126,6 +128,7 @@ export async function POST(req: NextRequest) {
         reference: complianceReference(type),
         organisationId: membership.organisationId,
         contractId,
+        tradeId,
         type: type as CertificateType,
         title,
         status: submit
