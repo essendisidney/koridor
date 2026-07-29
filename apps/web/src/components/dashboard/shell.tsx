@@ -41,7 +41,7 @@ const NAV = [
   { href: "/dashboard/finance", label: "Finance", icon: Wallet },
   { href: "/dashboard/logistics", label: "Logistics", icon: Ship },
   { href: "/dashboard/compliance", label: "Compliance", icon: FileCheck2 },
-  { href: "/dashboard/trust", label: "Trust", icon: ShieldCheck },
+  { href: "/dashboard/trust", label: "Identity", icon: ShieldCheck },
   { href: "/dashboard/documents", label: "Documents", icon: FileText },
   { href: "/dashboard/verification", label: "Verification", icon: BadgeCheck },
   { href: "/dashboard/registry", label: "Registry", icon: BookOpen },

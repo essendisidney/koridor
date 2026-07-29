@@ -595,11 +595,11 @@ async function main() {
     where: { tradeNumber: 'TRD-SEED-001' },
   });
   if (!existingTrade) {
-    await prisma.trade.create({
+    const trade = await prisma.trade.create({
       data: {
         tradeNumber: 'TRD-SEED-001',
-        status: 'NEGOTIATION',
-        currentStage: 'Negotiation',
+        status: 'CONTRACTED',
+        currentStage: 'Contract Signed',
         buyerOrgId: buyerOrg.id,
         sellerOrgId: exporterOrg.id,
         title: 'Arabica coffee corridor KE→NL',
@@ -613,8 +613,9 @@ async function main() {
         corridor: 'KE-NL',
         incoterms: 'FOB',
         ownerId: buyerUser.id,
-        trustScore: 65,
-        riskScore: 40,
+        trustScore: 78,
+        riskScore: 32,
+        completionPct: 23,
         createdBy: buyerUser.id,
         updatedBy: buyerUser.id,
         participants: {
@@ -631,41 +632,284 @@ async function main() {
             },
           ],
         },
-        milestones: {
-          create: [
-            {
-              code: 'BUYER_VERIFIED',
-              title: 'Buyer Verified',
-              sequence: 1,
-              createdBy: buyerUser.id,
-            },
-            {
-              code: 'SUPPLIER_VERIFIED',
-              title: 'Supplier Verified',
-              sequence: 2,
-              createdBy: buyerUser.id,
-            },
-            {
-              code: 'CONTRACT_SIGNED',
-              title: 'Contract Signed',
-              sequence: 3,
-              requiredEvidenceTypes: ['CONTRACT_PDF', 'DIGITAL_SIGNATURE'],
-              dependsOnCodes: ['BUYER_VERIFIED', 'SUPPLIER_VERIFIED'],
-              createdBy: buyerUser.id,
-            },
-            {
-              code: 'CLOSED',
-              title: 'Closed',
-              sequence: 14,
-              dependsOnCodes: ['SETTLEMENT_COMPLETE'],
-              createdBy: buyerUser.id,
-            },
-          ],
-        },
       },
     });
-    console.log('  Seeded trade TRD-SEED-001');
+
+    const milestoneDefs = [
+      {
+        code: 'BUYER_VERIFIED',
+        title: 'Buyer Verified',
+        sequence: 1,
+        requiredEvidenceTypes: [] as string[],
+        dependsOnCodes: [] as string[],
+        status: 'COMPLETED' as const,
+      },
+      {
+        code: 'SUPPLIER_VERIFIED',
+        title: 'Supplier Verified',
+        sequence: 2,
+        requiredEvidenceTypes: [],
+        dependsOnCodes: [],
+        status: 'COMPLETED' as const,
+      },
+      {
+        code: 'CONTRACT_SIGNED',
+        title: 'Contract Signed',
+        sequence: 3,
+        requiredEvidenceTypes: ['CONTRACT_PDF', 'DIGITAL_SIGNATURE'],
+        dependsOnCodes: ['BUYER_VERIFIED', 'SUPPLIER_VERIFIED'],
+        status: 'COMPLETED' as const,
+      },
+      {
+        code: 'DEPOSIT_RECEIVED',
+        title: 'Deposit Received',
+        sequence: 4,
+        requiredEvidenceTypes: ['PAYMENT_PROOF'],
+        dependsOnCodes: ['CONTRACT_SIGNED'],
+        status: 'PENDING' as const,
+      },
+      {
+        code: 'PRODUCTION_STARTED',
+        title: 'Production Started',
+        sequence: 5,
+        requiredEvidenceTypes: [],
+        dependsOnCodes: ['CONTRACT_SIGNED'],
+        status: 'PENDING' as const,
+      },
+      {
+        code: 'PRODUCTION_COMPLETE',
+        title: 'Production Complete',
+        sequence: 6,
+        requiredEvidenceTypes: [],
+        dependsOnCodes: ['PRODUCTION_STARTED'],
+        status: 'PENDING' as const,
+      },
+      {
+        code: 'INSPECTION_PASSED',
+        title: 'Inspection Passed',
+        sequence: 7,
+        requiredEvidenceTypes: ['INSPECTION_REPORT'],
+        dependsOnCodes: ['PRODUCTION_COMPLETE'],
+        status: 'PENDING' as const,
+      },
+      {
+        code: 'CERTIFICATE_APPROVED',
+        title: 'Certificate Approved',
+        sequence: 8,
+        requiredEvidenceTypes: ['CERTIFICATE'],
+        dependsOnCodes: ['INSPECTION_PASSED'],
+        status: 'PENDING' as const,
+      },
+      {
+        code: 'SHIPMENT_BOOKED',
+        title: 'Shipment Booked',
+        sequence: 9,
+        requiredEvidenceTypes: ['BILL_OF_LADING'],
+        dependsOnCodes: ['CERTIFICATE_APPROVED'],
+        status: 'PENDING' as const,
+      },
+      {
+        code: 'BORDER_EXIT',
+        title: 'Border Exit',
+        sequence: 10,
+        requiredEvidenceTypes: [],
+        dependsOnCodes: ['SHIPMENT_BOOKED'],
+        status: 'PENDING' as const,
+      },
+      {
+        code: 'BORDER_ENTRY',
+        title: 'Border Entry',
+        sequence: 11,
+        requiredEvidenceTypes: [],
+        dependsOnCodes: ['BORDER_EXIT'],
+        status: 'PENDING' as const,
+      },
+      {
+        code: 'DELIVERED',
+        title: 'Delivered',
+        sequence: 12,
+        requiredEvidenceTypes: ['PROOF_OF_DELIVERY'],
+        dependsOnCodes: ['BORDER_ENTRY'],
+        status: 'PENDING' as const,
+      },
+      {
+        code: 'SETTLEMENT_COMPLETE',
+        title: 'Settlement Complete',
+        sequence: 13,
+        requiredEvidenceTypes: ['PAYMENT_PROOF'],
+        dependsOnCodes: ['DELIVERED'],
+        status: 'PENDING' as const,
+      },
+      {
+        code: 'CLOSED',
+        title: 'Closed',
+        sequence: 14,
+        requiredEvidenceTypes: [],
+        dependsOnCodes: ['SETTLEMENT_COMPLETE'],
+        status: 'PENDING' as const,
+      },
+    ];
+
+    for (const m of milestoneDefs) {
+      await prisma.tradeMilestone.create({
+        data: {
+          tradeId: trade.id,
+          code: m.code,
+          title: m.title,
+          sequence: m.sequence,
+          requiredEvidenceTypes: m.requiredEvidenceTypes,
+          dependsOnCodes: m.dependsOnCodes,
+          status: m.status,
+          completedAt: m.status === 'COMPLETED' ? new Date() : null,
+          ownerOrgId:
+            m.code.startsWith('BUYER') || m.code === 'DEPOSIT_RECEIVED'
+              ? buyerOrg.id
+              : exporterOrg.id,
+          createdBy: buyerUser.id,
+          updatedBy: buyerUser.id,
+        },
+      });
+    }
+
+    const contractMs = await prisma.tradeMilestone.findFirst({
+      where: { tradeId: trade.id, code: 'CONTRACT_SIGNED' },
+    });
+    await prisma.tradeEvidence.createMany({
+      data: [
+        {
+          tradeId: trade.id,
+          milestoneId: contractMs?.id,
+          type: 'CONTRACT_PDF',
+          title: 'Signed contract PDF (seed)',
+          referenceRef: 'CTR-SEED-001',
+          actorId: buyerUser.id,
+          createdBy: buyerUser.id,
+        },
+        {
+          tradeId: trade.id,
+          milestoneId: contractMs?.id,
+          type: 'DIGITAL_SIGNATURE',
+          title: 'Dual party signatures (seed)',
+          referenceRef: 'CTR-SEED-001',
+          actorId: buyerUser.id,
+          createdBy: buyerUser.id,
+        },
+      ],
+    });
+
+    await prisma.tradeEvent.create({
+      data: {
+        tradeId: trade.id,
+        type: 'TRADE_CREATED',
+        message: 'Seed Trade Passport TRD-SEED-001 created (E2E demo)',
+        actorId: buyerUser.id,
+        createdBy: buyerUser.id,
+      },
+    });
+
+    console.log('  Seeded trade TRD-SEED-001 with full milestones + contract evidence');
+  } else {
+    // Upgrade thin seed trades to the full milestone template when missing.
+    const count = await prisma.tradeMilestone.count({
+      where: { tradeId: existingTrade.id, deletedAt: null },
+    });
+    if (count < 10) {
+      const codes = [
+        'BUYER_VERIFIED',
+        'SUPPLIER_VERIFIED',
+        'CONTRACT_SIGNED',
+        'DEPOSIT_RECEIVED',
+        'PRODUCTION_STARTED',
+        'PRODUCTION_COMPLETE',
+        'INSPECTION_PASSED',
+        'CERTIFICATE_APPROVED',
+        'SHIPMENT_BOOKED',
+        'BORDER_EXIT',
+        'BORDER_ENTRY',
+        'DELIVERED',
+        'SETTLEMENT_COMPLETE',
+        'CLOSED',
+      ];
+      let seq = 1;
+      for (const code of codes) {
+        await prisma.tradeMilestone.upsert({
+          where: {
+            tradeId_code: { tradeId: existingTrade.id, code },
+          },
+          update: { deletedAt: null },
+          create: {
+            tradeId: existingTrade.id,
+            code,
+            title: code
+              .split('_')
+              .map((w) => w[0] + w.slice(1).toLowerCase())
+              .join(' '),
+            sequence: seq,
+            status:
+              code === 'BUYER_VERIFIED' || code === 'SUPPLIER_VERIFIED'
+                ? 'COMPLETED'
+                : 'PENDING',
+            completedAt:
+              code === 'BUYER_VERIFIED' || code === 'SUPPLIER_VERIFIED'
+                ? new Date()
+                : null,
+            createdBy: buyerUser.id,
+            updatedBy: buyerUser.id,
+          },
+        });
+        seq += 1;
+      }
+      console.log('  Upgraded TRD-SEED-001 milestones');
+    }
   }
+
+  const defaultFlags = [
+    {
+      key: 'analytics_v1',
+      name: 'Analytics dashboard',
+      description: 'Trade / corridor / risk analytics UI',
+      enabled: true,
+    },
+    {
+      key: 'ai_assistant_v1',
+      name: 'AI assistant',
+      description: 'Heuristic + optional OpenAI assistant',
+      enabled: true,
+    },
+    {
+      key: 'strict_evidence',
+      name: 'Strict evidence mode',
+      description: 'Gate milestone completion on TradeEvidence',
+      enabled: true,
+    },
+    {
+      key: 'finance_escrow',
+      name: 'Finance escrow',
+      description: 'Wallet hold/release escrow flows',
+      enabled: true,
+    },
+  ];
+  for (const f of defaultFlags) {
+    await prisma.featureFlag.upsert({
+      where: { key: f.key },
+      update: {
+        name: f.name,
+        description: f.description,
+        enabled: f.enabled,
+        deletedAt: null,
+      },
+      create: {
+        key: f.key,
+        name: f.name,
+        description: f.description,
+        enabled: f.enabled,
+        percentage: 100,
+        createdBy: admin.id,
+        updatedBy: admin.id,
+      },
+    });
+  }
+  console.log('  Seeded feature flags');
 
   console.log('Seed complete:');
   console.log('  admin@koridor.io / Admin123!');

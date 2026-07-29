@@ -197,6 +197,29 @@ export default function TradeWorkspacePage() {
         <Stat label="Risk" value={String(trade.riskScore)} />
       </section>
 
+      <section className="space-y-2 border-t border-[var(--border)] pt-6">
+        <div className="flex items-center justify-between text-xs text-[var(--fg-muted)]">
+          <span>Completion</span>
+          <span>{trade.completionPct}%</span>
+        </div>
+        <div className="h-2 overflow-hidden rounded-sm bg-[var(--border)]">
+          <div
+            className="h-full bg-[var(--accent)] transition-all"
+            style={{ width: `${Math.min(100, trade.completionPct)}%` }}
+          />
+        </div>
+        <div className="flex items-center justify-between text-xs text-[var(--fg-muted)]">
+          <span>Readiness</span>
+          <span>{trade.readiness.pct}%</span>
+        </div>
+        <div className="h-2 overflow-hidden rounded-sm bg-[var(--border)]">
+          <div
+            className="h-full bg-[var(--fg)]/70 transition-all"
+            style={{ width: `${Math.min(100, trade.readiness.pct)}%` }}
+          />
+        </div>
+      </section>
+
       <section className="flex flex-wrap gap-2 border-t border-[var(--border)] pt-6">
         <Button
           size="sm"
@@ -213,6 +236,16 @@ export default function TradeWorkspacePage() {
         >
           Recompute
         </Button>
+        <Link href={`/dashboard/ai`}>
+          <Button size="sm" variant="secondary" disabled={loading}>
+            Score with AI
+          </Button>
+        </Link>
+        <Link href="/dashboard/analytics">
+          <Button size="sm" variant="secondary">
+            Analytics
+          </Button>
+        </Link>
         <Button
           size="sm"
           variant="secondary"
@@ -286,7 +319,10 @@ export default function TradeWorkspacePage() {
         <h2 className="font-[family-name:var(--font-display)] text-xl font-semibold">
           Milestones
         </h2>
-        {trade.milestones.map((m) => (
+        {trade.milestones.map((m) => {
+          const have = new Set(m.evidence.map((e) => e.type));
+          const missing = m.requiredEvidenceTypes.filter((t) => !have.has(t));
+          return (
           <div
             key={m.id}
             className="flex flex-wrap items-center justify-between gap-2 border-b border-[var(--border)] py-2"
@@ -297,11 +333,13 @@ export default function TradeWorkspacePage() {
               </p>
               <p className="text-xs text-[var(--fg-muted)]">
                 {m.status}
-                {m.requiredEvidenceTypes.length
-                  ? ` · needs ${m.requiredEvidenceTypes.join(", ")}`
-                  : ""}
                 {m.evidence.length ? ` · ${m.evidence.length} evidence` : ""}
               </p>
+              {missing.length > 0 && m.status !== "COMPLETED" ? (
+                <p className="mt-0.5 text-xs text-[var(--danger)]">
+                  Missing: {missing.join(", ")}
+                </p>
+              ) : null}
             </div>
             {m.status !== "COMPLETED" ? (
               <Button
@@ -312,9 +350,12 @@ export default function TradeWorkspacePage() {
               >
                 Complete
               </Button>
-            ) : null}
+            ) : (
+              <span className="text-xs text-[var(--fg-muted)]">Done</span>
+            )}
           </div>
-        ))}
+          );
+        })}
       </section>
 
       <form

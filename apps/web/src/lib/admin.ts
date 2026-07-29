@@ -35,10 +35,36 @@ const DEFAULT_FLAGS: {
 
 export async function listFeatureFlags() {
   try {
-    const flags = await prisma.featureFlag.findMany({
+    let flags = await prisma.featureFlag.findMany({
       where: { deletedAt: null },
       orderBy: { key: "asc" },
     });
+    if (flags.length === 0) {
+      await Promise.all(
+        DEFAULT_FLAGS.map((f) =>
+          prisma.featureFlag.upsert({
+            where: { key: f.key },
+            create: {
+              key: f.key,
+              name: f.name,
+              description: f.description,
+              enabled: f.enabled,
+              percentage: 100,
+            },
+            update: {
+              name: f.name,
+              description: f.description,
+              enabled: f.enabled,
+              deletedAt: null,
+            },
+          }),
+        ),
+      );
+      flags = await prisma.featureFlag.findMany({
+        where: { deletedAt: null },
+        orderBy: { key: "asc" },
+      });
+    }
     if (flags.length > 0) return flags;
   } catch {
     /* tables may not exist yet */

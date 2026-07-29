@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { api, ApiError } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
+import { formatDate } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 
 type TrustMe = {
@@ -20,6 +21,8 @@ type TrustMe = {
     name: string;
     verificationStatus: string;
     type: string;
+    countryCode?: string;
+    city?: string | null;
   };
 };
 
@@ -30,28 +33,50 @@ type KycProfile = {
   countryCode?: string | null;
 } | null;
 
+type Case = {
+  id: string;
+  status: string;
+  submittedAt?: string | null;
+  reviewedAt?: string | null;
+  documents: { id: string }[];
+};
+
+type Doc = { id: string; type: string; status: string; fileName: string };
+
 export default function TrustPage() {
   const { accessToken } = useAuth();
   const [trust, setTrust] = useState<TrustMe | null>(null);
   const [kyc, setKyc] = useState<KycProfile>(null);
+  const [cases, setCases] = useState<Case[]>([]);
+  const [docs, setDocs] = useState<Doc[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [kycError, setKycError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
-  useEffect(() => {
+  const load = useCallback(() => {
     if (!accessToken) return;
     Promise.all([
       api<TrustMe>("/trust/me", { token: accessToken }),
       api<KycProfile>("/kyc/me", { token: accessToken }),
+      api<Case[]>("/verification/cases/me", { token: accessToken }).catch(
+        () => [] as Case[],
+      ),
+      api<Doc[]>("/documents", { token: accessToken }).catch(() => [] as Doc[]),
     ])
-      .then(([t, k]) => {
+      .then(([t, k, c, d]) => {
         setTrust(t);
         setKyc(k);
+        setCases(Array.isArray(c) ? c : []);
+        setDocs(Array.isArray(d) ? d : []);
       })
       .catch((err) =>
-        setError(err instanceof ApiError ? err.message : "Unable to load trust"),
+        setError(err instanceof ApiError ? err.message : "Unable to load identity"),
       );
   }, [accessToken]);
+
+  useEffect(() => {
+    load();
+  }, [load]);
 
   async function refreshScore() {
     if (!accessToken) return;
@@ -87,6 +112,7 @@ export default function TrustPage() {
       });
       setKyc(profile);
       await refreshScore();
+      load();
     } catch (err) {
       setKycError(err instanceof ApiError ? err.message : "KYC submit failed");
     } finally {
@@ -95,16 +121,61 @@ export default function TrustPage() {
   }
 
   const breakdown = trust?.scoreBreakdown ?? {};
+  const openCase = cases.find(
+    (c) => c.status === "PENDING" || c.status === "DRAFT",
+  );
+  const approvedCase = cases.find((c) => c.status === "APPROVED");
+  const approvedDocs = docs.filter((d) => d.status === "APPROVED").length;
+
+  const checklist = [
+    {
+      key: "org",
+      label: "Organisation profile",
+      ok: Boolean(trust?.organisation.name),
+      href: "/dashboard/organisation",
+    },
+    {
+      key: "docs",
+      label: "Supporting documents uploaded",
+      ok: docs.length > 0,
+      href: "/dashboard/documents",
+    },
+    {
+      key: "docs_approved",
+      label: "At least one document approved",
+      ok: approvedDocs > 0,
+      href: "/dashboard/documents",
+    },
+    {
+      key: "kyb",
+      label: "KYB verification case",
+      ok: Boolean(openCase || approvedCase),
+      href: "/dashboard/verification",
+    },
+    {
+      key: "verified",
+      label: "Organisation VERIFIED",
+      ok: trust?.organisation.verificationStatus === "VERIFIED",
+      href: "/dashboard/verification",
+    },
+    {
+      key: "kyc",
+      label: "Member KYC submitted",
+      ok: Boolean(kyc && kyc.status !== "NONE"),
+      href: "#member-kyc",
+    },
+  ];
 
   return (
     <div className="mx-auto max-w-3xl space-y-8">
       <div className="flex items-start justify-between gap-4">
         <div>
           <h1 className="font-[family-name:var(--font-display)] text-3xl font-semibold">
-            Trust
+            Identity passport
           </h1>
           <p className="mt-1 text-sm text-[var(--fg-muted)]">
-            Score, verification status, and member KYC for your organisation.
+            Trust score, KYB case, documents, and member KYC — one place to become
+            trade-ready.
           </p>
         </div>
         <Button variant="secondary" onClick={refreshScore} disabled={saving}>
@@ -116,7 +187,7 @@ export default function TrustPage() {
 
       {trust ? (
         <section className="space-y-4 border-t border-[var(--border)] pt-6">
-          <div className="flex items-end gap-6">
+          <div className="flex flex-wrap items-end gap-6">
             <div>
               <p className="text-xs uppercase tracking-[0.14em] text-[var(--fg-muted)]">
                 Trust score
@@ -126,14 +197,22 @@ export default function TrustPage() {
               </p>
             </div>
             <div className="pb-2 text-sm text-[var(--fg-muted)]">
-              <p>{trust.organisation.name}</p>
+              <p className="font-medium text-[var(--fg)]">{trust.organisation.name}</p>
               <p>
                 {trust.organisation.verificationStatus.replaceAll("_", " ")} ·{" "}
                 {trust.organisation.type.replaceAll("_", " ")}
               </p>
+              <p>
+                {[trust.organisation.city, trust.organisation.countryCode]
+                  .filter(Boolean)
+                  .join(", ") || "Location TBD"}
+              </p>
+              {trust.lastScoredAt ? (
+                <p className="text-xs">Scored {formatDate(trust.lastScoredAt)}</p>
+              ) : null}
             </div>
           </div>
-          <div className="h-2 overflow-hidden rounded-full bg-[var(--border)]">
+          <div className="h-2 overflow-hidden rounded-sm bg-[var(--border)]">
             <div
               className="h-full bg-[var(--accent)] transition-all duration-500"
               style={{ width: `${Math.min(100, trust.trustScore)}%` }}
@@ -151,23 +230,64 @@ export default function TrustPage() {
                 <dd className="font-medium">
                   {value ?? 0} / {max}
                 </dd>
+                <div className="mt-1 h-1.5 overflow-hidden rounded-sm bg-[var(--border)]">
+                  <div
+                    className="h-full bg-[var(--accent)]/80"
+                    style={{
+                      width: `${Math.min(100, ((Number(value) || 0) / Number(max)) * 100)}%`,
+                    }}
+                  />
+                </div>
               </div>
             ))}
           </dl>
-          <div className="flex flex-wrap gap-3 pt-2">
-            <Link href="/dashboard/documents">
-              <Button variant="secondary" size="sm">
-                Upload documents
-              </Button>
-            </Link>
-            <Link href="/dashboard/verification">
-              <Button size="sm">Start verification</Button>
-            </Link>
-          </div>
         </section>
       ) : null}
 
-      <section className="space-y-4 border-t border-[var(--border)] pt-6">
+      <section className="space-y-3 border-t border-[var(--border)] pt-6">
+        <h2 className="font-[family-name:var(--font-display)] text-xl font-semibold">
+          Identity checklist
+        </h2>
+        <div className="divide-y divide-[var(--border)] border-y border-[var(--border)] bg-white/70">
+          {checklist.map((item) => (
+            <div
+              key={item.key}
+              className="flex items-center justify-between gap-3 px-4 py-3 text-sm"
+            >
+              <span>
+                <span className="mr-2">{item.ok ? "✓" : "○"}</span>
+                {item.label}
+              </span>
+              <Link href={item.href} className="text-xs text-[var(--accent)] underline">
+                {item.ok ? "View" : "Fix"}
+              </Link>
+            </div>
+          ))}
+        </div>
+        <div className="flex flex-wrap gap-3 pt-1">
+          <Link href="/dashboard/documents">
+            <Button variant="secondary" size="sm">
+              Documents ({docs.length})
+            </Button>
+          </Link>
+          <Link href="/dashboard/verification">
+            <Button size="sm">
+              {openCase
+                ? `KYB ${openCase.status}`
+                : approvedCase
+                  ? "KYB approved"
+                  : "Start KYB"}
+            </Button>
+          </Link>
+          <Link href="/dashboard/registry">
+            <Button variant="secondary" size="sm">
+              Registry
+            </Button>
+          </Link>
+        </div>
+      </section>
+
+      <section id="member-kyc" className="space-y-4 border-t border-[var(--border)] pt-6">
         <h2 className="font-[family-name:var(--font-display)] text-xl font-semibold">
           Member KYC
         </h2>

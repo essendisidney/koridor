@@ -31,6 +31,8 @@ export async function GET(req: NextRequest) {
         name: membership.organisation.name,
         verificationStatus: membership.organisation.verificationStatus,
         type: membership.organisation.type,
+        countryCode: membership.organisation.countryCode,
+        city: membership.organisation.city,
       },
     });
   } catch (error) {
@@ -45,7 +47,17 @@ export async function PATCH(req: NextRequest) {
     await requirePermission(user, Permission.TRUST_WRITE);
     const membership = await requireOrgMembership(user.id);
     const profile = await recomputeTrustScore(membership.organisationId, user.id);
-    return ok(profile);
+    return ok({
+      ...profile,
+      organisation: {
+        id: membership.organisation.id,
+        name: membership.organisation.name,
+        verificationStatus: membership.organisation.verificationStatus,
+        type: membership.organisation.type,
+        countryCode: membership.organisation.countryCode,
+        city: membership.organisation.city,
+      },
+    });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Failed";
     return fail(message, message === "Unauthorized" ? 401 : message === "Forbidden" ? 403 : 400);

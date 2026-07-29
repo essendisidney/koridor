@@ -152,7 +152,7 @@ export default function AnalyticsPage() {
             Analytics
           </h1>
           <p className="mt-1 text-sm text-[var(--fg-muted)]">
-            Trade volume, corridor flows, risk and settlement signals.
+            Trade volume, corridor flows, risk and settlement signals for the selected window.
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -160,6 +160,7 @@ export default function AnalyticsPage() {
             className="rounded-md border border-[var(--border)] bg-white px-3 py-2 text-sm"
             value={days}
             onChange={(e) => setDays(Number(e.target.value))}
+            aria-label="Period"
           >
             <option value={7}>7 days</option>
             <option value={30}>30 days</option>

@@ -54,9 +54,16 @@ cp .env.example .env
 
 pnpm --filter @koridor/shared build
 pnpm --filter @koridor/web prisma:generate
+
+# Apply any pending SQL under docs/migrations/ if tables are missing
+# e.g. docs/migrations/20260729_stage7_analytics.sql
+#      docs/migrations/20260729_stage8_ai_stage9_admin.sql
+
 pnpm db:seed   # optional if already seeded remotely
 pnpm dev
 ```
+
+**Note:** `DATABASE_URL` / `DIRECT_URL` for Prisma CLI should be in the **repo root** `.env` (not only `apps/web/.env.local`, which may only hold public Next vars).
 
 ## Demo accounts (seeded)
 
