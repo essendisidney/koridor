@@ -23,6 +23,7 @@ import {
   Ship,
   Users,
   Wallet,
+  BarChart3,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/auth";
@@ -30,6 +31,7 @@ import { Button } from "@/components/ui/button";
 
 const NAV = [
   { href: "/dashboard", label: "Overview", icon: LayoutDashboard },
+  { href: "/dashboard/analytics", label: "Analytics", icon: BarChart3 },
   { href: "/dashboard/trade", label: "Trade", icon: Handshake },
   { href: "/dashboard/rfqs", label: "RFQs", icon: ClipboardList },
   { href: "/dashboard/contracts", label: "Contracts", icon: FileSignature },

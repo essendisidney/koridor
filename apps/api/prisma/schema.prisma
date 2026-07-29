@@ -1408,3 +1408,74 @@ model ProofOfDelivery {
 
   @@map("proofs_of_delivery")
 }
+
+// ─────────────────────────────────────────────────────────────
+// Stage 7 – Analytics
+// ─────────────────────────────────────────────────────────────
+
+model AnalyticsSnapshot {
+  id              String   @id @default(uuid()) @db.Uuid
+  periodDate      DateTime @map("period_date") @db.Date
+  scope           String   @default("global")
+  totalTrades     Int      @default(0) @map("total_trades")
+  activeTrades    Int      @default(0) @map("active_trades")
+  completedTrades Int      @default(0) @map("completed_trades")
+  cancelledTrades Int      @default(0) @map("cancelled_trades")
+  disputedTrades  Int      @default(0) @map("disputed_trades")
+  totalValueUsd   Decimal  @default(0) @map("total_value_usd") @db.Decimal(20, 2)
+  avgReadinessPct Decimal  @default(0) @map("avg_readiness_pct") @db.Decimal(5, 2)
+  avgCompletionPct Decimal @default(0) @map("avg_completion_pct") @db.Decimal(5, 2)
+  avgRiskScore    Decimal  @default(0) @map("avg_risk_score") @db.Decimal(5, 2)
+  avgTrustScore   Decimal  @default(0) @map("avg_trust_score") @db.Decimal(5, 2)
+  newOrgs         Int      @default(0) @map("new_orgs")
+  verifiedOrgs    Int      @default(0) @map("verified_orgs")
+  totalEscrowUsd  Decimal  @default(0) @map("total_escrow_usd") @db.Decimal(20, 2)
+  shipmentsBooked Int      @default(0) @map("shipments_booked")
+  shipmentsDelivered Int   @default(0) @map("shipments_delivered")
+  certsApproved   Int      @default(0) @map("certs_approved")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  @@unique([periodDate, scope])
+  @@index([periodDate])
+  @@index([scope])
+  @@map("analytics_snapshots")
+}
+
+model CorridorStat {
+  id                String   @id @default(uuid()) @db.Uuid
+  periodDate        DateTime @map("period_date") @db.Date
+  corridor          String
+  originCountry     String   @map("origin_country") @db.Char(2)
+  destinationCountry String  @map("destination_country") @db.Char(2)
+  tradeCount        Int      @default(0) @map("trade_count")
+  totalValueUsd     Decimal  @default(0) @map("total_value_usd") @db.Decimal(20, 2)
+  avgRiskScore      Decimal  @default(0) @map("avg_risk_score") @db.Decimal(5, 2)
+  completedCount    Int      @default(0) @map("completed_count")
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  @@unique([periodDate, corridor])
+  @@index([periodDate])
+  @@index([corridor])
+  @@index([originCountry])
+  @@index([destinationCountry])
+  @@map("corridor_stats")
+}
+
+model CommodityStat {
+  id            String   @id @default(uuid()) @db.Uuid
+  periodDate    DateTime @map("period_date") @db.Date
+  commodity     String
+  tradeCount    Int      @default(0) @map("trade_count")
+  totalValueUsd Decimal  @default(0) @map("total_value_usd") @db.Decimal(20, 2)
+  avgRiskScore  Decimal  @default(0) @map("avg_risk_score") @db.Decimal(5, 2)
+  completedCount Int     @default(0) @map("completed_count")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  @@unique([periodDate, commodity])
+  @@index([periodDate])
+  @@index([commodity])
+  @@map("commodity_stats")
+}

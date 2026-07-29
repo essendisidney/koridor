@@ -61,6 +61,12 @@ Usable vertical slice:
 - Tracking timeline events
 - Proof of delivery
 
+## Phase 7 — Analytics (shipped)
+
+- Live trade / risk / corridor / commodity dashboards
+- Daily snapshot rollups (`analytics_snapshots`, corridor & commodity stats)
+- Org-scoped by default; platform-wide for admins
+
 ## Architecture
 
 ```
@@ -141,7 +147,7 @@ Schema for project `koridor` (`qfptnyifzdwmuxfkgpmv`) is already applied on Supa
 4. **Finance Engine** — wallets, escrow, ledger *(shipped)*
 5. **Compliance** — certificates, government workflows *(shipped)*
 6. **Logistics** — shipping, tracking, PoD *(shipped)*
-7. **Analytics** — trade / risk dashboards
+7. **Analytics** — trade / risk dashboards *(shipped)*
 8. **AI** — assistant, document analysis
 9. **Administration** — feature flags, monitoring
 

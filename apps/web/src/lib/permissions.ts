@@ -29,6 +29,7 @@ export enum Permission {
   LOGISTICS_READ = "logistics:read",
   LOGISTICS_WRITE = "logistics:write",
   LOGISTICS_OPERATE = "logistics:operate",
+  ANALYTICS_READ = "analytics:read",
   ADMIN_ALL = "admin:all",
 }
 
@@ -57,6 +58,8 @@ const LOGISTICS_BASE = [
   Permission.LOGISTICS_WRITE,
 ] as const;
 
+const ANALYTICS_BASE = [Permission.ANALYTICS_READ] as const;
+
 const ROLE_PERMISSIONS: Record<string, Permission[]> = {
   SYSTEM_ADMIN: [Permission.ADMIN_ALL],
   BUYER: [
@@ -72,6 +75,7 @@ const ROLE_PERMISSIONS: Record<string, Permission[]> = {
     ...COMPLIANCE_BASE,
     ...FINANCE_BASE,
     ...LOGISTICS_BASE,
+    ...ANALYTICS_BASE,
   ],
   EXPORTER: [
     Permission.ORG_READ,
@@ -86,6 +90,7 @@ const ROLE_PERMISSIONS: Record<string, Permission[]> = {
     ...COMPLIANCE_BASE,
     ...FINANCE_BASE,
     ...LOGISTICS_BASE,
+    ...ANALYTICS_BASE,
   ],
   FARMER: [
     Permission.ORG_READ,
@@ -101,6 +106,7 @@ const ROLE_PERMISSIONS: Record<string, Permission[]> = {
     Permission.COMPLIANCE_READ,
     Permission.FINANCE_READ,
     Permission.LOGISTICS_READ,
+    Permission.ANALYTICS_READ,
   ],
   COOPERATIVE: [
     Permission.ORG_READ,
@@ -117,6 +123,7 @@ const ROLE_PERMISSIONS: Record<string, Permission[]> = {
     ...COMPLIANCE_BASE,
     ...FINANCE_BASE,
     ...LOGISTICS_BASE,
+    ...ANALYTICS_BASE,
   ],
   LOGISTICS_PROVIDER: [
     Permission.ORG_READ,
@@ -132,6 +139,7 @@ const ROLE_PERMISSIONS: Record<string, Permission[]> = {
     Permission.LOGISTICS_READ,
     Permission.LOGISTICS_WRITE,
     Permission.LOGISTICS_OPERATE,
+    Permission.ANALYTICS_READ,
   ],
   BANK: [
     Permission.ORG_READ,
@@ -150,6 +158,7 @@ const ROLE_PERMISSIONS: Record<string, Permission[]> = {
     Permission.FINANCE_READ,
     Permission.FINANCE_WRITE,
     Permission.FINANCE_OPERATE,
+    Permission.ANALYTICS_READ,
   ],
   INSURANCE: [
     Permission.ORG_READ,
@@ -166,6 +175,7 @@ const ROLE_PERMISSIONS: Record<string, Permission[]> = {
     Permission.COMPLIANCE_READ,
     Permission.FINANCE_READ,
     Permission.LOGISTICS_READ,
+    Permission.ANALYTICS_READ,
   ],
   GOVERNMENT_OFFICER: [
     Permission.ORG_READ,
@@ -183,6 +193,7 @@ const ROLE_PERMISSIONS: Record<string, Permission[]> = {
     Permission.COMPLIANCE_REVIEW,
     Permission.FINANCE_READ,
     Permission.LOGISTICS_READ,
+    Permission.ANALYTICS_READ,
   ],
   CHAMBER_OF_COMMERCE: [
     Permission.ORG_READ,
@@ -199,6 +210,7 @@ const ROLE_PERMISSIONS: Record<string, Permission[]> = {
     Permission.COMPLIANCE_REVIEW,
     Permission.FINANCE_READ,
     Permission.LOGISTICS_READ,
+    Permission.ANALYTICS_READ,
   ],
 };
 
