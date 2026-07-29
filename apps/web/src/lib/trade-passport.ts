@@ -214,7 +214,9 @@ export async function computeReadiness(tradeId: string) {
   const milestoneOk = (code: string) =>
     milestoneByCode.get(code)?.status === TradeMilestoneStatus.COMPLETED;
 
-  const items = [
+  type ReadinessItem = { key: string; label: string; ok: boolean; stub?: boolean };
+
+  const items: ReadinessItem[] = [
     {
       key: "buyer_verified",
       label: "Buyer Verified",
@@ -251,16 +253,16 @@ export async function computeReadiness(tradeId: string) {
       label: "Shipment Booked",
       ok: milestoneOk("SHIPMENT_BOOKED"),
     },
-  ] as const;
+  ];
 
-  const scored = items.filter((i) => !("stub" in i));
-  const ready = scored.filter((i) => (i as any).ok).length;
+  const scored = items.filter((i) => !i.stub);
+  const ready = scored.filter((i) => i.ok).length;
   const pct = Math.round((ready / Math.max(scored.length, 1)) * 100);
 
   return {
     pct,
-    items: items.map((i) => ({ ...i, stub: (i as any).stub ?? false })),
-    missing: items.filter((i) => !(i as any).ok).map((i) => i.label),
+    items: items.map((i) => ({ ...i, stub: Boolean(i.stub) })),
+    missing: scored.filter((i) => !i.ok).map((i) => i.label),
   };
 }
 
@@ -403,17 +405,15 @@ export async function syncMilestonesFromWorld(tradeId: string, actorId?: string)
     referenceRef?: string | null;
     metadata?: Prisma.InputJsonValue;
   }) {
-    const evidenceWhere: Record<string, unknown> = {
+    const evidenceWhere: Prisma.TradeEvidenceWhereInput = {
       tradeId: input.tradeId,
       type: input.type,
       deletedAt: null,
+      ...(input.referenceRef ? { referenceRef: input.referenceRef } : {}),
     };
-    if (input.referenceRef) {
-      Object.assign(evidenceWhere, { referenceRef: input.referenceRef });
-    }
 
     const existing = await prisma.tradeEvidence.findFirst({
-      where: evidenceWhere as any,
+      where: evidenceWhere,
       select: { id: true },
     });
     if (existing) return existing.id;
