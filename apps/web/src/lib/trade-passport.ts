@@ -1,0 +1,617 @@
+import {
+  ContractStatus,
+  Prisma,
+  TradeEvidenceType,
+  TradeMilestoneStatus,
+  TradeStatus,
+  VerificationStatus,
+} from "@prisma/client";
+import { prisma } from "@/lib/prisma";
+import { tradeReference } from "@/lib/trade";
+
+export const MILESTONE_TEMPLATE: {
+  code: string;
+  title: string;
+  sequence: number;
+  requiredEvidenceTypes: TradeEvidenceType[];
+  dependsOnCodes: string[];
+}[] = [
+  {
+    code: "BUYER_VERIFIED",
+    title: "Buyer Verified",
+    sequence: 1,
+    requiredEvidenceTypes: [],
+    dependsOnCodes: [],
+  },
+  {
+    code: "SUPPLIER_VERIFIED",
+    title: "Supplier Verified",
+    sequence: 2,
+    requiredEvidenceTypes: [],
+    dependsOnCodes: [],
+  },
+  {
+    code: "CONTRACT_SIGNED",
+    title: "Contract Signed",
+    sequence: 3,
+    requiredEvidenceTypes: [
+      TradeEvidenceType.CONTRACT_PDF,
+      TradeEvidenceType.DIGITAL_SIGNATURE,
+    ],
+    dependsOnCodes: ["BUYER_VERIFIED", "SUPPLIER_VERIFIED"],
+  },
+  {
+    code: "DEPOSIT_RECEIVED",
+    title: "Deposit Received",
+    sequence: 4,
+    requiredEvidenceTypes: [TradeEvidenceType.PAYMENT_PROOF],
+    dependsOnCodes: ["CONTRACT_SIGNED"],
+  },
+  {
+    code: "PRODUCTION_STARTED",
+    title: "Production Started",
+    sequence: 5,
+    requiredEvidenceTypes: [],
+    dependsOnCodes: ["CONTRACT_SIGNED"],
+  },
+  {
+    code: "PRODUCTION_COMPLETE",
+    title: "Production Complete",
+    sequence: 6,
+    requiredEvidenceTypes: [],
+    dependsOnCodes: ["PRODUCTION_STARTED"],
+  },
+  {
+    code: "INSPECTION_PASSED",
+    title: "Inspection Passed",
+    sequence: 7,
+    requiredEvidenceTypes: [TradeEvidenceType.INSPECTION_REPORT],
+    dependsOnCodes: ["PRODUCTION_COMPLETE"],
+  },
+  {
+    code: "CERTIFICATE_APPROVED",
+    title: "Certificate Approved",
+    sequence: 8,
+    requiredEvidenceTypes: [TradeEvidenceType.CERTIFICATE],
+    dependsOnCodes: ["INSPECTION_PASSED"],
+  },
+  {
+    code: "SHIPMENT_BOOKED",
+    title: "Shipment Booked",
+    sequence: 9,
+    requiredEvidenceTypes: [TradeEvidenceType.BILL_OF_LADING],
+    dependsOnCodes: ["CERTIFICATE_APPROVED"],
+  },
+  {
+    code: "BORDER_EXIT",
+    title: "Border Exit",
+    sequence: 10,
+    requiredEvidenceTypes: [],
+    dependsOnCodes: ["SHIPMENT_BOOKED"],
+  },
+  {
+    code: "BORDER_ENTRY",
+    title: "Border Entry",
+    sequence: 11,
+    requiredEvidenceTypes: [],
+    dependsOnCodes: ["BORDER_EXIT"],
+  },
+  {
+    code: "DELIVERED",
+    title: "Delivered",
+    sequence: 12,
+    requiredEvidenceTypes: [TradeEvidenceType.PROOF_OF_DELIVERY],
+    dependsOnCodes: ["BORDER_ENTRY"],
+  },
+  {
+    code: "SETTLEMENT_COMPLETE",
+    title: "Settlement Complete",
+    sequence: 13,
+    requiredEvidenceTypes: [TradeEvidenceType.PAYMENT_PROOF],
+    dependsOnCodes: ["DELIVERED"],
+  },
+  {
+    code: "CLOSED",
+    title: "Closed",
+    sequence: 14,
+    requiredEvidenceTypes: [],
+    dependsOnCodes: ["SETTLEMENT_COMPLETE"],
+  },
+];
+
+export const STATUS_STAGE: Record<TradeStatus, string> = {
+  DRAFT: "Opportunity",
+  PENDING_VERIFICATION: "Pending Verification",
+  NEGOTIATION: "Negotiation",
+  CONTRACTED: "Contract Signed",
+  IN_PRODUCTION: "Production",
+  AWAITING_INSPECTION: "Inspection",
+  AWAITING_COMPLIANCE: "Compliance",
+  READY_TO_SHIP: "Ready to Ship",
+  IN_TRANSIT: "Shipment",
+  AT_BORDER: "Border Clearance",
+  DELIVERED: "Delivery",
+  AWAITING_SETTLEMENT: "Settlement",
+  COMPLETED: "Trade Completed",
+  CANCELLED: "Cancelled",
+  DISPUTED: "Disputed",
+};
+
+const ADVANCE_ORDER: TradeStatus[] = [
+  TradeStatus.DRAFT,
+  TradeStatus.PENDING_VERIFICATION,
+  TradeStatus.NEGOTIATION,
+  TradeStatus.CONTRACTED,
+  TradeStatus.IN_PRODUCTION,
+  TradeStatus.AWAITING_INSPECTION,
+  TradeStatus.AWAITING_COMPLIANCE,
+  TradeStatus.READY_TO_SHIP,
+  TradeStatus.IN_TRANSIT,
+  TradeStatus.AT_BORDER,
+  TradeStatus.DELIVERED,
+  TradeStatus.AWAITING_SETTLEMENT,
+  TradeStatus.COMPLETED,
+];
+
+export function tradeNumber() {
+  return tradeReference("TRD");
+}
+
+export async function seedTradeMilestones(input: {
+  tradeId: string;
+  buyerOrgId: string;
+  sellerOrgId?: string | null;
+  actorId?: string;
+}) {
+  return prisma.tradeMilestone.createMany({
+    data: MILESTONE_TEMPLATE.map((m) => ({
+      tradeId: input.tradeId,
+      code: m.code,
+      title: m.title,
+      sequence: m.sequence,
+      requiredEvidenceTypes: m.requiredEvidenceTypes,
+      dependsOnCodes: m.dependsOnCodes,
+      ownerOrgId:
+        m.code.startsWith("BUYER") || m.code === "DEPOSIT_RECEIVED"
+          ? input.buyerOrgId
+          : input.sellerOrgId ?? input.buyerOrgId,
+      createdBy: input.actorId,
+      updatedBy: input.actorId,
+    })),
+    skipDuplicates: true,
+  });
+}
+
+export function nextStatus(current: TradeStatus): TradeStatus | null {
+  if (
+    current === TradeStatus.CANCELLED ||
+    current === TradeStatus.DISPUTED ||
+    current === TradeStatus.COMPLETED
+  ) {
+    return null;
+  }
+  const idx = ADVANCE_ORDER.indexOf(current);
+  if (idx < 0 || idx >= ADVANCE_ORDER.length - 1) return null;
+  return ADVANCE_ORDER[idx + 1];
+}
+
+export async function computeReadiness(tradeId: string) {
+  const trade = await prisma.trade.findFirst({
+    where: { id: tradeId, deletedAt: null },
+    include: {
+      buyerOrg: { select: { verificationStatus: true } },
+      sellerOrg: { select: { verificationStatus: true } },
+      contracts: {
+        where: { deletedAt: null },
+        include: {
+          escrowRequests: {
+            where: { deletedAt: null },
+            include: { escrowAccount: true },
+          },
+          shipmentRequests: {
+            where: { deletedAt: null },
+            include: { shipment: true },
+          },
+        },
+        take: 5,
+      },
+      certificates: {
+        where: { deletedAt: null, status: "APPROVED" },
+        take: 5,
+      },
+    },
+  });
+  if (!trade) throw new Error("Trade not found");
+
+  const contract = trade.contracts[0];
+  const signed =
+    contract &&
+    (contract.status === ContractStatus.ACTIVE ||
+      contract.status === ContractStatus.COMPLETED ||
+      (Boolean(contract.buyerSignedAt) && Boolean(contract.sellerSignedAt)));
+
+  const funded = Boolean(
+    contract?.escrowRequests.some(
+      (e) =>
+        e.status === "FUNDED" ||
+        e.status === "RELEASED" ||
+        e.escrowAccount?.status === "FUNDED" ||
+        e.escrowAccount?.status === "RELEASED",
+    ),
+  );
+
+  const shipmentBooked = Boolean(
+    contract?.shipmentRequests.some(
+      (s) =>
+        s.shipment &&
+        (s.shipment.status === "BOOKED" ||
+          s.shipment.status === "IN_TRANSIT" ||
+          s.shipment.status === "DELIVERED"),
+    ),
+  );
+
+  const items = [
+    {
+      key: "buyer_verified",
+      label: "Buyer Verified",
+      ok: trade.buyerOrg.verificationStatus === VerificationStatus.VERIFIED,
+    },
+    {
+      key: "supplier_verified",
+      label: "Supplier Verified",
+      ok:
+        trade.sellerOrg?.verificationStatus === VerificationStatus.VERIFIED ||
+        false,
+    },
+    { key: "contract_signed", label: "Contract Signed", ok: Boolean(signed) },
+    { key: "financing", label: "Financing Available", ok: funded },
+    {
+      key: "certificates",
+      label: "Certificates Ready",
+      ok: trade.certificates.length > 0,
+    },
+    {
+      key: "insurance",
+      label: "Insurance Active",
+      ok: false,
+      stub: true,
+    },
+    { key: "shipment", label: "Shipment Booked", ok: shipmentBooked },
+  ];
+
+  const scored = items.filter((i) => !i.stub);
+  const ready = scored.filter((i) => i.ok).length;
+  const pct = Math.round((ready / Math.max(scored.length, 1)) * 100);
+
+  return { pct, items, missing: items.filter((i) => !i.ok).map((i) => i.label) };
+}
+
+export async function computeCompletion(tradeId: string) {
+  const milestones = await prisma.tradeMilestone.findMany({
+    where: { tradeId, deletedAt: null },
+    include: { evidence: { where: { deletedAt: null } } },
+  });
+
+  const required = milestones.filter((m) => m.code !== "CLOSED");
+  const completed = required.filter(
+    (m) => m.status === TradeMilestoneStatus.COMPLETED,
+  );
+  const pct = Math.round(
+    (completed.length / Math.max(required.length, 1)) * 100,
+  );
+
+  const trade = await prisma.trade.findFirst({
+    where: { id: tradeId, deletedAt: null },
+  });
+  const disputed = trade?.status === TradeStatus.DISPUTED;
+  const allDone =
+    !disputed &&
+    required.every((m) => m.status === TradeMilestoneStatus.COMPLETED);
+
+  return {
+    pct,
+    complete: allDone,
+    milestoneCount: required.length,
+    completedCount: completed.length,
+    disputed,
+  };
+}
+
+export async function recomputeTradeScores(tradeId: string, actorId?: string) {
+  const trade = await prisma.trade.findFirst({
+    where: { id: tradeId, deletedAt: null },
+  });
+  if (!trade) throw new Error("Trade not found");
+
+  const [buyerTrust, sellerTrust, readiness, completion] = await Promise.all([
+    prisma.trustProfile.findFirst({
+      where: { organisationId: trade.buyerOrgId, deletedAt: null },
+    }),
+    trade.sellerOrgId
+      ? prisma.trustProfile.findFirst({
+          where: { organisationId: trade.sellerOrgId, deletedAt: null },
+        })
+      : Promise.resolve(null),
+    computeReadiness(tradeId),
+    computeCompletion(tradeId),
+  ]);
+
+  const trustScore = Math.round(
+    ((buyerTrust?.trustScore ?? 0) + (sellerTrust?.trustScore ?? 0)) /
+      (trade.sellerOrgId ? 2 : 1),
+  );
+  const riskScore = Math.max(0, 100 - readiness.pct);
+
+  let status = trade.status;
+  let currentStage = trade.currentStage;
+  let completedAt = trade.completedAt;
+
+  if (completion.complete && status !== TradeStatus.CANCELLED) {
+    status = TradeStatus.COMPLETED;
+    currentStage = STATUS_STAGE.COMPLETED;
+    completedAt = completedAt ?? new Date();
+    await prisma.tradeMilestone.updateMany({
+      where: { tradeId, code: "CLOSED", deletedAt: null },
+      data: {
+        status: TradeMilestoneStatus.COMPLETED,
+        completedAt: new Date(),
+        updatedBy: actorId,
+      },
+    });
+  }
+
+  return prisma.trade.update({
+    where: { id: tradeId },
+    data: {
+      trustScore,
+      riskScore,
+      completionPct: completion.pct,
+      status,
+      currentStage,
+      completedAt,
+      updatedBy: actorId,
+    },
+  });
+}
+
+export async function completeMilestoneIfReady(input: {
+  tradeId: string;
+  code: string;
+  actorId?: string;
+}) {
+  const milestone = await prisma.tradeMilestone.findFirst({
+    where: {
+      tradeId: input.tradeId,
+      code: input.code,
+      deletedAt: null,
+    },
+    include: { evidence: { where: { deletedAt: null } } },
+  });
+  if (!milestone) return null;
+
+  const deps = await prisma.tradeMilestone.findMany({
+    where: {
+      tradeId: input.tradeId,
+      code: { in: milestone.dependsOnCodes },
+      deletedAt: null,
+    },
+  });
+  const depsMet = deps.every(
+    (d) => d.status === TradeMilestoneStatus.COMPLETED,
+  );
+  if (!depsMet) return milestone;
+
+  const required = milestone.requiredEvidenceTypes;
+  const have = new Set(milestone.evidence.map((e) => e.type));
+  const evidenceMet = required.every((t) => have.has(t as TradeEvidenceType));
+  if (!evidenceMet && required.length > 0) return milestone;
+
+  return prisma.tradeMilestone.update({
+    where: { id: milestone.id },
+    data: {
+      status: TradeMilestoneStatus.COMPLETED,
+      completedAt: new Date(),
+      updatedBy: input.actorId,
+    },
+  });
+}
+
+export async function syncMilestonesFromWorld(tradeId: string, actorId?: string) {
+  const trade = await prisma.trade.findFirst({
+    where: { id: tradeId, deletedAt: null },
+    include: {
+      buyerOrg: true,
+      sellerOrg: true,
+      contracts: {
+        where: { deletedAt: null },
+        include: {
+          escrowRequests: {
+            where: { deletedAt: null },
+            include: { escrowAccount: true },
+          },
+          shipmentRequests: {
+            where: { deletedAt: null },
+            include: { shipment: { include: { proofOfDelivery: true } } },
+          },
+        },
+      },
+      certificates: { where: { deletedAt: null, status: "APPROVED" } },
+    },
+  });
+  if (!trade) return;
+
+  const mark = async (code: string) => {
+    await prisma.tradeMilestone.updateMany({
+      where: { tradeId, code, deletedAt: null, status: { not: "COMPLETED" } },
+      data: {
+        status: TradeMilestoneStatus.COMPLETED,
+        completedAt: new Date(),
+        updatedBy: actorId,
+      },
+    });
+  };
+
+  if (trade.buyerOrg.verificationStatus === VerificationStatus.VERIFIED) {
+    await mark("BUYER_VERIFIED");
+  }
+  if (trade.sellerOrg?.verificationStatus === VerificationStatus.VERIFIED) {
+    await mark("SUPPLIER_VERIFIED");
+  }
+
+  const contract = trade.contracts[0];
+  if (
+    contract &&
+    contract.buyerSignedAt &&
+    contract.sellerSignedAt
+  ) {
+    await mark("CONTRACT_SIGNED");
+  }
+
+  if (
+    contract?.escrowRequests.some(
+      (e) =>
+        e.status === "FUNDED" ||
+        e.status === "RELEASED" ||
+        e.escrowAccount?.status === "FUNDED" ||
+        e.escrowAccount?.status === "RELEASED",
+    )
+  ) {
+    await mark("DEPOSIT_RECEIVED");
+  }
+
+  if (trade.certificates.length > 0) {
+    await mark("CERTIFICATE_APPROVED");
+  }
+
+  const shipment = contract?.shipmentRequests
+    .map((s) => s.shipment)
+    .find(Boolean);
+  if (shipment) {
+    if (
+      shipment.status === "BOOKED" ||
+      shipment.status === "IN_TRANSIT" ||
+      shipment.status === "DELIVERED"
+    ) {
+      await mark("SHIPMENT_BOOKED");
+    }
+    if (
+      shipment.status === "IN_TRANSIT" ||
+      shipment.status === "DELIVERED"
+    ) {
+      await mark("BORDER_EXIT");
+      await mark("BORDER_ENTRY");
+    }
+    if (shipment.status === "DELIVERED" || shipment.proofOfDelivery) {
+      await mark("DELIVERED");
+    }
+  }
+
+  if (
+    contract?.escrowRequests.some(
+      (e) =>
+        e.status === "RELEASED" || e.escrowAccount?.status === "RELEASED",
+    )
+  ) {
+    await mark("SETTLEMENT_COMPLETE");
+  }
+}
+
+export type CreateTradeInput = {
+  buyerOrgId: string;
+  sellerOrgId?: string | null;
+  ownerId: string;
+  actorId: string;
+  title: string;
+  commodity: string;
+  quantity: number | Prisma.Decimal;
+  unit?: string;
+  value?: number | Prisma.Decimal | null;
+  currency?: string;
+  originCountry?: string | null;
+  destinationCountry?: string | null;
+  corridor?: string | null;
+  incoterms?: string | null;
+  status?: TradeStatus;
+  notes?: string | null;
+};
+
+export async function createTradePassport(input: CreateTradeInput) {
+  const status = input.status ?? TradeStatus.DRAFT;
+  const trade = await prisma.trade.create({
+    data: {
+      tradeNumber: tradeNumber(),
+      status,
+      currentStage: STATUS_STAGE[status],
+      buyerOrgId: input.buyerOrgId,
+      sellerOrgId: input.sellerOrgId ?? null,
+      title: input.title,
+      commodity: input.commodity,
+      quantity: input.quantity,
+      unit: input.unit ?? "MT",
+      value: input.value ?? null,
+      currency: (input.currency ?? "USD").toUpperCase().slice(0, 3),
+      originCountry: input.originCountry
+        ? String(input.originCountry).toUpperCase().slice(0, 2)
+        : null,
+      destinationCountry: input.destinationCountry
+        ? String(input.destinationCountry).toUpperCase().slice(0, 2)
+        : null,
+      corridor:
+        input.corridor ??
+        (input.originCountry && input.destinationCountry
+          ? `${String(input.originCountry).toUpperCase()}-${String(input.destinationCountry).toUpperCase()}`
+          : null),
+      incoterms: input.incoterms ?? null,
+      ownerId: input.ownerId,
+      notes: input.notes ?? null,
+      createdBy: input.actorId,
+      updatedBy: input.actorId,
+      participants: {
+        create: [
+          {
+            organisationId: input.buyerOrgId,
+            role: "BUYER",
+            createdBy: input.actorId,
+          },
+          ...(input.sellerOrgId
+            ? [
+                {
+                  organisationId: input.sellerOrgId,
+                  role: "SUPPLIER" as const,
+                  createdBy: input.actorId,
+                },
+              ]
+            : []),
+        ],
+      },
+    },
+  });
+
+  await seedTradeMilestones({
+    tradeId: trade.id,
+    buyerOrgId: input.buyerOrgId,
+    sellerOrgId: input.sellerOrgId,
+    actorId: input.actorId,
+  });
+
+  await prisma.tradeEvent.create({
+    data: {
+      tradeId: trade.id,
+      type: "TRADE_CREATED",
+      message: `Trade passport ${trade.tradeNumber} created`,
+      actorId: input.actorId,
+      createdBy: input.actorId,
+    },
+  });
+
+  await syncMilestonesFromWorld(trade.id, input.actorId);
+  await recomputeTradeScores(trade.id, input.actorId);
+
+  return prisma.trade.findFirstOrThrow({
+    where: { id: trade.id },
+    include: {
+      participants: { where: { deletedAt: null } },
+      milestones: { where: { deletedAt: null }, orderBy: { sequence: "asc" } },
+    },
+  });
+}

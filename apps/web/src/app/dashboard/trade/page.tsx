@@ -1,60 +1,95 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
-import { api } from "@/lib/api";
+import { FormEvent, useCallback, useEffect, useState } from "react";
+import { api, ApiError } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
-type Rfq = { id: string; title: string; status: string; reference: string };
-type Contract = {
+type Trade = {
   id: string;
+  tradeNumber: string;
   title: string;
   status: string;
-  reference: string;
-  totalValue: string | number;
+  currentStage: string;
+  completionPct: number;
+  readinessPct?: number;
+  riskScore: number;
+  trustScore: number;
+  commodity: string;
   currency: string;
+  value?: string | number | null;
+  buyerOrg: { name: string };
+  sellerOrg?: { name: string } | null;
 };
 
 export default function TradePage() {
   const { accessToken } = useAuth();
-  const [mine, setMine] = useState<Rfq[]>([]);
-  const [open, setOpen] = useState<Rfq[]>([]);
-  const [contracts, setContracts] = useState<Contract[]>([]);
+  const [trades, setTrades] = useState<Trade[]>([]);
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
+  const load = useCallback(() => {
     if (!accessToken) return;
-    Promise.all([
-      api<Rfq[]>("/rfqs?scope=mine", { token: accessToken }),
-      api<Rfq[]>("/rfqs?scope=open", { token: accessToken }),
-      api<Contract[]>("/contracts", { token: accessToken }),
-    ])
-      .then(([m, o, c]) => {
-        setMine(Array.isArray(m) ? m.slice(0, 5) : []);
-        setOpen(Array.isArray(o) ? o.slice(0, 5) : []);
-        setContracts(Array.isArray(c) ? c.slice(0, 5) : []);
-      })
-      .catch(() => {
-        setMine([]);
-        setOpen([]);
-        setContracts([]);
-      });
+    api<Trade[]>("/trades", { token: accessToken })
+      .then(setTrades)
+      .catch((err) =>
+        setError(err instanceof ApiError ? err.message : "Failed to load"),
+      );
   }, [accessToken]);
 
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  async function createDraft(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    if (!accessToken) return;
+    setLoading(true);
+    setError(null);
+    const form = new FormData(e.currentTarget);
+    try {
+      const trade = await api<Trade>("/trades", {
+        method: "POST",
+        token: accessToken,
+        body: {
+          title: String(form.get("title")),
+          commodity: String(form.get("commodity")),
+          quantity: Number(form.get("quantity")),
+          unit: String(form.get("unit") || "MT"),
+          value: form.get("value") ? Number(form.get("value")) : undefined,
+          currency: String(form.get("currency") || "USD"),
+          originCountry: String(form.get("originCountry") || ""),
+          destinationCountry: String(form.get("destinationCountry") || ""),
+          incoterms: String(form.get("incoterms") || ""),
+        },
+      });
+      window.location.href = `/dashboard/trades/${trade.id}`;
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Create failed");
+    } finally {
+      setLoading(false);
+    }
+  }
+
   return (
-    <div className="mx-auto max-w-4xl space-y-8">
+    <div className="mx-auto max-w-3xl space-y-8">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <h1 className="font-[family-name:var(--font-display)] text-3xl font-semibold">
-            Trade
+            Trade Passports
           </h1>
           <p className="mt-1 text-sm text-[var(--fg-muted)]">
-            RFQs, offers, contracts, milestones, escrow and shipment requests.
+            Living trades — the single source of truth for parties, documents,
+            finance, and logistics.
           </p>
         </div>
         <div className="flex gap-2">
           <Link href="/dashboard/rfqs">
-            <Button size="sm">RFQs</Button>
+            <Button size="sm" variant="secondary">
+              RFQs
+            </Button>
           </Link>
           <Link href="/dashboard/contracts">
             <Button size="sm" variant="secondary">
@@ -64,117 +99,74 @@ export default function TradePage() {
         </div>
       </div>
 
-      <section className="grid gap-6 border-t border-[var(--border)] pt-6 md:grid-cols-3">
-        <Stat label="My RFQs" value={String(mine.length)} />
-        <Stat label="Open market RFQs" value={String(open.length)} />
-        <Stat label="Contracts" value={String(contracts.length)} />
+      {error ? <p className="text-sm text-[var(--danger)]">{error}</p> : null}
+
+      <section className="space-y-2 border-t border-[var(--border)] pt-6">
+        <h2 className="font-[family-name:var(--font-display)] text-xl font-semibold">
+          Active passports
+        </h2>
+        {trades.length === 0 ? (
+          <p className="text-sm text-[var(--fg-muted)]">
+            No trades yet. Draft one below, or accept an RFQ offer to mint a
+            passport.
+          </p>
+        ) : (
+          trades.map((t) => (
+            <Link
+              key={t.id}
+              href={`/dashboard/trades/${t.id}`}
+              className="block border-b border-[var(--border)] py-3"
+            >
+              <div className="flex flex-wrap items-baseline justify-between gap-2">
+                <p className="font-medium">{t.title}</p>
+                <p className="text-xs text-[var(--fg-muted)]">
+                  {t.completionPct}% · {t.status}
+                </p>
+              </div>
+              <p className="text-xs text-[var(--fg-muted)]">
+                {t.tradeNumber} · {t.currentStage} · {t.commodity}
+                {t.sellerOrg
+                  ? ` · ${t.buyerOrg.name} ↔ ${t.sellerOrg.name}`
+                  : ` · ${t.buyerOrg.name}`}
+                {t.value != null ? ` · ${t.currency} ${t.value}` : ""}
+              </p>
+            </Link>
+          ))
+        )}
       </section>
 
-      <Section title="My RFQs" href="/dashboard/rfqs">
-        {mine.length === 0 ? (
-          <Empty text="No RFQs yet. Create one to source goods." />
-        ) : (
-          mine.map((r) => (
-            <Row
-              key={r.id}
-              href={`/dashboard/rfqs/${r.id}`}
-              title={r.title}
-              meta={`${r.reference} · ${r.status}`}
-            />
-          ))
-        )}
-      </Section>
-
-      <Section title="Open RFQs" href="/dashboard/rfqs?tab=open">
-        {open.length === 0 ? (
-          <Empty text="No open RFQs from other organisations." />
-        ) : (
-          open.map((r) => (
-            <Row
-              key={r.id}
-              href={`/dashboard/rfqs/${r.id}`}
-              title={r.title}
-              meta={`${r.reference} · ${r.status}`}
-            />
-          ))
-        )}
-      </Section>
-
-      <Section title="Contracts" href="/dashboard/contracts">
-        {contracts.length === 0 ? (
-          <Empty text="No contracts yet. Accept an offer to form one." />
-        ) : (
-          contracts.map((c) => (
-            <Row
-              key={c.id}
-              href={`/dashboard/contracts/${c.id}`}
-              title={c.title}
-              meta={`${c.reference} · ${c.status} · ${c.currency} ${c.totalValue}`}
-            />
-          ))
-        )}
-      </Section>
-    </div>
-  );
-}
-
-function Stat({ label, value }: { label: string; value: string }) {
-  return (
-    <div>
-      <p className="text-xs uppercase tracking-[0.14em] text-[var(--fg-muted)]">
-        {label}
-      </p>
-      <p className="mt-1 font-[family-name:var(--font-display)] text-3xl font-semibold">
-        {value}
-      </p>
-    </div>
-  );
-}
-
-function Section({
-  title,
-  href,
-  children,
-}: {
-  title: string;
-  href: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <section className="space-y-3 border-t border-[var(--border)] pt-6">
-      <div className="flex items-center justify-between">
+      <form
+        onSubmit={createDraft}
+        className="space-y-3 border-t border-[var(--border)] pt-6"
+      >
         <h2 className="font-[family-name:var(--font-display)] text-xl font-semibold">
-          {title}
+          Draft opportunity
         </h2>
-        <Link href={href} className="text-sm text-[var(--accent)]">
-          View all
-        </Link>
-      </div>
-      <div className="space-y-2">{children}</div>
-    </section>
+        <Input label="Title" name="title" required />
+        <div className="grid gap-3 sm:grid-cols-3">
+          <Input label="Commodity" name="commodity" required />
+          <Input
+            label="Quantity"
+            name="quantity"
+            type="number"
+            step="0.01"
+            required
+          />
+          <Input label="Unit" name="unit" defaultValue="MT" />
+        </div>
+        <div className="grid gap-3 sm:grid-cols-3">
+          <Input label="Value" name="value" type="number" step="0.01" />
+          <Input label="Currency" name="currency" defaultValue="USD" />
+          <Input label="Incoterms" name="incoterms" placeholder="FOB" />
+        </div>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <Input label="Origin" name="originCountry" maxLength={2} />
+          <Input label="Destination" name="destinationCountry" maxLength={2} />
+        </div>
+        <Button type="submit" disabled={loading}>
+          {loading ? "Creating…" : "Create draft passport"}
+        </Button>
+      </form>
+    </div>
   );
-}
-
-function Row({
-  href,
-  title,
-  meta,
-}: {
-  href: string;
-  title: string;
-  meta: string;
-}) {
-  return (
-    <Link
-      href={href}
-      className="block border-b border-[var(--border)] py-3 transition hover:bg-[var(--bg-muted)]/40"
-    >
-      <p className="text-sm font-medium">{title}</p>
-      <p className="text-xs text-[var(--fg-muted)]">{meta}</p>
-    </Link>
-  );
-}
-
-function Empty({ text }: { text: string }) {
-  return <p className="text-sm text-[var(--fg-muted)]">{text}</p>;
 }

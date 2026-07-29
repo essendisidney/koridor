@@ -13,6 +13,12 @@ import {
 import { Permission } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
 import { decimalNumber, recordTradeEvent } from "@/lib/trade";
+import {
+  recomputeTradeScores,
+  STATUS_STAGE,
+  syncMilestonesFromWorld,
+} from "@/lib/trade-passport";
+import { TradeStatus } from "@prisma/client";
 
 export const runtime = "nodejs";
 
@@ -123,8 +129,22 @@ export async function POST(req: NextRequest, ctx: Ctx) {
         message: isBuyer ? "Buyer signed" : "Seller signed",
         actorId: user.id,
         contractId: id,
+        tradeId: contract.tradeId ?? undefined,
         rfqId: contract.rfqId ?? undefined,
       });
+
+      if (data.status === ContractStatus.ACTIVE && contract.tradeId) {
+        await prisma.trade.update({
+          where: { id: contract.tradeId },
+          data: {
+            status: TradeStatus.CONTRACTED,
+            currentStage: STATUS_STAGE.CONTRACTED,
+            updatedBy: user.id,
+          },
+        });
+        await syncMilestonesFromWorld(contract.tradeId, user.id);
+        await recomputeTradeScores(contract.tradeId, user.id);
+      }
 
       await prisma.activity.create({
         data: {

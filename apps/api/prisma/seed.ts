@@ -591,6 +591,82 @@ async function main() {
     });
   }
 
+  const existingTrade = await prisma.trade.findUnique({
+    where: { tradeNumber: 'TRD-SEED-001' },
+  });
+  if (!existingTrade) {
+    await prisma.trade.create({
+      data: {
+        tradeNumber: 'TRD-SEED-001',
+        status: 'NEGOTIATION',
+        currentStage: 'Negotiation',
+        buyerOrgId: buyerOrg.id,
+        sellerOrgId: exporterOrg.id,
+        title: 'Arabica coffee corridor KE→NL',
+        commodity: 'Arabica coffee',
+        quantity: 50,
+        unit: 'MT',
+        value: 125000,
+        currency: 'USD',
+        originCountry: 'KE',
+        destinationCountry: 'NL',
+        corridor: 'KE-NL',
+        incoterms: 'FOB',
+        ownerId: buyerUser.id,
+        trustScore: 65,
+        riskScore: 40,
+        createdBy: buyerUser.id,
+        updatedBy: buyerUser.id,
+        participants: {
+          create: [
+            {
+              organisationId: buyerOrg.id,
+              role: 'BUYER',
+              createdBy: buyerUser.id,
+            },
+            {
+              organisationId: exporterOrg.id,
+              role: 'SUPPLIER',
+              createdBy: buyerUser.id,
+            },
+          ],
+        },
+        milestones: {
+          create: [
+            {
+              code: 'BUYER_VERIFIED',
+              title: 'Buyer Verified',
+              sequence: 1,
+              createdBy: buyerUser.id,
+            },
+            {
+              code: 'SUPPLIER_VERIFIED',
+              title: 'Supplier Verified',
+              sequence: 2,
+              createdBy: buyerUser.id,
+            },
+            {
+              code: 'CONTRACT_SIGNED',
+              title: 'Contract Signed',
+              sequence: 3,
+              requiredEvidenceTypes: ['CONTRACT_PDF', 'DIGITAL_SIGNATURE'],
+              dependsOnCodes: ['BUYER_VERIFIED', 'SUPPLIER_VERIFIED'],
+              createdBy: buyerUser.id,
+            },
+            {
+              code: 'CLOSED',
+              title: 'Closed',
+              sequence: 14,
+              dependsOnCodes: ['SETTLEMENT_COMPLETE'],
+              createdBy: buyerUser.id,
+            },
+          ],
+        },
+      },
+    });
+    console.log('  Seeded trade TRD-SEED-001');
+  }
+
   console.log('Seed complete:');
   console.log('  admin@koridor.io / Admin123!');
   console.log('  exporter@demo.koridor.io / Demo123!');

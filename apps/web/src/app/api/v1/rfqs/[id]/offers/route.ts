@@ -5,6 +5,7 @@ import {
   MilestoneStatus,
   OfferStatus,
   RfqStatus,
+  TradeStatus,
 } from "@prisma/client";
 import { Prisma } from "@prisma/client";
 import { fail, ok } from "@/lib/http";
@@ -16,6 +17,11 @@ import {
 import { Permission } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
 import { decimalNumber, recordTradeEvent, tradeReference } from "@/lib/trade";
+import {
+  createTradePassport,
+  recomputeTradeScores,
+  syncMilestonesFromWorld,
+} from "@/lib/trade-passport";
 
 export const runtime = "nodejs";
 
@@ -194,6 +200,24 @@ export async function PATCH(req: NextRequest, ctx: Ctx) {
 
     const totalValue = new Prisma.Decimal(offer.unitPrice).mul(offer.quantity);
 
+    const trade = await createTradePassport({
+      buyerOrgId: rfq.buyerOrgId,
+      sellerOrgId: offer.sellerOrgId,
+      ownerId: user.id,
+      actorId: user.id,
+      title: rfq.title,
+      commodity: rfq.commodity,
+      quantity: offer.quantity,
+      unit: offer.unit,
+      value: totalValue,
+      currency: offer.currency,
+      originCountry: rfq.originCountry,
+      destinationCountry: rfq.destinationCountry,
+      incoterms: offer.incoterm ?? rfq.incoterm,
+      status: TradeStatus.NEGOTIATION,
+      notes: `Formed from ${rfq.reference}`,
+    });
+
     const result = await prisma.$transaction(async (tx) => {
       await tx.offer.update({
         where: { id: offerId },
@@ -213,6 +237,7 @@ export async function PATCH(req: NextRequest, ctx: Ctx) {
         data: {
           status: RfqStatus.AWARDED,
           closedAt: new Date(),
+          tradeId: trade.id,
           updatedBy: user.id,
         },
       });
@@ -220,6 +245,7 @@ export async function PATCH(req: NextRequest, ctx: Ctx) {
       const contract = await tx.contract.create({
         data: {
           reference: tradeReference("CTR"),
+          tradeId: trade.id,
           rfqId,
           offerId,
           buyerOrgId: rfq.buyerOrgId,
@@ -267,8 +293,9 @@ export async function PATCH(req: NextRequest, ctx: Ctx) {
 
     await recordTradeEvent({
       type: "OFFER_ACCEPTED",
-      message: "Offer accepted — contract created",
+      message: "Offer accepted — trade passport + contract created",
       actorId: user.id,
+      tradeId: trade.id,
       rfqId,
       contractId: result.id,
     });
@@ -276,15 +303,19 @@ export async function PATCH(req: NextRequest, ctx: Ctx) {
       type: "CONTRACT_CREATED",
       message: result.reference,
       actorId: user.id,
+      tradeId: trade.id,
       rfqId,
       contractId: result.id,
     });
+
+    await syncMilestonesFromWorld(trade.id, user.id);
+    await recomputeTradeScores(trade.id, user.id);
 
     await prisma.activity.create({
       data: {
         type: ActivityType.CONTRACT_CREATED,
         title: "Contract created",
-        description: result.reference,
+        description: `${result.reference} · ${trade.tradeNumber}`,
         actorId: user.id,
         organisationId: membership.organisationId,
         entityType: "Contract",
@@ -292,7 +323,7 @@ export async function PATCH(req: NextRequest, ctx: Ctx) {
       },
     });
 
-    return ok(result);
+    return ok({ ...result, tradeId: trade.id, tradeNumber: trade.tradeNumber });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Failed";
     return fail(message, message === "Unauthorized" ? 401 : 400);

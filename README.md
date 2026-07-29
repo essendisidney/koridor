@@ -35,6 +35,13 @@ Usable vertical slice:
 - Milestones, escrow requests, shipment requests
 - Trade timeline events
 
+## Stage 3.5 — Trade Orchestration (shipped)
+
+- Canonical **Trade Passport** as parent hub for living trades
+- Lifecycle states, milestone + evidence engines
+- Readiness & completion scores
+- Unified Trade Workspace (`/dashboard/trades/[id]`)
+
 ## Phase 4 — Finance Engine (shipped)
 
 - Organisation wallets (available + held balances)

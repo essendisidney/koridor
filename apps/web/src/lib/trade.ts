@@ -25,9 +25,16 @@ export async function recordTradeEvent(input: {
     | "SHIPMENT_BOOKED"
     | "SHIPMENT_IN_TRANSIT"
     | "SHIPMENT_DELIVERED"
+    | "TRADE_CREATED"
+    | "TRADE_ADVANCED"
+    | "TRADE_COMPLETED"
+    | "TRADE_CANCELLED"
+    | "TRADE_DISPUTED"
+    | "EVIDENCE_ATTACHED"
     | "NOTE";
   message?: string;
   actorId?: string;
+  tradeId?: string;
   rfqId?: string;
   contractId?: string;
   metadata?: Prisma.InputJsonValue;
@@ -37,6 +44,7 @@ export async function recordTradeEvent(input: {
       type: input.type,
       message: input.message,
       actorId: input.actorId,
+      tradeId: input.tradeId,
       rfqId: input.rfqId,
       contractId: input.contractId,
       metadata: input.metadata,

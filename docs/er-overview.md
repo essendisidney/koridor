@@ -1,19 +1,25 @@
-# Entity Relationship Overview — Phases 1–6
+# Entity Relationship Overview — Phases 1–6 + Stage 3.5
 
 ```mermaid
 erDiagram
+  Trade ||--o{ TradeParticipant : graph
+  Trade ||--o{ TradeMilestone : tracks
+  Trade ||--o{ TradeEvidence : proves
+  Trade ||--o{ TradeEvent : timeline
+  Trade ||--o{ Rfq : may_start
+  Trade ||--o{ Contract : commercial
+  Trade ||--o{ ComplianceCertificate : certs
+  Organisation ||--o{ Trade : buyer_or_seller
   Organisation ||--o{ Wallet : holds
   Wallet ||--o{ LedgerEntry : records
   EscrowRequest ||--o| EscrowAccount : opens
   EscrowAccount }o--|| Wallet : holds_from
-  Organisation ||--o{ EscrowAccount : buyer_or_seller
   ShipmentRequest ||--o| Shipment : books
   Shipment ||--o{ TrackingEvent : tracks
   Shipment ||--o| ProofOfDelivery : confirms
-  Organisation ||--o{ Shipment : party_or_provider
 ```
 
-Core trust/trade entities remain as in earlier phases. Finance adds `Wallet`, `LedgerEntry`, `EscrowAccount`. Logistics adds `Shipment`, `TrackingEvent`, `ProofOfDelivery`.
+The **Trade Passport** is the parent hub. Contract remains the signed commercial instrument; escrow/shipment attach through contract and surface in the Trade Workspace.
 
 ```mermaid
 erDiagram

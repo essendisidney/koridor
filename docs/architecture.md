@@ -1,8 +1,8 @@
-# Koridor Architecture — Phases 1–6
+# Koridor Architecture — Phases 1–6 + Stage 3.5
 
 ## System context
 
-Koridor is a modular trade operating system. Phase 1 established identity, tenancy, RBAC, and observability. Phase 2 adds the **Trust Engine**. Phase 3 adds the **Trade Engine**. Phase 4 adds **Finance** (wallets, escrow, ledger). Phase 5 adds **Compliance**. Phase 6 adds **Logistics** (shipments, tracking, PoD).
+Koridor is a modular trade operating system. **Stage 3.5** introduces the **Trade Passport** — a living digital twin that coordinates identity, trust, documents, finance, compliance, logistics, and settlement around one trade entity.
 
 
 ```mermaid
@@ -25,6 +25,7 @@ Production auth and Trust APIs run in the Next.js App Router (`apps/web/src/app/
 | `registry` | Type listings (farmer/coop/exporter/buyer) |
 | `contacts` | Organisation contacts on org profile |
 | `rfqs` / `offers` | RFQ lifecycle + seller offers |
+| `trades` | Trade Passport hub, milestones, evidence, readiness |
 | `contracts` | Contract formation, signatures, milestones |
 | `finance` | Wallets, ledger, escrow fund/release |
 | `compliance` | Certificates, printable payloads, approvals, expiry |
@@ -69,6 +70,12 @@ Recomputed on document upload, verification decision, KYC submit, contact/org pr
 | Print | Browser print of structured `payload` JSON |
 
 APIs: `/api/v1/compliance/certificates`, `.../approvals`, `.../expiry`.
+
+## Trade Passport (Stage 3.5)
+
+See [`trade-orchestration.md`](./trade-orchestration.md).
+
+APIs: `/api/v1/trades`, `/api/v1/trades/[id]`.
 
 ## Finance (Phase 4)
 

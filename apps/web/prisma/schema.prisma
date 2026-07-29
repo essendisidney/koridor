@@ -224,7 +224,67 @@ enum TradeEventType {
   SHIPMENT_BOOKED
   SHIPMENT_IN_TRANSIT
   SHIPMENT_DELIVERED
+  TRADE_CREATED
+  TRADE_ADVANCED
+  TRADE_COMPLETED
+  TRADE_CANCELLED
+  TRADE_DISPUTED
+  EVIDENCE_ATTACHED
   NOTE
+}
+
+enum TradeStatus {
+  DRAFT
+  PENDING_VERIFICATION
+  NEGOTIATION
+  CONTRACTED
+  IN_PRODUCTION
+  AWAITING_INSPECTION
+  AWAITING_COMPLIANCE
+  READY_TO_SHIP
+  IN_TRANSIT
+  AT_BORDER
+  DELIVERED
+  AWAITING_SETTLEMENT
+  COMPLETED
+  CANCELLED
+  DISPUTED
+}
+
+enum TradeParticipantRole {
+  BUYER
+  SUPPLIER
+  COOPERATIVE
+  LOGISTICS
+  BANK
+  INSURER
+  GOVERNMENT
+  INSPECTION
+  OTHER
+}
+
+enum TradeMilestoneStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  BLOCKED
+  SKIPPED
+  CANCELLED
+}
+
+enum TradeEvidenceType {
+  CONTRACT_PDF
+  DIGITAL_SIGNATURE
+  DOCUMENT
+  CERTIFICATE
+  INSPECTION_REPORT
+  BILL_OF_LADING
+  PHOTO
+  GPS_EVENT
+  CARRIER_CONFIRMATION
+  PROOF_OF_DELIVERY
+  PAYMENT_PROOF
+  OTHER
 }
 
 enum WalletStatus {
@@ -407,6 +467,9 @@ model Organisation {
   shipmentsAsProvider    Shipment[]       @relation("ShipmentProvider")
   shipmentsAsBuyer       Shipment[]       @relation("ShipmentBuyer")
   shipmentsAsSeller      Shipment[]       @relation("ShipmentSeller")
+  tradesAsBuyer          Trade[]          @relation("TradeBuyer")
+  tradesAsSeller         Trade[]          @relation("TradeSeller")
+  tradeParticipations    TradeParticipant[]
 
   @@index([slug])
   @@index([type])
@@ -725,6 +788,7 @@ model RegistryProfile {
 model Rfq {
   id               String    @id @default(uuid()) @db.Uuid
   reference        String    @unique
+  tradeId          String?   @map("trade_id") @db.Uuid
   buyerOrgId       String    @map("buyer_org_id") @db.Uuid
   createdById      String    @map("created_by_id") @db.Uuid
   title            String
@@ -747,11 +811,13 @@ model Rfq {
   updatedBy        String?   @map("updated_by") @db.Uuid
   deletedAt        DateTime? @map("deleted_at")
 
+  trade     Trade?       @relation(fields: [tradeId], references: [id], onDelete: SetNull)
   buyerOrg  Organisation @relation("RfqBuyer", fields: [buyerOrgId], references: [id])
   offers    Offer[]
   contracts Contract[]
   events    TradeEvent[]
 
+  @@index([tradeId])
   @@index([buyerOrgId])
   @@index([status])
   @@index([commodity])
@@ -793,6 +859,7 @@ model Offer {
 model Contract {
   id               String         @id @default(uuid()) @db.Uuid
   reference        String         @unique
+  tradeId          String?        @map("trade_id") @db.Uuid
   rfqId            String?        @map("rfq_id") @db.Uuid
   offerId          String?        @unique @map("offer_id") @db.Uuid
   buyerOrgId       String         @map("buyer_org_id") @db.Uuid
@@ -817,6 +884,7 @@ model Contract {
   updatedBy        String?        @map("updated_by") @db.Uuid
   deletedAt        DateTime?      @map("deleted_at")
 
+  trade     Trade?            @relation(fields: [tradeId], references: [id], onDelete: SetNull)
   rfq       Rfq?              @relation(fields: [rfqId], references: [id], onDelete: SetNull)
   offer     Offer?            @relation(fields: [offerId], references: [id], onDelete: SetNull)
   buyerOrg  Organisation      @relation("ContractBuyer", fields: [buyerOrgId], references: [id])
@@ -827,6 +895,7 @@ model Contract {
   events    TradeEvent[]
   certificates ComplianceCertificate[]
 
+  @@index([tradeId])
   @@index([buyerOrgId])
   @@index([sellerOrgId])
   @@index([status])
@@ -903,6 +972,7 @@ model ShipmentRequest {
 
 model TradeEvent {
   id         String         @id @default(uuid()) @db.Uuid
+  tradeId    String?        @map("trade_id") @db.Uuid
   rfqId      String?        @map("rfq_id") @db.Uuid
   contractId String?        @map("contract_id") @db.Uuid
   type       TradeEventType
@@ -915,13 +985,144 @@ model TradeEvent {
   updatedBy  String?        @map("updated_by") @db.Uuid
   deletedAt  DateTime?      @map("deleted_at")
 
+  trade    Trade?    @relation(fields: [tradeId], references: [id], onDelete: Cascade)
   rfq      Rfq?      @relation(fields: [rfqId], references: [id], onDelete: Cascade)
   contract Contract? @relation(fields: [contractId], references: [id], onDelete: Cascade)
 
+  @@index([tradeId])
   @@index([rfqId])
   @@index([contractId])
   @@index([createdAt])
   @@map("trade_events")
+}
+
+// ─────────────────────────────────────────────────────────────
+// Trade Passport (Stage 3.5)
+// ─────────────────────────────────────────────────────────────
+
+model Trade {
+  id                 String      @id @default(uuid()) @db.Uuid
+  tradeNumber        String      @unique @map("trade_number")
+  status             TradeStatus @default(DRAFT)
+  completionPct      Int         @default(0) @map("completion_pct")
+  riskScore          Int         @default(0) @map("risk_score")
+  trustScore         Int         @default(0) @map("trust_score")
+  buyerOrgId         String      @map("buyer_org_id") @db.Uuid
+  sellerOrgId        String?     @map("seller_org_id") @db.Uuid
+  title              String
+  commodity          String
+  quantity           Decimal     @db.Decimal(18, 4)
+  unit               String      @default("MT")
+  value              Decimal?    @db.Decimal(18, 4)
+  currency           String      @default("USD") @db.Char(3)
+  originCountry      String?     @map("origin_country") @db.Char(2)
+  destinationCountry String?     @map("destination_country") @db.Char(2)
+  corridor           String?
+  incoterms          String?
+  expectedStartAt    DateTime?   @map("expected_start_at")
+  expectedEndAt      DateTime?   @map("expected_end_at")
+  currentStage       String      @default("Opportunity") @map("current_stage")
+  ownerId            String      @map("owner_id") @db.Uuid
+  notes              String?
+  completedAt        DateTime?   @map("completed_at")
+  createdAt          DateTime    @default(now()) @map("created_at")
+  updatedAt          DateTime    @updatedAt @map("updated_at")
+  createdBy          String?     @map("created_by") @db.Uuid
+  updatedBy          String?     @map("updated_by") @db.Uuid
+  deletedAt          DateTime?   @map("deleted_at")
+
+  buyerOrg       Organisation       @relation("TradeBuyer", fields: [buyerOrgId], references: [id])
+  sellerOrg      Organisation?      @relation("TradeSeller", fields: [sellerOrgId], references: [id])
+  participants   TradeParticipant[]
+  milestones     TradeMilestone[]
+  evidence       TradeEvidence[]
+  timeline       TradeEvent[]
+  rfqs           Rfq[]
+  contracts      Contract[]
+  certificates   ComplianceCertificate[]
+
+  @@index([buyerOrgId])
+  @@index([sellerOrgId])
+  @@index([status])
+  @@index([ownerId])
+  @@index([deletedAt])
+  @@map("trades")
+}
+
+model TradeParticipant {
+  id             String               @id @default(uuid()) @db.Uuid
+  tradeId        String               @map("trade_id") @db.Uuid
+  organisationId String               @map("organisation_id") @db.Uuid
+  role           TradeParticipantRole
+  createdAt      DateTime             @default(now()) @map("created_at")
+  updatedAt      DateTime             @updatedAt @map("updated_at")
+  createdBy      String?              @map("created_by") @db.Uuid
+  updatedBy      String?              @map("updated_by") @db.Uuid
+  deletedAt      DateTime?            @map("deleted_at")
+
+  trade        Trade        @relation(fields: [tradeId], references: [id], onDelete: Cascade)
+  organisation Organisation @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+
+  @@unique([tradeId, organisationId, role])
+  @@index([tradeId])
+  @@index([organisationId])
+  @@map("trade_participants")
+}
+
+model TradeMilestone {
+  id                   String               @id @default(uuid()) @db.Uuid
+  tradeId              String               @map("trade_id") @db.Uuid
+  code                 String
+  title                String
+  sequence             Int                  @default(1)
+  status               TradeMilestoneStatus @default(PENDING)
+  ownerOrgId           String?              @map("owner_org_id") @db.Uuid
+  deadline             DateTime?
+  requiredEvidenceTypes String[]            @default([]) @map("required_evidence_types")
+  dependsOnCodes       String[]             @default([]) @map("depends_on_codes")
+  completedAt          DateTime?            @map("completed_at")
+  createdAt            DateTime             @default(now()) @map("created_at")
+  updatedAt            DateTime             @updatedAt @map("updated_at")
+  createdBy            String?              @map("created_by") @db.Uuid
+  updatedBy            String?              @map("updated_by") @db.Uuid
+  deletedAt            DateTime?            @map("deleted_at")
+
+  trade    Trade           @relation(fields: [tradeId], references: [id], onDelete: Cascade)
+  evidence TradeEvidence[]
+
+  @@unique([tradeId, code])
+  @@index([tradeId])
+  @@index([status])
+  @@map("trade_milestones")
+}
+
+model TradeEvidence {
+  id            String            @id @default(uuid()) @db.Uuid
+  tradeId       String            @map("trade_id") @db.Uuid
+  milestoneId   String?           @map("milestone_id") @db.Uuid
+  type          TradeEvidenceType
+  title         String
+  referenceRef  String?           @map("reference_ref")
+  storagePath   String?           @map("storage_path")
+  contentHash   String?           @map("content_hash")
+  documentId    String?           @map("document_id") @db.Uuid
+  certificateId String?           @map("certificate_id") @db.Uuid
+  metadata      Json?
+  actorId       String?           @map("actor_id") @db.Uuid
+  capturedAt    DateTime          @default(now()) @map("captured_at")
+  createdAt     DateTime          @default(now()) @map("created_at")
+  updatedAt     DateTime          @updatedAt @map("updated_at")
+  createdBy     String?           @map("created_by") @db.Uuid
+  updatedBy     String?           @map("updated_by") @db.Uuid
+  deletedAt     DateTime?         @map("deleted_at")
+
+  trade     Trade           @relation(fields: [tradeId], references: [id], onDelete: Cascade)
+  milestone TradeMilestone? @relation(fields: [milestoneId], references: [id], onDelete: SetNull)
+
+  @@index([tradeId])
+  @@index([milestoneId])
+  @@index([type])
+  @@map("trade_evidence")
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -958,6 +1159,7 @@ model ComplianceCertificate {
   id               String            @id @default(uuid()) @db.Uuid
   reference        String            @unique
   organisationId   String            @map("organisation_id") @db.Uuid
+  tradeId          String?           @map("trade_id") @db.Uuid
   contractId       String?           @map("contract_id") @db.Uuid
   type             CertificateType
   title            String
@@ -981,11 +1183,13 @@ model ComplianceCertificate {
   deletedAt        DateTime?         @map("deleted_at")
 
   organisation Organisation              @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  trade        Trade?                    @relation(fields: [tradeId], references: [id], onDelete: SetNull)
   contract     Contract?                 @relation(fields: [contractId], references: [id], onDelete: SetNull)
   approvals    ComplianceApproval[]
   events       ComplianceEvent[]
 
   @@index([organisationId])
+  @@index([tradeId])
   @@index([contractId])
   @@index([type])
   @@index([status])
