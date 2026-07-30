@@ -14,6 +14,7 @@ import {
   decimalStr,
   ensureWallet,
 } from "@/lib/finance";
+import { getPaymentProvider, paymentsProviderName } from "@/lib/payments";
 import { decimalNumber } from "@/lib/trade";
 
 export const runtime = "nodejs";
@@ -39,6 +40,7 @@ export async function GET(req: NextRequest) {
     });
 
     return ok({
+      provider: paymentsProviderName(),
       wallet: {
         ...wallet,
         availableBalance: decimalStr(wallet.availableBalance),
@@ -68,7 +70,6 @@ export async function POST(req: NextRequest) {
       return fail("Unsupported action", 400);
     }
 
-    // Org can top up own wallet; banks/admins can top up any org via operate + orgId
     let organisationId = membership.organisationId;
     if (body.organisationId && String(body.organisationId) !== organisationId) {
       if (!canOperateFinance(user)) {
@@ -89,13 +90,56 @@ export async function POST(req: NextRequest) {
       actorId: user.id,
     });
 
+    const forceDemo = Boolean(body.demo) || String(body.mode ?? "") === "demo";
+    const provider = forceDemo
+      ? {
+          name: "demo",
+          createTopUp: async () => ({
+            id: `demo-${Date.now()}`,
+            status: "succeeded" as const,
+            amount,
+            currency,
+            provider: "demo",
+            reference: `demo-${Date.now()}`,
+          }),
+        }
+      : getPaymentProvider();
+
+    const intent = await provider.createTopUp({
+      organisationId,
+      walletId: wallet.id,
+      amount,
+      currency,
+      actorId: user.id,
+      successUrl: body.successUrl ? String(body.successUrl) : undefined,
+      cancelUrl: body.cancelUrl ? String(body.cancelUrl) : undefined,
+    });
+
+    // Pending checkout (Stripe / M-Pesa) — credit happens on webhook / confirm
+    if (intent.status === "pending") {
+      return ok(
+        {
+          pending: true,
+          provider: intent.provider,
+          intent,
+          wallet: {
+            ...wallet,
+            availableBalance: decimalStr(wallet.availableBalance),
+            heldBalance: decimalStr(wallet.heldBalance),
+          },
+        },
+        { status: 201 },
+      );
+    }
+
     const result = await creditWallet({
       walletId: wallet.id,
       amount,
       kind: "TOP_UP",
       description: body.notes
         ? String(body.notes)
-        : "Wallet top-up (demo settlement)",
+        : `Wallet top-up via ${intent.provider}`,
+      reference: intent.reference,
       actorId: user.id,
     });
 
@@ -103,7 +147,7 @@ export async function POST(req: NextRequest) {
       data: {
         type: ActivityType.WALLET_CREDITED,
         title: "Wallet credited",
-        description: `${amount} ${currency}`,
+        description: `${amount} ${currency} (${intent.provider})`,
         actorId: user.id,
         organisationId,
         entityType: "Wallet",
@@ -113,6 +157,9 @@ export async function POST(req: NextRequest) {
 
     return ok(
       {
+        pending: false,
+        provider: intent.provider,
+        intent,
         wallet: {
           ...result.wallet,
           availableBalance: decimalStr(result.wallet.availableBalance),

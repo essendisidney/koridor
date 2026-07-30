@@ -14,6 +14,7 @@ import {
 import { Permission } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
 import { recordTrackingEvent } from "@/lib/logistics";
+import { getCarrierProvider, carriersProviderName } from "@/lib/carriers";
 import { recordTradeEvent } from "@/lib/trade";
 
 export const runtime = "nodejs";
@@ -117,17 +118,30 @@ export async function POST(req: NextRequest, ctx: Ctx) {
         return fail("providerOrgId is required", 400);
       }
 
+      const carrier = getCarrierProvider();
+      const booking = await carrier.book({
+        shipmentId: shipment.id,
+        reference: shipment.reference,
+        origin: shipment.origin,
+        destination: shipment.destination,
+        carrierName: body.carrierName
+          ? String(body.carrierName)
+          : shipment.carrierName,
+        trackingNumber: body.trackingNumber
+          ? String(body.trackingNumber)
+          : shipment.trackingNumber,
+      });
+
       const updated = await prisma.shipment.update({
         where: { id: shipment.id },
         data: {
           status: ShipmentStatus.BOOKED,
           providerOrgId: providerOrgId ?? String(body.providerOrgId),
-          carrierName: body.carrierName
-            ? String(body.carrierName)
-            : shipment.carrierName,
-          trackingNumber: body.trackingNumber
-            ? String(body.trackingNumber)
-            : shipment.trackingNumber,
+          carrierName: booking.carrierName,
+          trackingNumber: booking.trackingNumber,
+          notes: booking.labelUrl
+            ? `${shipment.notes ? `${shipment.notes}\n` : ""}Label: ${booking.labelUrl}`
+            : shipment.notes,
           bookedAt: shipment.bookedAt ?? new Date(),
           updatedBy: user.id,
         },
@@ -144,8 +158,12 @@ export async function POST(req: NextRequest, ctx: Ctx) {
       await recordTrackingEvent({
         shipmentId: shipment.id,
         status: "BOOKED",
-        location: body.location ? String(body.location) : shipment.origin ?? undefined,
-        message: body.message ? String(body.message) : "Shipment booked",
+        location: body.location
+          ? String(body.location)
+          : shipment.origin ?? undefined,
+        message: body.message
+          ? String(body.message)
+          : `Shipment booked via ${booking.provider}`,
         actorId: user.id,
       });
 
@@ -160,7 +178,7 @@ export async function POST(req: NextRequest, ctx: Ctx) {
         data: {
           type: ActivityType.SHIPMENT_BOOKED,
           title: "Shipment booked",
-          description: shipment.reference,
+          description: `${shipment.reference} · ${booking.provider}`,
           actorId: user.id,
           organisationId: membership.organisationId,
           entityType: "Shipment",
@@ -168,7 +186,7 @@ export async function POST(req: NextRequest, ctx: Ctx) {
         },
       });
 
-      return ok(updated);
+      return ok({ ...updated, carrierProvider: carriersProviderName() });
     }
 
     if (action === "depart") {
@@ -244,6 +262,64 @@ export async function POST(req: NextRequest, ctx: Ctx) {
       });
 
       return ok(event, { status: 201 });
+    }
+
+    if (action === "sync_tracking") {
+      if (!isProvider && !operate && !isParty) return fail("Forbidden", 403);
+      if (!shipment.trackingNumber) {
+        return fail("Shipment has no tracking number", 400);
+      }
+
+      const carrier = getCarrierProvider();
+      const updates = await carrier.track({
+        trackingNumber: shipment.trackingNumber,
+        carrierName: shipment.carrierName,
+      });
+
+      const created = [];
+      for (const u of updates) {
+        const dup = await prisma.trackingEvent.findFirst({
+          where: {
+            shipmentId: shipment.id,
+            status: u.status,
+            message: u.message ?? null,
+            deletedAt: null,
+            occurredAt: { gte: new Date(Date.now() - 60 * 60 * 1000) },
+          },
+        });
+        if (dup) continue;
+        created.push(
+          await recordTrackingEvent({
+            shipmentId: shipment.id,
+            status: u.status,
+            location: u.location,
+            message: u.message ?? u.rawStatus,
+            actorId: user.id,
+            occurredAt: u.occurredAt,
+          }),
+        );
+      }
+
+      const latest = updates[updates.length - 1];
+      if (
+        latest?.status === "IN_TRANSIT" &&
+        shipment.status === ShipmentStatus.BOOKED
+      ) {
+        await prisma.shipment.update({
+          where: { id: shipment.id },
+          data: {
+            status: ShipmentStatus.IN_TRANSIT,
+            departedAt: shipment.departedAt ?? new Date(),
+            updatedBy: user.id,
+          },
+        });
+      }
+
+      return ok({
+        provider: carriersProviderName(),
+        imported: created.length,
+        events: created,
+      });
     }
 
     if (action === "deliver") {
@@ -343,7 +419,10 @@ export async function POST(req: NextRequest, ctx: Ctx) {
       return ok(updated);
     }
 
-    return fail("action must be book, depart, track, or deliver", 400);
+    return fail(
+      "action must be book, depart, track, sync_tracking, or deliver",
+      400,
+    );
   } catch (error) {
     const message = error instanceof Error ? error.message : "Failed";
     return fail(

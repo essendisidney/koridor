@@ -144,13 +144,12 @@ export default function ShipmentDetailPage() {
             disabled={loading}
             onClick={() =>
               act("book", {
-                carrierName: shipment.carrierName || "Koridor Logistics",
-                trackingNumber:
-                  shipment.trackingNumber || `TRK-${Date.now().toString(36)}`,
+                carrierName: shipment.carrierName || undefined,
+                trackingNumber: shipment.trackingNumber || undefined,
               })
             }
           >
-            Book / confirm
+            Book via carrier
           </Button>
         ) : null}
         {shipment.status === "BOOKED" || shipment.status === "IN_TRANSIT" ? (
@@ -165,6 +164,16 @@ export default function ShipmentDetailPage() {
             }
           >
             Mark in transit
+          </Button>
+        ) : null}
+        {shipment.trackingNumber ? (
+          <Button
+            size="sm"
+            variant="secondary"
+            disabled={loading}
+            onClick={() => act("sync_tracking")}
+          >
+            Sync carrier tracking
           </Button>
         ) : null}
       </section>

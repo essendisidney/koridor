@@ -78,6 +78,12 @@ Usable vertical slice:
 - Feature flags + health checks
 - Admin overview (`/dashboard/admin`) for system admins
 
+## Integrations (shipped)
+
+- Payments adapter: demo / Stripe Checkout + webhook / M-Pesa-ready
+- Carriers adapter: manual / AfterShip book + sync tracking
+- See [`docs/integrations.md`](./docs/integrations.md)
+
 ## Architecture
 
 ```

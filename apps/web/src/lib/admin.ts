@@ -181,6 +181,29 @@ export async function runHealthChecks(actorId?: string) {
     latencyMs: 0,
   });
 
+  checks.push({
+    service: "payments",
+    status: process.env.STRIPE_SECRET_KEY
+      ? "stripe"
+      : process.env.PAYMENTS_PROVIDER === "mpesa"
+        ? "mpesa"
+        : "demo",
+    latencyMs: 0,
+    detail: {
+      provider: process.env.PAYMENTS_PROVIDER ?? null,
+      webhook: Boolean(process.env.STRIPE_WEBHOOK_SECRET),
+    },
+  });
+
+  checks.push({
+    service: "carriers",
+    status: process.env.AFTERSHIP_API_KEY ? "aftership" : "manual",
+    latencyMs: 0,
+    detail: {
+      provider: process.env.CARRIER_PROVIDER ?? null,
+    },
+  });
+
   // Persist best-effort
   for (const c of checks) {
     try {
@@ -198,7 +221,15 @@ export async function runHealthChecks(actorId?: string) {
   }
 
   const overall = checks.every(
-    (c) => c.status === "ok" || c.status === "configured" || c.status === "not_configured",
+    (c) =>
+      c.status === "ok" ||
+      c.status === "configured" ||
+      c.status === "not_configured" ||
+      c.status === "demo" ||
+      c.status === "manual" ||
+      c.status === "stripe" ||
+      c.status === "mpesa" ||
+      c.status === "aftership",
   )
     ? "healthy"
     : "degraded";

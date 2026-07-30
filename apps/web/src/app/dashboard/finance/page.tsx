@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
 type WalletPayload = {
+  provider?: string;
   wallet: {
     id: string;
     currency: string;
@@ -25,6 +26,12 @@ type WalletPayload = {
     description?: string | null;
     createdAt: string;
   }[];
+};
+
+type TopUpResult = {
+  pending?: boolean;
+  provider?: string;
+  intent?: { checkoutUrl?: string; reference?: string; status?: string };
 };
 
 type EscrowAccount = {
@@ -71,8 +78,9 @@ export default function FinancePage() {
     setLoading(true);
     setError(null);
     const form = new FormData(e.currentTarget);
+    const useDemo = String(form.get("mode") || "") === "demo";
     try {
-      await api("/finance/wallet", {
+      const res = await api<TopUpResult>("/finance/wallet", {
         method: "POST",
         token: accessToken,
         body: {
@@ -80,8 +88,13 @@ export default function FinancePage() {
           amount: Number(form.get("amount")),
           currency: String(form.get("currency") || "USD"),
           notes: String(form.get("notes") || ""),
+          demo: useDemo,
         },
       });
+      if (res.pending && res.intent?.checkoutUrl) {
+        window.location.href = res.intent.checkoutUrl;
+        return;
+      }
       (e.target as HTMLFormElement).reset();
       load();
     } catch (err) {
@@ -162,9 +175,11 @@ export default function FinancePage() {
           Top up wallet
         </h2>
         <p className="text-sm text-[var(--fg-muted)]">
-          Demo settlement credit — use before funding escrow.
+          Provider: <span className="text-[var(--fg)]">{wallet?.provider ?? "…"}</span>
+          . Stripe Checkout when configured; otherwise demo credit. Escrow stays
+          on-ledger.
         </p>
-        <div className="grid gap-3 sm:grid-cols-3">
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <Input
             label="Amount"
             name="amount"
@@ -174,9 +189,20 @@ export default function FinancePage() {
           />
           <Input label="Currency" name="currency" defaultValue="USD" />
           <Input label="Notes" name="notes" />
+          <label className="text-sm">
+            <span className="mb-1.5 block font-medium">Mode</span>
+            <select
+              name="mode"
+              className="h-11 w-full rounded-md border border-[var(--border)] bg-white px-3"
+              defaultValue="provider"
+            >
+              <option value="provider">Configured provider</option>
+              <option value="demo">Force demo credit</option>
+            </select>
+          </label>
         </div>
         <Button type="submit" disabled={loading}>
-          {loading ? "Working…" : "Credit wallet"}
+          {loading ? "Working…" : "Top up"}
         </Button>
       </form>
 
