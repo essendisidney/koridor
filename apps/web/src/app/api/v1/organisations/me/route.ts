@@ -1,18 +1,14 @@
 import { NextRequest } from "next/server";
 import { requireUser } from "@/lib/auth-server";
+import { getMembership } from "@/lib/org-access";
 import { fail, ok } from "@/lib/http";
-import { prisma } from "@/lib/prisma";
 
 export const runtime = "nodejs";
 
 export async function GET(req: NextRequest) {
   try {
     const user = await requireUser(req);
-    const membership = await prisma.organisationMember.findFirst({
-      where: { userId: user.id, deletedAt: null },
-      include: { organisation: true },
-      orderBy: { joinedAt: "asc" },
-    });
+    const membership = await getMembership(user.id);
     if (!membership || membership.organisation.deletedAt) {
       return fail("No organisation linked to this account", 404);
     }

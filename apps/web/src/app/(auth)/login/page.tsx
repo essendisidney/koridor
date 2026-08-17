@@ -93,7 +93,9 @@ function LoginForm() {
         </Link>
       </p>
       <p className="mt-4 rounded-md bg-[var(--accent-soft)] px-3 py-2 text-xs text-[var(--fg)]">
-        Demo: exporter@demo.koridor.io / Demo123!
+        Demo supplier: exporter@demo.koridor.io / Demo123!
+        <br />
+        Demo GCC buyer: oman@demo.koridor.io / Demo123!
       </p>
     </div>
   );

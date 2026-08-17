@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { AuthUser, requireUser } from "@/lib/auth-server";
 import { hasPermission, Permission } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
+import { pickPrimaryMembership } from "@/lib/membership";
 
 export async function requireAuth(req: NextRequest) {
   return requireUser(req);
@@ -17,11 +18,12 @@ export async function requirePermission(
 }
 
 export async function getMembership(userId: string) {
-  return prisma.organisationMember.findFirst({
+  const memberships = await prisma.organisationMember.findMany({
     where: { userId, deletedAt: null },
     include: { organisation: true },
     orderBy: { joinedAt: "asc" },
   });
+  return pickPrimaryMembership(memberships);
 }
 
 export async function requireOrgMembership(userId: string) {

@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { requireUser } from "@/lib/auth-server";
 import { fail, ok } from "@/lib/http";
 import { prisma } from "@/lib/prisma";
+import { pickPrimaryMembership } from "@/lib/membership";
 import { permissionsForRoles } from "@/lib/permissions";
 
 export const runtime = "nodejs";
@@ -37,13 +38,18 @@ export async function PATCH(req: NextRequest) {
         roles: { where: { deletedAt: null } },
         memberships: {
           where: { deletedAt: null },
+          include: {
+            organisation: {
+              select: { deletedAt: true, verificationStatus: true },
+            },
+          },
           orderBy: { joinedAt: "asc" },
-          take: 1,
         },
       },
     });
 
     const roles = updated.roles.map((r) => r.role);
+    const primary = pickPrimaryMembership(updated.memberships);
     return ok({
       id: updated.id,
       email: updated.email,
@@ -53,7 +59,7 @@ export async function PATCH(req: NextRequest) {
       avatarUrl: updated.avatarUrl,
       emailVerified: updated.emailVerified,
       mfaEnabled: updated.mfaEnabled,
-      organisationId: updated.memberships[0]?.organisationId ?? null,
+      organisationId: primary?.organisationId ?? null,
       roles,
       permissions: permissionsForRoles(roles),
     });

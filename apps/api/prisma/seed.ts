@@ -480,6 +480,20 @@ async function main() {
         'Iraqi wholesaler importing Kenyan horticulture and staples via Umm Qasr.',
       commodities: ['avocado', 'french beans', 'tea'],
     },
+    {
+      email: 'saudi@demo.koridor.io',
+      firstName: 'Noura',
+      lastName: 'Al-Qahtani',
+      phone: '+96611000001',
+      tz: 'Asia/Riyadh',
+      slug: 'jeddah-food-security',
+      name: 'Jeddah Food Security Co',
+      city: 'Jeddah',
+      country: 'SA',
+      summary:
+        'Saudi offtaker for Kenyan tea, avocado and horticulture into Jeddah and Dammam.',
+      commodities: ['tea', 'avocado', 'mango'],
+    },
   ] as const;
 
   for (const b of gulfBuyers) {
@@ -1054,6 +1068,10 @@ async function main() {
   console.log('  admin@koridor.io / Admin123!');
   console.log('  exporter@demo.koridor.io / Demo123!');
   console.log('  buyer@demo.koridor.io / Demo123!');
+  console.log('  oman@demo.koridor.io / Demo123!');
+  console.log('  saudi@demo.koridor.io / Demo123!');
+  console.log('  iran@demo.koridor.io / Demo123!');
+  console.log('  iraq@demo.koridor.io / Demo123!');
 }
 
 main()

@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { fail, ok } from "@/lib/http";
 import { requireUser } from "@/lib/auth-server";
 import { prisma } from "@/lib/prisma";
+import { pickPrimaryMembership } from "@/lib/membership";
 import {
   JOURNEY_PHASES,
   personaCopy,
@@ -40,7 +41,7 @@ export async function GET(req: NextRequest) {
   try {
     const user = await requireUser(req);
 
-    const membership = await prisma.organisationMember.findFirst({
+    const memberships = await prisma.organisationMember.findMany({
       where: { userId: user.id, deletedAt: null },
       include: {
         organisation: {
@@ -57,6 +58,7 @@ export async function GET(req: NextRequest) {
       },
       orderBy: { joinedAt: "asc" },
     });
+    const membership = pickPrimaryMembership(memberships);
 
     const org =
       membership && !membership.organisation.deletedAt

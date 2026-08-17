@@ -3,6 +3,7 @@ import bcrypt from "bcryptjs";
 import { SignJWT, jwtVerify } from "jose";
 import { NextRequest } from "next/server";
 import { prisma } from "./prisma";
+import { pickPrimaryMembership } from "./membership";
 import { permissionsForRoles } from "./permissions";
 
 const ACCESS_TTL = process.env.JWT_ACCESS_EXPIRES_IN ?? "15m";
@@ -73,17 +74,29 @@ function toAuthUser(user: {
 }
 
 async function loadUser(userId: string) {
-  return prisma.user.findFirst({
+  const user = await prisma.user.findFirst({
     where: { id: userId, deletedAt: null, isActive: true },
     include: {
       roles: { where: { deletedAt: null } },
       memberships: {
         where: { deletedAt: null },
+        include: {
+          organisation: {
+            select: { deletedAt: true, verificationStatus: true },
+          },
+        },
         orderBy: { joinedAt: "asc" },
-        take: 1,
       },
     },
   });
+  if (!user) return null;
+  const primary = pickPrimaryMembership(user.memberships);
+  return {
+    ...user,
+    memberships: primary
+      ? [{ organisationId: primary.organisationId }]
+      : [],
+  };
 }
 
 export async function issueTokens(userId: string) {
@@ -134,11 +147,6 @@ export async function login(email: string, password: string) {
     where: { email: email.toLowerCase().trim(), deletedAt: null },
     include: {
       roles: { where: { deletedAt: null } },
-      memberships: {
-        where: { deletedAt: null },
-        orderBy: { joinedAt: "asc" },
-        take: 1,
-      },
     },
   });
   if (!user || !user.isActive) throw new Error("Invalid email or password");
@@ -150,13 +158,15 @@ export async function login(email: string, password: string) {
     data: { lastLoginAt: new Date() },
   });
 
+  const tokens = await issueTokens(user.id);
+
   await prisma.auditLog.create({
     data: {
       action: "USER_LOGIN",
       entityType: "User",
       entityId: user.id,
       actorId: user.id,
-      organisationId: user.memberships[0]?.organisationId,
+      organisationId: tokens.user.organisationId,
     },
   });
 
@@ -165,13 +175,13 @@ export async function login(email: string, password: string) {
       type: "USER_LOGIN",
       title: "Signed in",
       actorId: user.id,
-      organisationId: user.memberships[0]?.organisationId,
+      organisationId: tokens.user.organisationId,
       entityType: "User",
       entityId: user.id,
     },
   });
 
-  return issueTokens(user.id);
+  return tokens;
 }
 
 export async function register(input: {
