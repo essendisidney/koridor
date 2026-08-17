@@ -84,6 +84,12 @@ Usable vertical slice:
 - Carriers adapter: manual / AfterShip book + sync tracking
 - See [`docs/integrations.md`](./docs/integrations.md)
 
+## Bankability & trade credit (shipped)
+
+- **Bankability dossier** (`/dashboard/bankability`) — lender-facing score from identity, trade performance, escrow settlement, logistics
+- **In-kind trade credit** on Finance — limit from bankability; issue supplier credit (goods/inputs, not cash); settle post-delivery
+- Migration: [`docs/migrations/20260730_bankability_trade_credit.sql`](./docs/migrations/20260730_bankability_trade_credit.sql)
+
 ## Architecture
 
 ```

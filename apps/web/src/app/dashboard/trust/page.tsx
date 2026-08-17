@@ -279,6 +279,11 @@ export default function TrustPage() {
                   : "Start KYB"}
             </Button>
           </Link>
+          <Link href="/dashboard/bankability">
+            <Button variant="secondary" size="sm">
+              Bankability dossier
+            </Button>
+          </Link>
           <Link href="/dashboard/registry">
             <Button variant="secondary" size="sm">
               Registry

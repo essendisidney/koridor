@@ -39,6 +39,7 @@ const NAV = [
   { href: "/dashboard/rfqs", label: "RFQs", icon: ClipboardList },
   { href: "/dashboard/contracts", label: "Contracts", icon: FileSignature },
   { href: "/dashboard/finance", label: "Finance", icon: Wallet },
+  { href: "/dashboard/bankability", label: "Bankability", icon: Shield },
   { href: "/dashboard/logistics", label: "Logistics", icon: Ship },
   { href: "/dashboard/compliance", label: "Compliance", icon: FileCheck2 },
   { href: "/dashboard/trust", label: "Identity", icon: ShieldCheck },

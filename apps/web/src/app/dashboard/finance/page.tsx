@@ -46,10 +46,45 @@ type EscrowAccount = {
   sellerOrg: { name: string };
 };
 
+type CreditFacility = {
+  id: string;
+  currency: string;
+  status: string;
+  bankabilityScore: number;
+  limitAmount: string;
+  drawnAmount: string;
+  availableAmount: string;
+  draws: {
+    id: string;
+    reference: string;
+    amount: string;
+    currency: string;
+    status: string;
+    description?: string | null;
+    createdAt: string;
+    settledAt?: string | null;
+    supplierOrg: { id: string; name: string };
+  }[];
+};
+
+type CreditPayload = {
+  facility: CreditFacility;
+  receivedDraws: {
+    id: string;
+    reference: string;
+    amount: string;
+    currency: string;
+    status: string;
+    createdAt: string;
+    buyerOrg: { name: string };
+  }[];
+};
+
 export default function FinancePage() {
   const { accessToken } = useAuth();
   const [wallet, setWallet] = useState<WalletPayload | null>(null);
   const [escrows, setEscrows] = useState<EscrowAccount[]>([]);
+  const [credit, setCredit] = useState<CreditPayload | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -58,10 +93,14 @@ export default function FinancePage() {
     Promise.all([
       api<WalletPayload>("/finance/wallet", { token: accessToken }),
       api<EscrowAccount[]>("/finance/escrow", { token: accessToken }),
+      api<CreditPayload>("/finance/credit", { token: accessToken }).catch(
+        () => null,
+      ),
     ])
-      .then(([w, e]) => {
+      .then(([w, e, c]) => {
         setWallet(w);
         setEscrows(e);
+        setCredit(c);
       })
       .catch((err) =>
         setError(err instanceof ApiError ? err.message : "Failed to load"),
@@ -140,6 +179,51 @@ export default function FinancePage() {
     }
   }
 
+  async function issueCredit(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    if (!accessToken) return;
+    setLoading(true);
+    setError(null);
+    const form = new FormData(e.currentTarget);
+    try {
+      await api("/finance/credit", {
+        method: "POST",
+        token: accessToken,
+        body: {
+          action: "draw",
+          supplierOrgId: String(form.get("supplierOrgId")),
+          amount: Number(form.get("amount")),
+          tradeId: String(form.get("tradeId") || "") || undefined,
+          description: String(form.get("description") || "") || undefined,
+        },
+      });
+      (e.target as HTMLFormElement).reset();
+      load();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Credit draw failed");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function settleCredit(drawId: string, collectFromWallet: boolean) {
+    if (!accessToken) return;
+    setLoading(true);
+    setError(null);
+    try {
+      await api("/finance/credit", {
+        method: "POST",
+        token: accessToken,
+        body: { action: "settle", drawId, collectFromWallet },
+      });
+      load();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Settle failed");
+    } finally {
+      setLoading(false);
+    }
+  }
+
   return (
     <div className="mx-auto max-w-3xl space-y-8">
       <div>
@@ -147,7 +231,7 @@ export default function FinancePage() {
           Finance
         </h1>
         <p className="mt-1 text-sm text-[var(--fg-muted)]">
-          Organisation wallet, ledger, and trade escrow accounts.
+          Organisation wallet, ledger, escrow, and in-kind trade credit.
         </p>
       </div>
 
@@ -277,6 +361,113 @@ export default function FinancePage() {
             Open escrow account
           </Button>
         </form>
+      </section>
+
+      <section className="space-y-3 border-t border-[var(--border)] pt-6">
+        <h2 className="font-[family-name:var(--font-display)] text-xl font-semibold">
+          In-kind trade credit
+        </h2>
+        <p className="text-sm text-[var(--fg-muted)]">
+          Limit follows{" "}
+          <Link href="/dashboard/bankability" className="underline">
+            bankability
+          </Link>
+          . Issue supplier credit for inputs/goods (not cash). Settle after
+          delivery — wallet debit by default.
+        </p>
+        {credit?.facility ? (
+          <div className="grid gap-4 sm:grid-cols-3">
+            <Stat
+              label="Limit"
+              value={`${credit.facility.limitAmount} ${credit.facility.currency}`}
+            />
+            <Stat
+              label="Drawn"
+              value={`${credit.facility.drawnAmount} ${credit.facility.currency}`}
+            />
+            <Stat
+              label="Available"
+              value={`${credit.facility.availableAmount} ${credit.facility.currency}`}
+            />
+          </div>
+        ) : (
+          <p className="text-sm text-[var(--fg-muted)]">
+            Facility syncs when bankability is scored.
+          </p>
+        )}
+        <form onSubmit={issueCredit} className="grid gap-3 sm:grid-cols-2">
+          <Input label="Supplier org id" name="supplierOrgId" required />
+          <Input
+            label="Amount"
+            name="amount"
+            type="number"
+            step="0.01"
+            required
+          />
+          <Input label="Trade id (optional)" name="tradeId" />
+          <Input label="Description" name="description" />
+          <Button type="submit" disabled={loading}>
+            Issue supplier credit
+          </Button>
+        </form>
+        {credit?.facility?.draws?.length ? (
+          <div className="space-y-2 pt-2">
+            {credit.facility.draws.map((d) => (
+              <div
+                key={d.id}
+                className="border-b border-[var(--border)] py-3"
+              >
+                <div className="flex flex-wrap items-baseline justify-between gap-2">
+                  <p className="font-medium">
+                    {d.reference} · {d.amount} {d.currency}
+                  </p>
+                  <p className="text-xs text-[var(--fg-muted)]">{d.status}</p>
+                </div>
+                <p className="text-xs text-[var(--fg-muted)]">
+                  → {d.supplierOrg.name} · {formatDate(d.createdAt)}
+                  {d.settledAt ? ` · settled ${formatDate(d.settledAt)}` : ""}
+                </p>
+                {d.status === "OPEN" ? (
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    <Button
+                      size="sm"
+                      disabled={loading}
+                      onClick={() => settleCredit(d.id, true)}
+                    >
+                      Settle (wallet)
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      disabled={loading}
+                      onClick={() => settleCredit(d.id, false)}
+                    >
+                      Mark settled
+                    </Button>
+                  </div>
+                ) : null}
+              </div>
+            ))}
+          </div>
+        ) : null}
+        {credit?.receivedDraws?.length ? (
+          <div className="space-y-2 pt-4">
+            <h3 className="text-sm font-medium">Credit received (as supplier)</h3>
+            {credit.receivedDraws.map((d) => (
+              <div
+                key={d.id}
+                className="flex flex-wrap justify-between gap-2 border-b border-[var(--border)] py-2 text-sm"
+              >
+                <span>
+                  {d.reference} from {d.buyerOrg.name}
+                </span>
+                <span>
+                  {d.amount} {d.currency} · {d.status}
+                </span>
+              </div>
+            ))}
+          </div>
+        ) : null}
       </section>
 
       <section className="space-y-2 border-t border-[var(--border)] pt-6">

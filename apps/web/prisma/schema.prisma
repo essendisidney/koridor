@@ -90,6 +90,9 @@ enum ActivityType {
   VERIFICATION_APPROVED
   VERIFICATION_REJECTED
   TRUST_SCORE_UPDATED
+  BANKABILITY_UPDATED
+  TRADE_CREDIT_DRAWN
+  TRADE_CREDIT_SETTLED
   KYC_SUBMITTED
   RFQ_CREATED
   RFQ_PUBLISHED
@@ -304,6 +307,20 @@ enum LedgerEntryKind {
   ESCROW_RELEASE
   ESCROW_REFUND
   ADJUSTMENT
+  CREDIT_DRAW
+  CREDIT_SETTLE
+}
+
+enum TradeCreditFacilityStatus {
+  ACTIVE
+  SUSPENDED
+  CLOSED
+}
+
+enum TradeCreditDrawStatus {
+  OPEN
+  SETTLED
+  CANCELLED
 }
 
 enum EscrowAccountStatus {
@@ -470,6 +487,8 @@ model Organisation {
   tradesAsBuyer          Trade[]          @relation("TradeBuyer")
   tradesAsSeller         Trade[]          @relation("TradeSeller")
   tradeParticipations    TradeParticipant[]
+  tradeCreditFacility    TradeCreditFacility?
+  tradeCreditDrawsAsSupplier TradeCreditDraw[] @relation("TradeCreditSupplier")
 
   @@index([slug])
   @@index([type])
@@ -614,20 +633,25 @@ model AuditLog {
 // ─────────────────────────────────────────────────────────────
 
 model TrustProfile {
-  id               String    @id @default(uuid()) @db.Uuid
-  organisationId   String    @unique @map("organisation_id") @db.Uuid
-  trustScore       Int       @default(0) @map("trust_score")
-  scoreBreakdown   Json      @default("{}") @map("score_breakdown")
-  lastScoredAt     DateTime? @map("last_scored_at")
-  createdAt        DateTime  @default(now()) @map("created_at")
-  updatedAt        DateTime  @updatedAt @map("updated_at")
-  createdBy        String?   @map("created_by") @db.Uuid
-  updatedBy        String?   @map("updated_by") @db.Uuid
-  deletedAt        DateTime? @map("deleted_at")
+  id                     String    @id @default(uuid()) @db.Uuid
+  organisationId         String    @unique @map("organisation_id") @db.Uuid
+  trustScore             Int       @default(0) @map("trust_score")
+  scoreBreakdown         Json      @default("{}") @map("score_breakdown")
+  lastScoredAt           DateTime? @map("last_scored_at")
+  bankabilityScore       Int       @default(0) @map("bankability_score")
+  bankabilityBreakdown   Json      @default("{}") @map("bankability_breakdown")
+  suggestedCreditLimit   Decimal   @default(0) @map("suggested_credit_limit") @db.Decimal(18, 4)
+  bankabilityScoredAt    DateTime? @map("bankability_scored_at")
+  createdAt              DateTime  @default(now()) @map("created_at")
+  updatedAt              DateTime  @updatedAt @map("updated_at")
+  createdBy              String?   @map("created_by") @db.Uuid
+  updatedBy              String?   @map("updated_by") @db.Uuid
+  deletedAt              DateTime? @map("deleted_at")
 
   organisation Organisation @relation(fields: [organisationId], references: [id], onDelete: Cascade)
 
   @@index([trustScore])
+  @@index([bankabilityScore])
   @@map("trust_profiles")
 }
 
@@ -1325,6 +1349,57 @@ model EscrowAccount {
   @@index([status])
   @@index([deletedAt])
   @@map("escrow_accounts")
+}
+
+model TradeCreditFacility {
+  id               String                    @id @default(uuid()) @db.Uuid
+  organisationId   String                    @unique @map("organisation_id") @db.Uuid
+  currency         String                    @default("USD") @db.Char(3)
+  limitAmount      Decimal                   @default(0) @map("limit_amount") @db.Decimal(18, 4)
+  drawnAmount      Decimal                   @default(0) @map("drawn_amount") @db.Decimal(18, 4)
+  status           TradeCreditFacilityStatus @default(ACTIVE)
+  bankabilityScore Int                       @default(0) @map("bankability_score")
+  notes            String?
+  createdAt        DateTime                  @default(now()) @map("created_at")
+  updatedAt        DateTime                  @updatedAt @map("updated_at")
+  createdBy        String?                   @map("created_by") @db.Uuid
+  updatedBy        String?                   @map("updated_by") @db.Uuid
+  deletedAt        DateTime?                 @map("deleted_at")
+
+  organisation Organisation      @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  draws        TradeCreditDraw[]
+
+  @@index([status])
+  @@index([deletedAt])
+  @@map("trade_credit_facilities")
+}
+
+model TradeCreditDraw {
+  id             String                @id @default(uuid()) @db.Uuid
+  facilityId     String                @map("facility_id") @db.Uuid
+  supplierOrgId  String                @map("supplier_org_id") @db.Uuid
+  tradeId        String?               @map("trade_id") @db.Uuid
+  reference      String                @unique
+  amount         Decimal               @db.Decimal(18, 4)
+  currency       String                @default("USD") @db.Char(3)
+  status         TradeCreditDrawStatus @default(OPEN)
+  description    String?
+  settledAt      DateTime?             @map("settled_at")
+  createdAt      DateTime              @default(now()) @map("created_at")
+  updatedAt      DateTime              @updatedAt @map("updated_at")
+  createdBy      String?               @map("created_by") @db.Uuid
+  updatedBy      String?               @map("updated_by") @db.Uuid
+  deletedAt      DateTime?             @map("deleted_at")
+
+  facility    TradeCreditFacility @relation(fields: [facilityId], references: [id], onDelete: Cascade)
+  supplierOrg Organisation        @relation("TradeCreditSupplier", fields: [supplierOrgId], references: [id])
+
+  @@index([facilityId])
+  @@index([supplierOrgId])
+  @@index([tradeId])
+  @@index([status])
+  @@index([deletedAt])
+  @@map("trade_credit_draws")
 }
 
 // ─────────────────────────────────────────────────────────────
