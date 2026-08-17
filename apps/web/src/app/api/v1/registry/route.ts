@@ -14,6 +14,8 @@ export async function GET(req: NextRequest) {
 
     const type = req.nextUrl.searchParams.get("type") ?? undefined;
     const country = req.nextUrl.searchParams.get("country") ?? undefined;
+    const market = req.nextUrl.searchParams.get("market")?.toUpperCase();
+    const commodity = req.nextUrl.searchParams.get("commodity")?.trim();
     const q = req.nextUrl.searchParams.get("q")?.trim() ?? "";
 
     const profiles = await prisma.registryProfile.findMany({
@@ -21,11 +23,19 @@ export async function GET(req: NextRequest) {
         deletedAt: null,
         isListed: true,
         ...(type ? { organisationType: type as OrganisationType } : {}),
+        ...(market
+          ? { exportMarkets: { hasSome: [market, market.toLowerCase()] } }
+          : {}),
+        ...(commodity
+          ? {
+              commodities: {
+                hasSome: [commodity, commodity.toLowerCase()],
+              },
+            }
+          : {}),
         organisation: {
           deletedAt: null,
-          ...(country
-            ? { countryCode: country.toUpperCase() }
-            : {}),
+          ...(country ? { countryCode: country.toUpperCase() } : {}),
           ...(q
             ? {
                 OR: [

@@ -6,6 +6,9 @@ import { api, ApiError } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { CountrySelect } from "@/components/country-select";
+import { Select } from "@/components/ui/select";
+import { KENYA_PRODUCE } from "@/lib/corridors";
 
 type Trade = {
   id: string;
@@ -82,7 +85,7 @@ export default function TradePage() {
           </h1>
           <p className="mt-1 text-sm text-[var(--fg-muted)]">
             Living trades — the single source of truth for parties, documents,
-            finance, and logistics.
+            living trades with origin Kenya and destination Oman, Iran, or Iraq.
           </p>
         </div>
         <div className="flex gap-2">
@@ -142,9 +145,15 @@ export default function TradePage() {
         <h2 className="font-[family-name:var(--font-display)] text-xl font-semibold">
           Draft opportunity
         </h2>
-        <Input label="Title" name="title" required />
+        <Input label="Title" name="title" required placeholder="Kenya tea — CIF Bandar Abbas" />
         <div className="grid gap-3 sm:grid-cols-3">
-          <Input label="Commodity" name="commodity" required />
+          <Select label="Commodity" name="commodity" required defaultValue="Tea">
+            {KENYA_PRODUCE.map((p) => (
+              <option key={p} value={p}>
+                {p}
+              </option>
+            ))}
+          </Select>
           <Input
             label="Quantity"
             name="quantity"
@@ -157,11 +166,21 @@ export default function TradePage() {
         <div className="grid gap-3 sm:grid-cols-3">
           <Input label="Value" name="value" type="number" step="0.01" />
           <Input label="Currency" name="currency" defaultValue="USD" />
-          <Input label="Incoterms" name="incoterms" placeholder="FOB" />
+          <Input label="Incoterms" name="incoterms" defaultValue="FOB Mombasa" />
         </div>
         <div className="grid gap-3 sm:grid-cols-2">
-          <Input label="Origin" name="originCountry" maxLength={2} />
-          <Input label="Destination" name="destinationCountry" maxLength={2} />
+          <CountrySelect
+            label="Origin"
+            name="originCountry"
+            defaultValue="KE"
+            required
+          />
+          <CountrySelect
+            label="Destination"
+            name="destinationCountry"
+            defaultValue="IQ"
+            required
+          />
         </div>
         <Button type="submit" disabled={loading}>
           {loading ? "Creating…" : "Create draft passport"}

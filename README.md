@@ -90,6 +90,13 @@ Usable vertical slice:
 - **In-kind trade credit** on Finance — limit from bankability; issue supplier credit (goods/inputs, not cash); settle post-delivery
 - Migration: [`docs/migrations/20260730_bankability_trade_credit.sql`](./docs/migrations/20260730_bankability_trade_credit.sql)
 
+## Kenya → Oman / Iran / Iraq (shipped)
+
+- Public corridor: `/kenya` — buyers in Oman, Iran, and Iraq RFQ Kenyan farm produce
+- Register as **Buyer** with country OM / IR / IQ; Kenyan farms register origin KE
+- Registry filters by Kenya origin and Gulf export markets
+- Produce presets (avocado, tea, coffee, macadamia) on RFQs and Trade Passports
+
 ## Architecture
 
 ```

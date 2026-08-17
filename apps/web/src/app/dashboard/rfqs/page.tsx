@@ -6,6 +6,9 @@ import { api, ApiError } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { CountrySelect } from "@/components/country-select";
+import { Select } from "@/components/ui/select";
+import { KENYA_PRODUCE } from "@/lib/corridors";
 
 type Rfq = {
   id: string;
@@ -79,7 +82,8 @@ export default function RfqsPage() {
           RFQs
         </h1>
         <p className="mt-1 text-sm text-[var(--fg-muted)]">
-          Request quotations and browse open market demand.
+          Buyers in Oman, Iran, and Iraq: origin Kenya, destination your
+          country. Kenyan exporters answer from Open market.
         </p>
       </div>
 
@@ -134,13 +138,18 @@ export default function RfqsPage() {
           <h2 className="font-[family-name:var(--font-display)] text-xl font-semibold">
             Create RFQ
           </h2>
-          <Input label="Title" name="title" required />
-          <Input
-            label="Commodity"
-            name="commodity"
-            required
-            placeholder="Arabica coffee"
-          />
+          <p className="text-sm text-[var(--fg-muted)]">
+            Default corridor is Kenya origin to Oman / Iran / Iraq.
+          </p>
+          <Input label="Title" name="title" required placeholder="Hass avocado — Kenya to Muscat" />
+          <Select label="Commodity" name="commodity" required defaultValue="Avocado">
+            {KENYA_PRODUCE.map((p) => (
+              <option key={p} value={p}>
+                {p}
+              </option>
+            ))}
+            <option value="Other">Other</option>
+          </Select>
           <div className="grid gap-3 sm:grid-cols-3">
             <Input
               label="Quantity"
@@ -159,14 +168,20 @@ export default function RfqsPage() {
               type="number"
               step="0.01"
             />
-            <Input label="Incoterm" name="incoterm" placeholder="FOB" />
+            <Input label="Incoterm" name="incoterm" placeholder="FOB Mombasa" defaultValue="FOB Mombasa" />
           </div>
           <div className="grid gap-3 sm:grid-cols-2">
-            <Input label="Origin (ISO-2)" name="originCountry" maxLength={2} />
-            <Input
-              label="Destination (ISO-2)"
+            <CountrySelect
+              label="Origin"
+              name="originCountry"
+              defaultValue="KE"
+              required
+            />
+            <CountrySelect
+              label="Destination"
               name="destinationCountry"
-              maxLength={2}
+              defaultValue="OM"
+              required
             />
           </div>
           <Input label="Notes" name="notes" />

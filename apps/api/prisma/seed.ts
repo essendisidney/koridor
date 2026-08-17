@@ -393,9 +393,9 @@ async function main() {
     where: { organisationId: exporterOrg.id },
     update: {
       summary:
-        'East African agricultural exporter specialising in coffee and avocado.',
-      commodities: ['coffee', 'avocado'],
-      exportMarkets: ['EU', 'UK', 'UAE'],
+        'Kenyan exporter of avocado, coffee, tea and macadamia to Oman, Iran, Iraq and the GCC.',
+      commodities: ['avocado', 'coffee', 'tea', 'macadamia'],
+      exportMarkets: ['OM', 'IR', 'IQ', 'AE', 'EU'],
       yearsInOperation: 8,
       isListed: true,
       deletedAt: null,
@@ -404,9 +404,9 @@ async function main() {
       organisationId: exporterOrg.id,
       organisationType: OrganisationType.EXPORTER,
       summary:
-        'East African agricultural exporter specialising in coffee and avocado.',
-      commodities: ['coffee', 'avocado'],
-      exportMarkets: ['EU', 'UK', 'UAE'],
+        'Kenyan exporter of avocado, coffee, tea and macadamia to Oman, Iran, Iraq and the GCC.',
+      commodities: ['avocado', 'coffee', 'tea', 'macadamia'],
+      exportMarkets: ['OM', 'IR', 'IQ', 'AE', 'EU'],
       yearsInOperation: 8,
       isListed: true,
       createdBy: exporterUser.id,
@@ -436,6 +436,145 @@ async function main() {
       createdBy: buyerUser.id,
     },
   });
+
+  const gulfBuyers = [
+    {
+      email: 'oman@demo.koridor.io',
+      firstName: 'Amira',
+      lastName: 'Al-Busaidi',
+      phone: '+96824000001',
+      tz: 'Asia/Muscat',
+      slug: 'sohar-fresh-trading',
+      name: 'Sohar Fresh Trading',
+      city: 'Muscat',
+      country: 'OM',
+      summary:
+        'Omani importer sourcing Kenyan avocado, mango and tea through Mombasa–Sohar.',
+      commodities: ['avocado', 'mango', 'tea'],
+    },
+    {
+      email: 'iran@demo.koridor.io',
+      firstName: 'Reza',
+      lastName: 'Karimi',
+      phone: '+98210000001',
+      tz: 'Asia/Tehran',
+      slug: 'caspian-agro-imports',
+      name: 'Caspian Agro Imports',
+      city: 'Tehran',
+      country: 'IR',
+      summary:
+        'Iranian buyer of Kenyan coffee, tea and oilseeds with Halal documentation.',
+      commodities: ['coffee', 'tea', 'spices'],
+    },
+    {
+      email: 'iraq@demo.koridor.io',
+      firstName: 'Layla',
+      lastName: 'Al-Saadi',
+      phone: '+96410000001',
+      tz: 'Asia/Baghdad',
+      slug: 'basra-produce-house',
+      name: 'Basra Produce House',
+      city: 'Basra',
+      country: 'IQ',
+      summary:
+        'Iraqi wholesaler importing Kenyan horticulture and staples via Umm Qasr.',
+      commodities: ['avocado', 'french beans', 'tea'],
+    },
+  ] as const;
+
+  for (const b of gulfBuyers) {
+    const user = await prisma.user.upsert({
+      where: { email: b.email },
+      update: {
+        passwordHash: demoPassword,
+        firstName: b.firstName,
+        lastName: b.lastName,
+        emailVerified: true,
+        emailVerifiedAt: new Date(),
+        isActive: true,
+        deletedAt: null,
+      },
+      create: {
+        email: b.email,
+        passwordHash: demoPassword,
+        firstName: b.firstName,
+        lastName: b.lastName,
+        phone: b.phone,
+        emailVerified: true,
+        emailVerifiedAt: new Date(),
+        settings: { create: { locale: 'en', timezone: b.tz } },
+      },
+    });
+    await prisma.userRole.upsert({
+      where: { userId_role: { userId: user.id, role: SystemRole.BUYER } },
+      update: { deletedAt: null },
+      create: {
+        userId: user.id,
+        role: SystemRole.BUYER,
+        createdBy: admin.id,
+      },
+    });
+    const org = await prisma.organisation.upsert({
+      where: { slug: b.slug },
+      update: {
+        name: b.name,
+        type: OrganisationType.BUYER,
+        status: OrganisationStatus.ACTIVE,
+        verificationStatus: VerificationStatus.VERIFIED,
+        countryCode: b.country,
+        city: b.city,
+        ownerId: user.id,
+        deletedAt: null,
+      },
+      create: {
+        name: b.name,
+        slug: b.slug,
+        type: OrganisationType.BUYER,
+        status: OrganisationStatus.ACTIVE,
+        verificationStatus: VerificationStatus.VERIFIED,
+        countryCode: b.country,
+        city: b.city,
+        description: b.summary,
+        ownerId: user.id,
+        createdBy: user.id,
+      },
+    });
+    await prisma.organisationMember.upsert({
+      where: {
+        organisationId_userId: {
+          organisationId: org.id,
+          userId: user.id,
+        },
+      },
+      update: { role: OrganisationMemberRole.OWNER, deletedAt: null },
+      create: {
+        organisationId: org.id,
+        userId: user.id,
+        role: OrganisationMemberRole.OWNER,
+        createdBy: user.id,
+      },
+    });
+    await prisma.registryProfile.upsert({
+      where: { organisationId: org.id },
+      update: {
+        summary: b.summary,
+        commodities: [...b.commodities],
+        exportMarkets: ['KE'],
+        isListed: true,
+        deletedAt: null,
+      },
+      create: {
+        organisationId: org.id,
+        organisationType: OrganisationType.BUYER,
+        summary: b.summary,
+        commodities: [...b.commodities],
+        exportMarkets: ['KE'],
+        yearsInOperation: 5,
+        isListed: true,
+        createdBy: user.id,
+      },
+    });
+  }
 
   const existingKyc = await prisma.kycProfile.findFirst({
     where: { userId: exporterUser.id, deletedAt: null },

@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { FormEvent, useState } from "react";
-import { useRouter } from "next/navigation";
+import { FormEvent, Suspense, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
@@ -21,9 +21,14 @@ const ROLES = [
   { value: "CHAMBER_OF_COMMERCE", label: "Chamber of Commerce" },
 ];
 
-export default function RegisterPage() {
+function RegisterForm() {
   const { register } = useAuth();
   const router = useRouter();
+  const params = useSearchParams();
+  const roleHint = (params.get("role") || "EXPORTER").toUpperCase();
+  const defaultRole = ROLES.some((r) => r.value === roleHint)
+    ? roleHint
+    : "EXPORTER";
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -41,7 +46,20 @@ export default function RegisterPage() {
         password: String(form.get("password")),
         role: String(form.get("role")),
       });
-      router.push("/onboarding/organisation");
+      const selected = String(form.get("role"));
+      const country = params.get("country");
+      const orgType =
+        selected === "BUYER"
+          ? "BUYER"
+          : selected === "FARMER"
+            ? "FARMER"
+            : selected === "COOPERATIVE"
+              ? "COOPERATIVE"
+              : "EXPORTER";
+      const qs = new URLSearchParams();
+      qs.set("type", orgType);
+      if (country) qs.set("country", country.toUpperCase());
+      router.push(`/onboarding/organisation?${qs.toString()}`);
     } catch (err) {
       setError(
         err instanceof ApiError ? err.message : "Unable to create account",
@@ -63,7 +81,9 @@ export default function RegisterPage() {
         Create account
       </h1>
       <p className="mt-2 text-sm text-[var(--fg-muted)]">
-        Register as a participant in the Koridor network.
+        {defaultRole === "BUYER"
+          ? "Importers in Oman, Iran, and Iraq: register as Buyer, then RFQ Kenyan farm produce."
+          : "Register as a participant in the Koridor network — Kenyan supply to Gulf and West Asian buyers."}
       </p>
       <form onSubmit={onSubmit} className="mt-8 space-y-4">
         <div className="grid gap-4 sm:grid-cols-2">
@@ -78,7 +98,7 @@ export default function RegisterPage() {
           required
         />
         <Input label="Phone" name="phone" type="tel" />
-        <Select label="Primary role" name="role" required defaultValue="EXPORTER">
+        <Select label="Primary role" name="role" required defaultValue={defaultRole}>
           {ROLES.map((role) => (
             <option key={role.value} value={role.value}>
               {role.label}
@@ -109,5 +129,13 @@ export default function RegisterPage() {
         </Link>
       </p>
     </div>
+  );
+}
+
+export default function RegisterPage() {
+  return (
+    <Suspense>
+      <RegisterForm />
+    </Suspense>
   );
 }

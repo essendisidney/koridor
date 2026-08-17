@@ -1,12 +1,14 @@
 "use client";
 
-import { FormEvent, useState } from "react";
-import { useRouter } from "next/navigation";
+import { FormEvent, Suspense, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { api, ApiError } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
+import { CountrySelect } from "@/components/country-select";
+import { isGulfWestAsiaBuyer } from "@/lib/corridors";
 
 const TYPES = [
   "BUYER",
@@ -21,9 +23,19 @@ const TYPES = [
   "OTHER",
 ];
 
-export default function OrganisationOnboardingPage() {
+function OnboardingForm() {
   const { accessToken, refreshProfile } = useAuth();
   const router = useRouter();
+  const params = useSearchParams();
+  const typeHint = (params.get("type") || "EXPORTER").toUpperCase();
+  const defaultType = TYPES.includes(typeHint) ? typeHint : "EXPORTER";
+  const countryHint = (params.get("country") || "").toUpperCase();
+  const defaultCountry =
+    countryHint.length === 2
+      ? countryHint
+      : defaultType === "BUYER"
+        ? "OM"
+        : "KE";
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -50,7 +62,13 @@ export default function OrganisationOnboardingPage() {
         },
       });
       await refreshProfile();
-      router.push("/dashboard/organisation");
+      const type = String(form.get("type"));
+      const country = String(form.get("countryCode")).toUpperCase();
+      if (type === "BUYER" && isGulfWestAsiaBuyer(country)) {
+        router.push("/dashboard/rfqs");
+      } else {
+        router.push("/dashboard/registry");
+      }
     } catch (err) {
       setError(
         err instanceof ApiError
@@ -71,12 +89,18 @@ export default function OrganisationOnboardingPage() {
         Register your organisation
       </h1>
       <p className="mt-2 text-sm text-[var(--fg-muted)]">
-        Organisations are the trust boundary for members, documents, and trade
-        activity.
+        Kenyan farms and exporters list as origin KE. Importers in Oman, Iran,
+        or Iraq register as Buyer with destination country OM, IR, or IQ — then
+        RFQ Kenyan produce.
       </p>
       <form onSubmit={onSubmit} className="mt-8 space-y-4">
         <Input label="Legal name" name="name" required />
-        <Select label="Organisation type" name="type" required defaultValue="EXPORTER">
+        <Select
+          label="Organisation type"
+          name="type"
+          required
+          defaultValue={defaultType}
+        >
           {TYPES.map((type) => (
             <option key={type} value={type}>
               {type.replaceAll("_", " ")}
@@ -84,14 +108,19 @@ export default function OrganisationOnboardingPage() {
           ))}
         </Select>
         <div className="grid gap-4 sm:grid-cols-2">
-          <Input
-            label="Country code"
+          <CountrySelect
+            label="Country"
             name="countryCode"
-            maxLength={2}
-            placeholder="KE"
             required
+            defaultValue={defaultCountry}
           />
-          <Input label="City" name="city" />
+          <Input
+            label="City"
+            name="city"
+            placeholder={
+              defaultType === "BUYER" ? "Muscat / Tehran / Baghdad" : "Nairobi"
+            }
+          />
         </div>
         <Input label="Registration number" name="registrationNumber" />
         <Input label="Tax ID" name="taxId" />
@@ -107,5 +136,13 @@ export default function OrganisationOnboardingPage() {
         </Button>
       </form>
     </div>
+  );
+}
+
+export default function OrganisationOnboardingPage() {
+  return (
+    <Suspense>
+      <OnboardingForm />
+    </Suspense>
   );
 }

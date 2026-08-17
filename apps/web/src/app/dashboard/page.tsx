@@ -57,7 +57,8 @@ export default function DashboardPage() {
             Welcome, {user?.firstName}
           </h1>
           <p className="mt-1 text-sm text-[var(--fg-muted)]">
-            Your organisation workspace for trusted cross-border trade.
+            Kenya origin to Oman, Iran, and Iraq — RFQs, contracts, and shipping
+            on one Trade Passport.
           </p>
         </div>
         {!user?.organisationId ? (
@@ -77,6 +78,14 @@ export default function DashboardPage() {
       </div>
 
       <div className="flex flex-wrap gap-3">
+        <Link href="/kenya">
+          <Button size="sm">Kenya → Oman / Iran / Iraq</Button>
+        </Link>
+        <Link href="/dashboard/rfqs">
+          <Button variant="secondary" size="sm">
+            RFQ Kenyan produce
+          </Button>
+        </Link>
         <Link href="/dashboard/trust">
           <Button variant="secondary" size="sm">
             Trust score

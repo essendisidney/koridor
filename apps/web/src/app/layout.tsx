@@ -21,7 +21,7 @@ export const metadata: Metadata = {
     template: "%s · Koridor",
   },
   description:
-    "Koridor is the operating system for cross-border trade — trusted infrastructure for African commerce.",
+    "Operating system for Kenyan farm produce to Oman, Iran, Iraq, and African trade corridors.",
 };
 
 export default function RootLayout({

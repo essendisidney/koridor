@@ -49,26 +49,26 @@ export default function LandingPage() {
             The operating system for cross-border trade.
           </h1>
           <p className="animate-fade-up mt-4 max-w-xl text-base leading-relaxed text-white/80 delay-200 md:text-lg">
-            Trusted digital infrastructure connecting producers, exporters,
-            buyers, banks, insurers, logistics, and governments across African
-            trade corridors.
+            Trusted digital infrastructure connecting Kenyan farms to buyers in
+            Oman, Iran, Iraq, and beyond — plus banks, insurers, logistics, and
+            governments on one Trade Passport.
           </p>
           <div className="animate-fade-up mt-8 flex flex-wrap gap-3 delay-300">
-            <Link href="/register">
+            <Link href="/register?role=BUYER">
               <Button
                 size="lg"
                 className="bg-[var(--accent)] text-white hover:bg-[#0c5a57]"
               >
-                Create organisation
+                Buy Kenyan produce
               </Button>
             </Link>
-            <Link href="/login">
+            <Link href="/kenya">
               <Button
                 size="lg"
                 variant="secondary"
                 className="border-white/30 bg-white/10 text-white hover:bg-white/15"
               >
-                Access platform
+                Kenya → Oman, Iran, Iraq
               </Button>
             </Link>
           </div>
@@ -82,20 +82,22 @@ export default function LandingPage() {
               Infrastructure, not another marketplace.
             </h2>
             <p className="mt-4 max-w-lg text-[var(--fg-muted)] leading-relaxed">
-              Koridor is built for verification, contracts, compliance,
-              settlement, and logistics orchestration — the rails that make
-              trade trustworthy at scale.
+              A buyer in Muscat, Tehran, or Baghdad can RFQ Kenyan avocado, tea,
+              or coffee; a Nairobi exporter answers with evidence — KYB, Halal,
+              certificate of origin, escrow, and Mombasa shipping — not a
+              marketplace listing alone.
             </p>
           </div>
           <ul className="space-y-5 text-sm leading-relaxed text-[var(--fg)]">
             <li className="border-l-2 border-[var(--accent)] pl-4">
-              Organisation identity, roles, and audit-ready access control
+              Kenya origin → Oman, Iran, and Iraq as a first-class corridor
             </li>
             <li className="border-l-2 border-[var(--accent)] pl-4">
-              Trust engine foundations for KYB, KYC, and registries
+              Trust, contracts, Halal/COO compliance, escrow, and logistics
             </li>
             <li className="border-l-2 border-[var(--accent)] pl-4">
-              Modular architecture for trade, finance, compliance, and logistics
+              In-kind credit and bankability so Kenyan suppliers can fulfil
+              export orders
             </li>
           </ul>
         </div>
@@ -106,7 +108,10 @@ export default function LandingPage() {
           <span className="font-[family-name:var(--font-display)] text-base text-white">
             Koridor
           </span>
-          <span>© {new Date().getFullYear()} Koridor. All rights reserved.</span>
+          <span>Kenya → Oman · Iran · Iraq</span>
+          <Link href="/kenya" className="text-white underline">
+            Buy Kenyan produce
+          </Link>
         </div>
       </footer>
     </div>

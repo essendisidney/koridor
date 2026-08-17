@@ -6,6 +6,8 @@ import { api, ApiError } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { CountrySelect } from "@/components/country-select";
+import { GULF_WEST_ASIA_BUYERS, KENYA_PRODUCE } from "@/lib/corridors";
 
 type RegistryItem = {
   id: string;
@@ -39,6 +41,8 @@ export default function RegistryPage() {
   const [items, setItems] = useState<RegistryItem[]>([]);
   const [mine, setMine] = useState<MyProfile>(null);
   const [type, setType] = useState("");
+  const [country, setCountry] = useState("");
+  const [market, setMarket] = useState("");
   const [q, setQ] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
@@ -48,13 +52,15 @@ export default function RegistryPage() {
     if (!accessToken) return;
     const params = new URLSearchParams();
     if (type) params.set("type", type);
+    if (country) params.set("country", country);
+    if (market) params.set("market", market);
     if (q) params.set("q", q);
     api<RegistryItem[]>(`/registry?${params.toString()}`, { token: accessToken })
       .then(setItems)
       .catch((err) =>
         setError(err instanceof ApiError ? err.message : "Browse failed"),
       );
-  }, [accessToken, type, q]);
+  }, [accessToken, type, country, market, q]);
 
   useEffect(() => {
     if (!accessToken) return;
@@ -103,7 +109,9 @@ export default function RegistryPage() {
           Registry
         </h1>
         <p className="mt-1 text-sm text-[var(--fg-muted)]">
-          Farmer, cooperative, exporter, and buyer directory.
+          Kenyan farmers and exporters, plus buyers in Oman, Iran, and Iraq.
+          List commodities and Gulf export markets (OM, IR, IQ) so importers can
+          find you.
         </p>
       </div>
 
@@ -120,11 +128,13 @@ export default function RegistryPage() {
           <Input
             label="Commodities (comma-separated)"
             name="commodities"
+            placeholder="avocado, tea, coffee"
             defaultValue={mine?.commodities?.join(", ") ?? ""}
           />
           <Input
-            label="Export markets (comma-separated)"
+            label="Export / source markets (comma-separated ISO-2)"
             name="exportMarkets"
+            placeholder="OM, IR, IQ"
             defaultValue={mine?.exportMarkets?.join(", ") ?? ""}
           />
           <Input
@@ -168,6 +178,28 @@ export default function RegistryPage() {
               </option>
             ))}
           </select>
+          <CountrySelect
+            label=""
+            name="countryFilter"
+            allowEmpty
+            emptyLabel="All countries"
+            value={country}
+            onChange={(e) => setCountry(e.target.value)}
+            className="h-11"
+          />
+          <select
+            value={market}
+            onChange={(e) => setMarket(e.target.value)}
+            className="h-11 rounded-md border border-[var(--border)] bg-white px-3 text-sm"
+          >
+            <option value="">Any export market</option>
+            {GULF_WEST_ASIA_BUYERS.map((c) => (
+              <option key={c} value={c}>
+                Ships to {c}
+              </option>
+            ))}
+            <option value="KE">Ships to KE</option>
+          </select>
           <input
             value={q}
             onChange={(e) => setQ(e.target.value)}
@@ -175,6 +207,10 @@ export default function RegistryPage() {
             className="h-11 min-w-[200px] flex-1 rounded-md border border-[var(--border)] bg-white px-3 text-sm"
           />
         </div>
+        <p className="text-xs text-[var(--fg-muted)]">
+          Quick: Kenyan {KENYA_PRODUCE.slice(0, 4).join(", ").toLowerCase()}{" "}
+          towards Oman, Iran, Iraq.
+        </p>
         {error ? <p className="text-sm text-[var(--danger)]">{error}</p> : null}
         <div className="space-y-3">
           {items.length === 0 ? (
@@ -197,6 +233,12 @@ export default function RegistryPage() {
                   {item.organisation.countryCode}
                   {item.organisation.city ? ` · ${item.organisation.city}` : ""}{" "}
                   · {item.organisation.verificationStatus}
+                  {item.commodities?.length
+                    ? ` · ${item.commodities.slice(0, 3).join(", ")}`
+                    : ""}
+                  {item.exportMarkets?.length
+                    ? ` · markets ${item.exportMarkets.slice(0, 4).join(", ")}`
+                    : ""}
                 </p>
                 {item.summary ? (
                   <p className="mt-1 text-sm text-[var(--fg-muted)]">
