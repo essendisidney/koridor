@@ -86,9 +86,9 @@ export default function RfqsPage() {
           RFQs
         </h1>
         <p className="mt-1 text-sm text-[var(--fg-muted)]">
-          GCC and Iranian buyers: origin Kenya, destination Oman / Saudi Arabia
-          / Iran / Iraq, with a needed-by date so farmers plant against a sold
-          order.
+          GCC and Iranian buyers: this is Negotiate. Origin Kenya, destination
+          Oman / Saudi Arabia / Iran / Iraq, with a needed-by date so farmers
+          plant against a sold order.
         </p>
       </div>
 

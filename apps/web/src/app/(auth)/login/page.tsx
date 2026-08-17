@@ -1,18 +1,25 @@
 "use client";
 
 import Link from "next/link";
-import { FormEvent, useState } from "react";
-import { useRouter } from "next/navigation";
+import { FormEvent, Suspense, useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/lib/auth";
 import { ApiError } from "@/lib/api";
+import { postAuthPath, safeNextPath } from "@/lib/journey";
 
-export default function LoginPage() {
-  const { login } = useAuth();
+function LoginForm() {
+  const { login, user, loading: authLoading, accessToken } = useAuth();
   const router = useRouter();
+  const params = useSearchParams();
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (authLoading || !accessToken || !user) return;
+    router.replace(safeNextPath(params.get("next")) ?? postAuthPath(user));
+  }, [authLoading, accessToken, user, params, router]);
 
   async function onSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -20,8 +27,11 @@ export default function LoginPage() {
     setLoading(true);
     const form = new FormData(e.currentTarget);
     try {
-      await login(String(form.get("email")), String(form.get("password")));
-      router.push("/dashboard");
+      const authed = await login(
+        String(form.get("email")),
+        String(form.get("password")),
+      );
+      router.push(safeNextPath(params.get("next")) ?? postAuthPath(authed));
     } catch (err) {
       setError(
         err instanceof ApiError
@@ -47,7 +57,8 @@ export default function LoginPage() {
         Sign in
       </h1>
       <p className="mt-2 text-sm text-[var(--fg-muted)]">
-        Access your organisation workspace.
+        You land on the next incomplete step — organisation setup, verification,
+        RFQ, or the open Trade Passport.
       </p>
       <form onSubmit={onSubmit} className="mt-8 space-y-4">
         <Input
@@ -72,18 +83,26 @@ export default function LoginPage() {
           </p>
         ) : null}
         <Button type="submit" className="w-full" disabled={loading}>
-          {loading ? "Signing in…" : "Sign in"}
+          {loading ? "Signing in…" : "Continue"}
         </Button>
       </form>
       <p className="mt-6 text-sm text-[var(--fg-muted)]">
         New to Koridor?{" "}
-        <Link href="/register" className="font-medium text-[var(--accent)]">
-          Create an account
+        <Link href="/start" className="font-medium text-[var(--accent)]">
+          Begin the corridor
         </Link>
       </p>
       <p className="mt-4 rounded-md bg-[var(--accent-soft)] px-3 py-2 text-xs text-[var(--fg)]">
         Demo: exporter@demo.koridor.io / Demo123!
       </p>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense>
+      <LoginForm />
+    </Suspense>
   );
 }

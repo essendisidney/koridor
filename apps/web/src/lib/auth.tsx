@@ -30,8 +30,8 @@ type AuthState = {
   accessToken: string | null;
   refreshToken: string | null;
   loading: boolean;
-  login: (email: string, password: string) => Promise<void>;
-  register: (input: RegisterInput) => Promise<void>;
+  login: (email: string, password: string) => Promise<AuthUser>;
+  register: (input: RegisterInput) => Promise<AuthUser>;
   logout: () => Promise<void>;
   refreshProfile: () => Promise<void>;
   setSession: (tokens: Tokens, user: AuthUser) => void;
@@ -128,6 +128,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         },
         result.user,
       );
+      return result.user;
     },
     [setSession],
   );
@@ -149,6 +150,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         },
         result.user,
       );
+      return result.user;
     },
     [setSession],
   );

@@ -24,11 +24,11 @@ export default function AuthLayout({
           </Link>
           <div>
             <p className="max-w-md font-[family-name:var(--font-display)] text-3xl font-semibold leading-snug">
-              Secure access to the trade operating system.
+              Connect, verify, negotiate, execute.
             </p>
             <p className="mt-3 max-w-sm text-sm text-white/75">
-              Enterprise authentication with organisation-scoped roles, audit
-              trails, and MFA-ready security.
+              One Kenya–GCC lot on one Trade Passport. After sign-in you are
+              sent to the next incomplete step — not a menu of tools.
             </p>
           </div>
         </div>

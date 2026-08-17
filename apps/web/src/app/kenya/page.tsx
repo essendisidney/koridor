@@ -66,7 +66,7 @@ export default function KenyaCorridorPage() {
 
   return (
     <div className="min-h-screen bg-[var(--bg)]">
-      <PublicNav ctaHref="/register?role=BUYER&country=OM" ctaLabel="Buy from Kenya" />
+      <PublicNav ctaHref="/start" ctaLabel="Begin" />
 
       <main className="mx-auto max-w-5xl space-y-12 px-6 py-12">
         <section>
@@ -82,27 +82,12 @@ export default function KenyaCorridorPage() {
             origin, escrow, and logistics stay bound to the lot.
           </p>
           <div className="mt-6 flex flex-wrap gap-3">
-            <Link href="/register?role=BUYER&country=OM">
-              <Button size="lg">Buyer in Oman</Button>
+            <Link href="/start">
+              <Button size="lg">Begin the corridor</Button>
             </Link>
-            <Link href="/register?role=BUYER&country=SA">
+            <Link href="/login">
               <Button size="lg" variant="secondary">
-                Buyer in Saudi Arabia
-              </Button>
-            </Link>
-            <Link href="/register?role=BUYER&country=IR">
-              <Button size="lg" variant="secondary">
-                Buyer in Iran
-              </Button>
-            </Link>
-            <Link href="/register?role=BUYER&country=IQ">
-              <Button size="lg" variant="secondary">
-                Buyer in Iraq
-              </Button>
-            </Link>
-            <Link href="/register?role=COOPERATIVE&country=KE">
-              <Button size="lg" variant="secondary">
-                Kenyan cooperative
+                Sign in
               </Button>
             </Link>
           </div>
@@ -151,8 +136,9 @@ export default function KenyaCorridorPage() {
           </h2>
           <ol className="mt-4 space-y-3 text-sm leading-relaxed">
             <li>
-              <strong>1. Register as Buyer</strong> — organisation country Oman
-              (OM), Saudi Arabia (SA), Iran (IR), or Iraq (IQ).
+              <strong>1. Begin the corridor</strong> — choose GCC buyer or
+              Kenyan cooperative at Get started. Register the organisation (not
+              700,000 individual farmers).
             </li>
             <li>
               <strong>2. Publish an offtake RFQ</strong> — origin Kenya, destination

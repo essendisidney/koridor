@@ -3,7 +3,13 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 
-export function PublicNav({ ctaHref, ctaLabel }: { ctaHref: string; ctaLabel: string }) {
+export function PublicNav({
+  ctaHref = "/start",
+  ctaLabel = "Get started",
+}: {
+  ctaHref?: string;
+  ctaLabel?: string;
+}) {
   return (
     <header className="border-b border-[var(--border)] bg-white">
       <div className="mx-auto flex h-16 max-w-5xl items-center justify-between px-6">
@@ -40,8 +46,8 @@ export function PublicFooter() {
           Koridor
         </span>
         <span>Kenya → Oman · Saudi Arabia · Iran · Iraq</span>
-        <Link href="/cropchain" className="text-white underline">
-          CropChain Africa
+        <Link href="/start" className="text-white underline">
+          Get started
         </Link>
       </div>
     </footer>

@@ -1,5 +1,12 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { JourneyStepper } from "@/components/journey-stepper";
+import { JOURNEY_PHASES } from "@/lib/journey";
+
+const phases = JOURNEY_PHASES.map((p, i) => ({
+  ...p,
+  status: (i === 0 ? "current" : "upcoming") as "current" | "upcoming",
+}));
 
 export default function LandingPage() {
   return (
@@ -28,7 +35,7 @@ export default function LandingPage() {
             >
               Sign in
             </Link>
-            <Link href="/register">
+            <Link href="/start">
               <Button
                 size="sm"
                 className="bg-white text-[var(--primary)] hover:bg-white/90"
@@ -61,26 +68,25 @@ export default function LandingPage() {
             The operating system for cross-border trade.
           </h1>
           <p className="animate-fade-up mt-4 max-w-xl text-base leading-relaxed text-white/80 delay-200 md:text-lg">
-            Trusted digital infrastructure connecting Kenyan farms to buyers in
-            Oman, Saudi Arabia, Iran, Iraq, and the wider GCC — on one Trade
-            Passport.
+            Kenyan farms to buyers in Oman, Saudi Arabia, Iran, and Iraq — one
+            corridor, one Trade Passport, four steps from landing to settlement.
           </p>
           <div className="animate-fade-up mt-8 flex flex-wrap gap-3 delay-300">
-            <Link href="/register?role=BUYER">
+            <Link href="/start">
               <Button
                 size="lg"
                 className="bg-[var(--accent)] text-white hover:bg-[#0c5a57]"
               >
-                Buy Kenyan produce
+                Begin the corridor
               </Button>
             </Link>
-            <Link href="/cropchain">
+            <Link href="/login">
               <Button
                 size="lg"
                 variant="secondary"
                 className="border-white/30 bg-white/10 text-white hover:bg-white/15"
               >
-                CropChain Africa
+                Sign in
               </Button>
             </Link>
           </div>
@@ -88,30 +94,25 @@ export default function LandingPage() {
       </section>
 
       <section className="border-t border-[var(--border)] bg-white">
-        <div className="mx-auto grid max-w-6xl gap-10 px-6 py-20 md:grid-cols-[1.1fr_0.9fr] md:gap-16">
+        <div className="mx-auto max-w-6xl space-y-10 px-6 py-20">
           <div>
             <h2 className="font-[family-name:var(--font-display)] text-3xl font-semibold text-[var(--fg)] md:text-4xl">
-              Infrastructure, not another marketplace.
+              What you do, in order.
             </h2>
             <p className="mt-4 max-w-lg text-[var(--fg-muted)] leading-relaxed">
-              A buyer in Muscat, Jeddah, Tehran, or Baghdad can RFQ Kenyan
-              avocado, tea, or coffee with a harvest date; a Kenyan cooperative
-              answers with evidence — KYB, Halal, origin, escrow, and Mombasa
-              shipping — not a listing alone.
+              The public site, sign-in, and workspace use the same sequence. You
+              never hunt twenty menus for the next move.
             </p>
           </div>
-          <ul className="space-y-5 text-sm leading-relaxed text-[var(--fg)]">
-            <li className="border-l-2 border-[var(--accent)] pl-4">
-              Kenya → Oman, Saudi Arabia, Iran, and Iraq as one executable corridor
-            </li>
-            <li className="border-l-2 border-[var(--accent)] pl-4">
-              Trust, contracts, Halal/COO compliance, escrow, and logistics
-            </li>
-            <li className="border-l-2 border-[var(--accent)] pl-4">
-              In-kind credit and bankability so Kenyan suppliers can fulfil
-              export orders
-            </li>
-          </ul>
+          <JourneyStepper phases={phases} />
+          <div className="flex flex-wrap gap-3">
+            <Link href="/start">
+              <Button>Choose your role</Button>
+            </Link>
+            <Link href="/cropchain">
+              <Button variant="secondary">CropChain Africa</Button>
+            </Link>
+          </div>
         </div>
       </section>
 
@@ -121,8 +122,8 @@ export default function LandingPage() {
             Koridor
           </span>
           <span>Kenya → Oman · Saudi Arabia · Iran · Iraq</span>
-          <Link href="/cropchain" className="text-white underline">
-            CropChain Africa
+          <Link href="/start" className="text-white underline">
+            Get started
           </Link>
         </div>
       </footer>

@@ -8,6 +8,8 @@ import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { useAuth } from "@/lib/auth";
 import { ApiError } from "@/lib/api";
+import { JourneyStepper } from "@/components/journey-stepper";
+import { JOURNEY_PHASES } from "@/lib/journey";
 
 const ROLES = [
   { value: "EXPORTER", label: "Exporter" },
@@ -21,6 +23,11 @@ const ROLES = [
   { value: "CHAMBER_OF_COMMERCE", label: "Chamber of Commerce" },
 ];
 
+const phases = JOURNEY_PHASES.map((p, i) => ({
+  ...p,
+  status: (i === 0 ? "current" : "upcoming") as "current" | "upcoming",
+}));
+
 function RegisterForm() {
   const { register } = useAuth();
   const router = useRouter();
@@ -31,6 +38,15 @@ function RegisterForm() {
     : "EXPORTER";
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
+  const blurb =
+    defaultRole === "BUYER"
+      ? "Step 1 of 4 — Connect. After this account, you register the importing organisation, then publish a dated Kenya offtake."
+      : defaultRole === "COOPERATIVE" || defaultRole === "FARMER"
+        ? "Step 1 of 4 — Connect. After this account, you register the Kenyan organisation (cooperative or factory, not 700k farmers)."
+        : defaultRole === "CHAMBER_OF_COMMERCE"
+          ? "Step 1 of 4 — Connect. After this account, register the chamber so producer groups can be vetted on the corridor."
+          : "Step 1 of 4 — Connect. Create the account, then the organisation. The workspace will name the next action.";
 
   async function onSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -74,19 +90,21 @@ function RegisterForm() {
   return (
     <div>
       <Link
-        href="/"
+        href="/start"
         className="mb-8 inline-block font-[family-name:var(--font-display)] text-xl font-semibold text-[var(--fg)] lg:hidden"
       >
         Koridor
       </Link>
-      <h1 className="font-[family-name:var(--font-display)] text-3xl font-semibold text-[var(--fg)]">
+      <p className="text-xs uppercase tracking-[0.14em] text-[var(--accent)]">
+        Connect
+      </p>
+      <h1 className="mt-1 font-[family-name:var(--font-display)] text-3xl font-semibold text-[var(--fg)]">
         Create account
       </h1>
-      <p className="mt-2 text-sm text-[var(--fg-muted)]">
-        {defaultRole === "BUYER"
-          ? "Importers in Oman, Saudi Arabia, Iran, and Iraq: register as Buyer, then RFQ Kenyan farm produce."
-          : "Register as a participant in the Koridor network — Kenyan supply to Gulf and West Asian buyers."}
-      </p>
+      <p className="mt-2 text-sm text-[var(--fg-muted)]">{blurb}</p>
+      <div className="mt-6">
+        <JourneyStepper phases={phases} compact />
+      </div>
       <form onSubmit={onSubmit} className="mt-8 space-y-4">
         <div className="grid gap-4 sm:grid-cols-2">
           <Input label="First name" name="firstName" required />
@@ -121,7 +139,7 @@ function RegisterForm() {
           </p>
         ) : null}
         <Button type="submit" className="w-full" disabled={loading}>
-          {loading ? "Creating account…" : "Continue"}
+          {loading ? "Creating account…" : "Continue to organisation"}
         </Button>
       </form>
       <p className="mt-6 text-sm text-[var(--fg-muted)]">

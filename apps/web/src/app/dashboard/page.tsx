@@ -2,198 +2,118 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { api } from "@/lib/api";
+import { api, ApiError } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
-import { formatDate } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { JourneyStepper } from "@/components/journey-stepper";
+import type { JourneyPhase } from "@/lib/journey";
 
-type Activity = {
-  id: string;
-  title: string;
-  description?: string | null;
-  type: string;
-  createdAt: string;
-};
-
-type Notification = {
-  id: string;
-  title: string;
-  body: string;
-  status: string;
-  createdAt: string;
+type JourneyPayload = {
+  persona: string;
+  copy: { headline: string; blurb: string };
+  org: {
+    name: string;
+    type: string;
+    countryCode: string;
+    verificationStatus: string;
+  } | null;
+  phases: JourneyPhase[];
+  next: { title: string; body: string; href: string; cta: string };
+  trades: {
+    id: string;
+    tradeNumber: string;
+    title: string;
+    status: string;
+    currentStage: string;
+    completionPct: number;
+  }[];
 };
 
 export default function DashboardPage() {
   const { accessToken, user } = useAuth();
-  const [activities, setActivities] = useState<Activity[]>([]);
-  const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [unread, setUnread] = useState(0);
+  const [journey, setJourney] = useState<JourneyPayload | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!accessToken) return;
-    Promise.all([
-      api<Activity[]>("/activities?limit=5", { token: accessToken }),
-      api<Notification[]>("/notifications?limit=5", { token: accessToken }),
-      api<{ count: number }>("/notifications/unread-count", {
-        token: accessToken,
-      }),
-    ])
-      .then(([acts, notes, count]) => {
-        setActivities(Array.isArray(acts) ? acts : []);
-        setNotifications(Array.isArray(notes) ? notes : []);
-        setUnread(count?.count ?? 0);
-      })
-      .catch(() => {
-        setActivities([]);
-        setNotifications([]);
-      });
+    api<JourneyPayload>("/journey", { token: accessToken })
+      .then(setJourney)
+      .catch((err) =>
+        setError(err instanceof ApiError ? err.message : "Unable to load journey"),
+      );
   }, [accessToken]);
 
+  if (!journey && !error) {
+    return (
+      <p className="text-sm text-[var(--fg-muted)]">Loading your next step…</p>
+    );
+  }
+
   return (
-    <div className="space-y-8">
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <h1 className="font-[family-name:var(--font-display)] text-3xl font-semibold text-[var(--fg)]">
-            Welcome, {user?.firstName}
-          </h1>
-          <p className="mt-1 text-sm text-[var(--fg-muted)]">
-            Kenya origin to Oman, Saudi Arabia, Iran, and Iraq — RFQs,
-            contracts, and shipping on one Trade Passport.
+    <div className="mx-auto max-w-3xl space-y-10">
+      <div>
+        <p className="text-xs uppercase tracking-[0.14em] text-[var(--accent)]">
+          {user?.firstName ? `Welcome, ${user.firstName}` : "Workspace"}
+        </p>
+        <h1 className="mt-1 font-[family-name:var(--font-display)] text-3xl font-semibold text-[var(--fg)]">
+          {journey?.copy.headline ?? "Your Kenya–GCC corridor"}
+        </h1>
+        <p className="mt-2 text-sm leading-relaxed text-[var(--fg-muted)]">
+          {journey?.copy.blurb}
+        </p>
+        {journey?.org ? (
+          <p className="mt-2 text-xs text-[var(--fg-muted)]">
+            {journey.org.name} · {journey.org.type.replaceAll("_", " ")} ·{" "}
+            {journey.org.countryCode} · {journey.org.verificationStatus}
           </p>
-        </div>
-        {!user?.organisationId ? (
-          <Link href="/onboarding/organisation">
-            <Button>Register organisation</Button>
-          </Link>
         ) : null}
       </div>
 
-      <div className="grid gap-4 md:grid-cols-3">
-        <Stat label="Unread notifications" value={String(unread)} />
-        <Stat label="Roles" value={String(user?.roles.length ?? 0)} />
-        <Stat
-          label="Organisation"
-          value={user?.organisationId ? "Linked" : "Pending"}
-        />
-      </div>
+      {error ? <p className="text-sm text-[var(--danger)]">{error}</p> : null}
 
-      <div className="flex flex-wrap gap-3">
-        <Link href="/cropchain">
-          <Button size="sm">CropChain Africa</Button>
-        </Link>
-        <Link href="/dashboard/rfqs">
-          <Button variant="secondary" size="sm">
-            RFQ Kenyan produce
-          </Button>
-        </Link>
-        <Link href="/dashboard/trust">
-          <Button variant="secondary" size="sm">
-            Trust score
-          </Button>
-        </Link>
-        <Link href="/dashboard/documents">
-          <Button variant="secondary" size="sm">
-            Documents
-          </Button>
-        </Link>
-        <Link href="/dashboard/verification">
-          <Button variant="secondary" size="sm">
-            Verification
-          </Button>
-        </Link>
-        <Link href="/dashboard/registry">
-          <Button variant="secondary" size="sm">
-            Registry
-          </Button>
-        </Link>
-      </div>
+      {journey ? <JourneyStepper phases={journey.phases} /> : null}
 
-      <div className="grid gap-8 lg:grid-cols-2">
-        <section>
-          <div className="mb-3 flex items-center justify-between">
-            <h2 className="text-sm font-semibold uppercase tracking-[0.12em] text-[var(--fg-muted)]">
-              Recent activity
-            </h2>
-            <Link
-              href="/dashboard/activity"
-              className="text-sm text-[var(--accent)]"
-            >
-              View all
-            </Link>
-          </div>
-          <div className="divide-y divide-[var(--border)] border-y border-[var(--border)] bg-white/70">
-            {activities.length === 0 ? (
-              <p className="py-6 text-sm text-[var(--fg-muted)]">
-                No activity yet.
-              </p>
-            ) : (
-              activities.map((item) => (
-                <div key={item.id} className="py-4">
-                  <p className="text-sm font-medium text-[var(--fg)]">
-                    {item.title}
-                  </p>
-                  {item.description ? (
-                    <p className="mt-1 text-sm text-[var(--fg-muted)]">
-                      {item.description}
-                    </p>
-                  ) : null}
-                  <p className="mt-2 text-xs text-[var(--fg-muted)]">
-                    {formatDate(item.createdAt)}
-                  </p>
-                </div>
-              ))
-            )}
-          </div>
+      {journey?.next ? (
+        <section className="border border-[var(--border)] bg-white p-6">
+          <p className="text-xs uppercase tracking-[0.14em] text-[var(--accent)]">
+            Next
+          </p>
+          <h2 className="mt-2 font-[family-name:var(--font-display)] text-2xl font-semibold">
+            {journey.next.title}
+          </h2>
+          <p className="mt-2 text-sm leading-relaxed text-[var(--fg-muted)]">
+            {journey.next.body}
+          </p>
+          <Link href={journey.next.href} className="mt-5 inline-block">
+            <Button>{journey.next.cta}</Button>
+          </Link>
         </section>
+      ) : null}
 
-        <section>
-          <div className="mb-3 flex items-center justify-between">
-            <h2 className="text-sm font-semibold uppercase tracking-[0.12em] text-[var(--fg-muted)]">
-              Notifications
-            </h2>
+      {journey?.trades?.length ? (
+        <section className="space-y-3 border-t border-[var(--border)] pt-8">
+          <h2 className="font-[family-name:var(--font-display)] text-xl font-semibold">
+            Open lots
+          </h2>
+          {journey.trades.map((t) => (
             <Link
-              href="/dashboard/notifications"
-              className="text-sm text-[var(--accent)]"
+              key={t.id}
+              href={`/dashboard/trades/${t.id}`}
+              className="block border-b border-[var(--border)] py-3"
             >
-              View all
-            </Link>
-          </div>
-          <div className="divide-y divide-[var(--border)] border-y border-[var(--border)] bg-white/70">
-            {notifications.length === 0 ? (
-              <p className="py-6 text-sm text-[var(--fg-muted)]">
-                No notifications.
+              <div className="flex flex-wrap items-baseline justify-between gap-2">
+                <p className="font-medium">{t.title}</p>
+                <p className="text-xs text-[var(--fg-muted)]">
+                  {t.completionPct}% · {t.status}
+                </p>
+              </div>
+              <p className="text-xs text-[var(--fg-muted)]">
+                {t.tradeNumber} · {t.currentStage}
               </p>
-            ) : (
-              notifications.map((item) => (
-                <div key={item.id} className="py-4">
-                  <p className="text-sm font-medium text-[var(--fg)]">
-                    {item.title}
-                  </p>
-                  <p className="mt-1 text-sm text-[var(--fg-muted)]">
-                    {item.body}
-                  </p>
-                  <p className="mt-2 text-xs text-[var(--fg-muted)]">
-                    {formatDate(item.createdAt)} · {item.status}
-                  </p>
-                </div>
-              ))
-            )}
-          </div>
+            </Link>
+          ))}
         </section>
-      </div>
-    </div>
-  );
-}
-
-function Stat({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="border border-[var(--border)] bg-white px-5 py-4">
-      <p className="text-xs uppercase tracking-[0.12em] text-[var(--fg-muted)]">
-        {label}
-      </p>
-      <p className="mt-2 font-[family-name:var(--font-display)] text-2xl font-semibold text-[var(--fg)]">
-        {value}
-      </p>
+      ) : null}
     </div>
   );
 }

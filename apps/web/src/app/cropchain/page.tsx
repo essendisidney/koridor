@@ -50,7 +50,7 @@ const PILLARS = [
 export default function CropChainPage() {
   return (
     <div className="min-h-screen bg-[var(--bg)]">
-      <PublicNav ctaHref="/register?role=BUYER&country=SA" ctaLabel="GCC offtake" />
+      <PublicNav ctaHref="/start" ctaLabel="Begin" />
 
       <main className="mx-auto max-w-5xl space-y-12 px-6 py-12">
         <section>
@@ -133,17 +133,11 @@ export default function CropChainPage() {
             inspection and delivery evidence land on the passport.
           </p>
           <div className="mt-6 flex flex-wrap gap-3">
+            <Link href="/start">
+              <Button>Begin the corridor</Button>
+            </Link>
             <Link href="/kenya">
-              <Button>Open Kenya–GCC directory</Button>
-            </Link>
-            <Link href="/register?role=BUYER&country=OM">
-              <Button variant="secondary">I am a GCC buyer</Button>
-            </Link>
-            <Link href="/register?role=COOPERATIVE&country=KE">
-              <Button variant="secondary">Kenyan cooperative</Button>
-            </Link>
-            <Link href="/register?role=CHAMBER_OF_COMMERCE&country=KE">
-              <Button variant="secondary">Chamber partner</Button>
+              <Button variant="secondary">Kenya–GCC directory</Button>
             </Link>
           </div>
         </section>
