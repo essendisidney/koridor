@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
+import { SessionCta, SessionTextLink } from "@/components/session-cta";
 
 export function PublicNav({
   ctaHref = "/start",
@@ -20,18 +20,14 @@ export function PublicNav({
           Koridor
         </Link>
         <nav className="flex items-center gap-4">
-          <Link href="/cropchain" className="text-sm font-medium">
+          <Link href="/cropchain" className="hidden text-sm font-medium sm:inline">
             CropChain
           </Link>
-          <Link href="/kenya" className="text-sm font-medium">
+          <Link href="/kenya" className="hidden text-sm font-medium sm:inline">
             Kenya–GCC
           </Link>
-          <Link href="/login" className="text-sm font-medium">
-            Sign in
-          </Link>
-          <Link href={ctaHref}>
-            <Button size="sm">{ctaLabel}</Button>
-          </Link>
+          <SessionTextLink className="text-sm font-medium" />
+          <SessionCta guestHref={ctaHref} guestLabel={ctaLabel} />
         </nav>
       </div>
     </header>

@@ -10,6 +10,7 @@ import { useAuth } from "@/lib/auth";
 import { ApiError } from "@/lib/api";
 import { JourneyStepper } from "@/components/journey-stepper";
 import { JOURNEY_PHASES } from "@/lib/journey";
+import { countryName } from "@/lib/corridors";
 
 const ROLES = [
   { value: "EXPORTER", label: "Exporter" },
@@ -36,6 +37,11 @@ function RegisterForm() {
   const defaultRole = ROLES.some((r) => r.value === roleHint)
     ? roleHint
     : "EXPORTER";
+  const roleFromQuery = Boolean(
+    params.get("role") && ROLES.some((r) => r.value === roleHint),
+  );
+  const country = (params.get("country") || "").toUpperCase();
+  const roleLabel = ROLES.find((r) => r.value === defaultRole)?.label ?? defaultRole;
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -96,7 +102,7 @@ function RegisterForm() {
         Koridor
       </Link>
       <p className="text-xs uppercase tracking-[0.14em] text-[var(--accent)]">
-        Connect
+        Step 1 of 4 · Connect
       </p>
       <h1 className="mt-1 font-[family-name:var(--font-display)] text-3xl font-semibold text-[var(--fg)]">
         Create account
@@ -118,13 +124,26 @@ function RegisterForm() {
           required
         />
         <Input label="Phone" name="phone" type="tel" />
-        <Select label="Primary role" name="role" required defaultValue={defaultRole}>
-          {ROLES.map((role) => (
-            <option key={role.value} value={role.value}>
-              {role.label}
-            </option>
-          ))}
-        </Select>
+        {roleFromQuery ? (
+          <div className="rounded-md border border-[var(--border)] bg-[var(--accent-soft)] px-3 py-2 text-sm">
+            <p>
+              <span className="font-medium">{roleLabel}</span>
+              {country ? ` · ${countryName(country) || country}` : ""}
+            </p>
+            <input type="hidden" name="role" value={defaultRole} />
+            <Link href="/start" className="text-xs text-[var(--accent)] underline">
+              Choose a different path
+            </Link>
+          </div>
+        ) : (
+          <Select label="Primary role" name="role" required defaultValue={defaultRole}>
+            {ROLES.map((role) => (
+              <option key={role.value} value={role.value}>
+                {role.label}
+              </option>
+            ))}
+          </Select>
+        )}
         <Input
           label="Password"
           name="password"

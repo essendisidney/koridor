@@ -190,165 +190,55 @@ export default function TradeWorkspacePage() {
   }
 
   const contract = trade.contracts[0];
+  const nextTest = trade.executable?.tests.find((t) => !t.ok);
 
   return (
     <div className="mx-auto max-w-3xl space-y-8">
       <div>
-        <Link
-          href="/dashboard/trade"
-          className="text-xs text-[var(--fg-muted)] underline"
-        >
-          Trade Passports
-        </Link>
-        <h1 className="mt-2 font-[family-name:var(--font-display)] text-3xl font-semibold">
+        <p className="text-xs text-[var(--fg-muted)]">
+          <Link href="/dashboard" className="underline">
+            Home
+          </Link>
+          {" · "}
+          <Link href="/dashboard/trade" className="underline">
+            Passports
+          </Link>
+        </p>
+        <p className="mt-3 text-xs uppercase tracking-[0.14em] text-[var(--accent)]">
+          Step 4 of 4 · Execute
+        </p>
+        <h1 className="mt-1 font-[family-name:var(--font-display)] text-3xl font-semibold">
           {trade.tradeNumber}
         </h1>
         <p className="mt-1 text-sm text-[var(--fg-muted)]">
-          {trade.title} · {trade.currentStage} · {trade.status}
+          {trade.title} · {trade.originCountry || "—"} →{" "}
+          {trade.destinationCountry || "—"} · {trade.commodity} ·{" "}
+          {trade.quantity} {trade.unit}
         </p>
       </div>
 
       {error ? <p className="text-sm text-[var(--danger)]">{error}</p> : null}
 
-      <section className="grid gap-4 border-t border-[var(--border)] pt-6 sm:grid-cols-4">
-        <Stat label="Completion" value={`${trade.completionPct}%`} />
-        <Stat label="Readiness" value={`${trade.readiness.pct}%`} />
-        <Stat label="Trust" value={String(trade.trustScore)} />
-        <Stat label="Risk" value={String(trade.riskScore)} />
-      </section>
-
-      <section className="space-y-2 border-t border-[var(--border)] pt-6">
-        <div className="flex items-center justify-between text-xs text-[var(--fg-muted)]">
-          <span>Completion</span>
-          <span>{trade.completionPct}%</span>
-        </div>
-        <div className="h-2 overflow-hidden rounded-sm bg-[var(--border)]">
-          <div
-            className="h-full bg-[var(--accent)] transition-all"
-            style={{ width: `${Math.min(100, trade.completionPct)}%` }}
-          />
-        </div>
-        <div className="flex items-center justify-between text-xs text-[var(--fg-muted)]">
-          <span>Readiness</span>
-          <span>{trade.readiness.pct}%</span>
-        </div>
-        <div className="h-2 overflow-hidden rounded-sm bg-[var(--border)]">
-          <div
-            className="h-full bg-[var(--fg)]/70 transition-all"
-            style={{ width: `${Math.min(100, trade.readiness.pct)}%` }}
-          />
-        </div>
-      </section>
-
-      <section className="flex flex-wrap gap-2 border-t border-[var(--border)] pt-6">
-        <Button
-          size="sm"
-          disabled={loading}
-          onClick={() => act("advance")}
-        >
-          Advance stage
-        </Button>
-        <Button
-          size="sm"
-          variant="secondary"
-          disabled={loading}
-          onClick={() => act("recompute")}
-        >
-          Recompute
-        </Button>
-        <Link href={`/dashboard/ai`}>
-          <Button size="sm" variant="secondary" disabled={loading}>
-            Score with AI
-          </Button>
-        </Link>
-        <Link href="/dashboard/analytics">
-          <Button size="sm" variant="secondary">
-            Analytics
-          </Button>
-        </Link>
-        <Button
-          size="sm"
-          variant="secondary"
-          disabled={loading}
-          onClick={() => act("dispute", { notes: "Marked disputed" })}
-        >
-          Dispute
-        </Button>
-        <Button
-          size="sm"
-          variant="secondary"
-          disabled={loading}
-          onClick={() => act("cancel", { notes: "Cancelled" })}
-        >
-          Cancel
-        </Button>
-      </section>
-
-      <section className="space-y-2 border-t border-[var(--border)] pt-6">
-        <h2 className="font-[family-name:var(--font-display)] text-xl font-semibold">
-          Overview
-        </h2>
-        <p className="text-sm">
-          {trade.commodity} · {trade.quantity} {trade.unit}
-          {trade.value != null ? ` · ${trade.currency} ${trade.value}` : ""}
-        </p>
-        <p className="text-sm text-[var(--fg-muted)]">
-          Corridor {trade.corridor || "—"} ·{" "}
-          {trade.originCountry || "—"} → {trade.destinationCountry || "—"} ·{" "}
-          {trade.incoterms || "Incoterms TBD"}
-        </p>
-        <p className="text-xs text-[var(--fg-muted)]">
-          Created {formatDate(trade.createdAt)} · Updated{" "}
-          {formatDate(trade.updatedAt)}
-        </p>
-      </section>
-
-      <section className="space-y-2 border-t border-[var(--border)] pt-6">
-        <h2 className="font-[family-name:var(--font-display)] text-xl font-semibold">
-          Readiness
-        </h2>
-        {trade.readiness.items.map((item) => (
-          <p key={item.key} className="text-sm">
-            {item.ok ? "✓" : item.stub ? "–" : "○"} {item.label}
-            {item.stub ? " (stub)" : ""}
-          </p>
-        ))}
-        {trade.completion.complete ? (
-          <p className="text-sm font-medium">Trade complete</p>
-        ) : (
-          <p className="text-xs text-[var(--fg-muted)]">
-            {trade.completion.completedCount}/{trade.completion.milestoneCount}{" "}
-            milestones complete
-          </p>
-        )}
-      </section>
-
       {trade.executable ? (
-        <section className="space-y-3 border-t border-[var(--border)] pt-6">
+        <section className="space-y-4 border border-[var(--border)] bg-white p-6">
           <div className="flex flex-wrap items-end justify-between gap-3">
             <div>
-              <h2 className="font-[family-name:var(--font-display)] text-xl font-semibold">
-                Executable corridor
-              </h2>
-              <p className="text-sm text-[var(--fg-muted)]">
-                Trust · Rules · Events · Finance — finish the lot on this
-                passport.
+              <p className="text-xs uppercase tracking-[0.14em] text-[var(--accent)]">
+                This lot
               </p>
-            </div>
-            <div className="text-right">
-              <p className="font-[family-name:var(--font-display)] text-3xl font-semibold text-[var(--accent)]">
-                {trade.executable.pct}%
-              </p>
-              <p className="text-xs text-[var(--fg-muted)]">
+              <h2 className="mt-1 font-[family-name:var(--font-display)] text-2xl font-semibold">
                 {trade.executable.settled
-                  ? "Settled"
+                  ? "Settled on this passport"
                   : trade.executable.readyToExecute || trade.executable.executable
                     ? "Ready to execute"
-                    : "Not yet executable"}
-              </p>
+                    : "Close the open tests"}
+              </h2>
             </div>
+            <p className="font-[family-name:var(--font-display)] text-3xl font-semibold text-[var(--accent)]">
+              {trade.executable.pct}%
+            </p>
           </div>
-          <div className="h-2 overflow-hidden rounded-sm bg-[var(--border)]">
+          <div className="h-2 overflow-hidden rounded-full bg-[var(--border)]">
             <div
               className="h-full bg-[var(--accent)] transition-all"
               style={{ width: `${Math.min(100, trade.executable.pct)}%` }}
@@ -369,7 +259,21 @@ export default function TradeWorkspacePage() {
               );
             })}
           </div>
-          <ul className="divide-y divide-[var(--border)] border-y border-[var(--border)]">
+          <p className="text-sm">{trade.executable.nextAction}</p>
+          {nextTest && !nextTest.ok ? (
+            <div className="border-t border-[var(--border)] pt-4">
+              <p className="text-sm font-medium">{nextTest.question}</p>
+              <p className="mt-1 text-xs text-[var(--fg-muted)]">
+                {nextTest.detail}
+              </p>
+              {nextTest.href ? (
+                <Link href={nextTest.href} className="mt-3 inline-block">
+                  <Button size="sm">Fix this</Button>
+                </Link>
+              ) : null}
+            </div>
+          ) : null}
+          <ul className="divide-y divide-[var(--border)] border-t border-[var(--border)]">
             {trade.executable.tests.map((t) => (
               <li key={t.id} className="py-2 text-sm">
                 <p>
@@ -381,21 +285,67 @@ export default function TradeWorkspacePage() {
                     </span>
                   ) : null}
                 </p>
-                <p className="pl-6 text-xs text-[var(--fg-muted)]">{t.detail}</p>
-                {!t.ok && t.href ? (
-                  <Link
-                    href={t.href}
-                    className="pl-6 text-xs text-[var(--accent)] underline"
-                  >
-                    Fix
-                  </Link>
+                {!t.ok ? (
+                  <p className="pl-6 text-xs text-[var(--fg-muted)]">
+                    {t.detail}
+                    {t.href ? (
+                      <>
+                        {" "}
+                        <Link href={t.href} className="text-[var(--accent)] underline">
+                          Fix
+                        </Link>
+                      </>
+                    ) : null}
+                  </p>
                 ) : null}
               </li>
             ))}
           </ul>
-          <p className="text-sm font-medium">{trade.executable.nextAction}</p>
         </section>
       ) : null}
+
+      <section className="space-y-2">
+        <p className="text-sm text-[var(--fg-muted)]">
+          Corridor {trade.corridor || "—"} ·{" "}
+          {trade.incoterms || "Incoterms TBD"}
+          {trade.value != null ? ` · ${trade.currency} ${trade.value}` : ""}
+        </p>
+      </section>
+
+      <details className="border-t border-[var(--border)] pt-4">
+        <summary className="cursor-pointer text-sm font-medium">
+          Operator tools
+        </summary>
+        <div className="mt-3 flex flex-wrap gap-2">
+          <Button size="sm" disabled={loading} onClick={() => act("advance")}>
+            Advance stage
+          </Button>
+          <Button
+            size="sm"
+            variant="secondary"
+            disabled={loading}
+            onClick={() => act("recompute")}
+          >
+            Recompute
+          </Button>
+          <Button
+            size="sm"
+            variant="secondary"
+            disabled={loading}
+            onClick={() => act("dispute", { notes: "Marked disputed" })}
+          >
+            Dispute
+          </Button>
+          <Button
+            size="sm"
+            variant="secondary"
+            disabled={loading}
+            onClick={() => act("cancel", { notes: "Cancelled" })}
+          >
+            Cancel
+          </Button>
+        </div>
+      </details>
 
       <section className="space-y-2 border-t border-[var(--border)] pt-6">
         <h2 className="font-[family-name:var(--font-display)] text-xl font-semibold">
@@ -599,28 +549,6 @@ export default function TradeWorkspacePage() {
           ))
         )}
       </section>
-
-      <section className="border-t border-[var(--border)] pt-6">
-        <h2 className="font-[family-name:var(--font-display)] text-xl font-semibold">
-          AI Assistant
-        </h2>
-        <p className="mt-1 text-sm text-[var(--fg-muted)]">
-          Context-aware guidance for this trade — coming in a later stage.
-        </p>
-      </section>
-    </div>
-  );
-}
-
-function Stat({ label, value }: { label: string; value: string }) {
-  return (
-    <div>
-      <p className="text-xs uppercase tracking-[0.14em] text-[var(--fg-muted)]">
-        {label}
-      </p>
-      <p className="mt-1 font-[family-name:var(--font-display)] text-2xl font-semibold">
-        {value}
-      </p>
     </div>
   );
 }

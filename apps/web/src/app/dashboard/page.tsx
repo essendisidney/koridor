@@ -76,7 +76,11 @@ export default function DashboardPage() {
       {journey?.next ? (
         <section className="border border-[var(--border)] bg-white p-6">
           <p className="text-xs uppercase tracking-[0.14em] text-[var(--accent)]">
-            Next
+            {(() => {
+              const idx = journey.phases.findIndex((p) => p.status === "current");
+              const phase = journey.phases[idx] ?? journey.phases[0];
+              return `Step ${Math.max(1, idx + 1)} of ${journey.phases.length} · ${phase.title}`;
+            })()}
           </p>
           <h2 className="mt-2 font-[family-name:var(--font-display)] text-2xl font-semibold">
             {journey.next.title}
