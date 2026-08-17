@@ -11,6 +11,18 @@ export default function LandingPage() {
           </span>
           <nav className="flex items-center gap-3">
             <Link
+              href="/cropchain"
+              className="hidden text-sm font-medium text-white/85 transition hover:text-white sm:inline"
+            >
+              CropChain
+            </Link>
+            <Link
+              href="/kenya"
+              className="hidden text-sm font-medium text-white/85 transition hover:text-white sm:inline"
+            >
+              Kenya–GCC
+            </Link>
+            <Link
               href="/login"
               className="text-sm font-medium text-white/85 transition hover:text-white"
             >
@@ -50,8 +62,8 @@ export default function LandingPage() {
           </h1>
           <p className="animate-fade-up mt-4 max-w-xl text-base leading-relaxed text-white/80 delay-200 md:text-lg">
             Trusted digital infrastructure connecting Kenyan farms to buyers in
-            Oman, Iran, Iraq, and beyond — plus banks, insurers, logistics, and
-            governments on one Trade Passport.
+            Oman, Saudi Arabia, Iran, Iraq, and the wider GCC — on one Trade
+            Passport.
           </p>
           <div className="animate-fade-up mt-8 flex flex-wrap gap-3 delay-300">
             <Link href="/register?role=BUYER">
@@ -62,13 +74,13 @@ export default function LandingPage() {
                 Buy Kenyan produce
               </Button>
             </Link>
-            <Link href="/kenya">
+            <Link href="/cropchain">
               <Button
                 size="lg"
                 variant="secondary"
                 className="border-white/30 bg-white/10 text-white hover:bg-white/15"
               >
-                Kenya → Oman, Iran, Iraq
+                CropChain Africa
               </Button>
             </Link>
           </div>
@@ -82,15 +94,15 @@ export default function LandingPage() {
               Infrastructure, not another marketplace.
             </h2>
             <p className="mt-4 max-w-lg text-[var(--fg-muted)] leading-relaxed">
-              A buyer in Muscat, Tehran, or Baghdad can RFQ Kenyan avocado, tea,
-              or coffee; a Nairobi exporter answers with evidence — KYB, Halal,
-              certificate of origin, escrow, and Mombasa shipping — not a
-              marketplace listing alone.
+              A buyer in Muscat, Jeddah, Tehran, or Baghdad can RFQ Kenyan
+              avocado, tea, or coffee with a harvest date; a Kenyan cooperative
+              answers with evidence — KYB, Halal, origin, escrow, and Mombasa
+              shipping — not a listing alone.
             </p>
           </div>
           <ul className="space-y-5 text-sm leading-relaxed text-[var(--fg)]">
             <li className="border-l-2 border-[var(--accent)] pl-4">
-              Kenya origin → Oman, Iran, and Iraq as a first-class corridor
+              Kenya → Oman, Saudi Arabia, Iran, and Iraq as one executable corridor
             </li>
             <li className="border-l-2 border-[var(--accent)] pl-4">
               Trust, contracts, Halal/COO compliance, escrow, and logistics
@@ -108,9 +120,9 @@ export default function LandingPage() {
           <span className="font-[family-name:var(--font-display)] text-base text-white">
             Koridor
           </span>
-          <span>Kenya → Oman · Iran · Iraq</span>
-          <Link href="/kenya" className="text-white underline">
-            Buy Kenyan produce
+          <span>Kenya → Oman · Saudi Arabia · Iran · Iraq</span>
+          <Link href="/cropchain" className="text-white underline">
+            CropChain Africa
           </Link>
         </div>
       </footer>

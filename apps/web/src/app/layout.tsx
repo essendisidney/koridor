@@ -21,7 +21,7 @@ export const metadata: Metadata = {
     template: "%s · Koridor",
   },
   description:
-    "Operating system for Kenyan farm produce to Oman, Iran, Iraq, and African trade corridors.",
+    "Operating system for Kenyan farm produce to Oman, Saudi Arabia, Iran, Iraq, and the GCC.",
 };
 
 export default function RootLayout({

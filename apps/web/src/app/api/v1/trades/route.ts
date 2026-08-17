@@ -8,6 +8,7 @@ import {
 } from "@/lib/org-access";
 import { Permission } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
+import { isGulfWestAsiaBuyer } from "@/lib/corridors";
 import { createTradePassport } from "@/lib/trade-passport";
 import { decimalNumber } from "@/lib/trade";
 
@@ -67,6 +68,16 @@ export async function POST(req: NextRequest) {
     const quantity = decimalNumber(body.quantity, 0);
     if (quantity <= 0) return fail("quantity must be positive", 400);
 
+    const dest = body.destinationCountry
+      ? String(body.destinationCountry).toUpperCase().slice(0, 2)
+      : null;
+    if (isGulfWestAsiaBuyer(dest) && !body.expectedEndAt) {
+      return fail(
+        "expectedEndAt (delivery window) is required so farmers plant against a sold offtake",
+        400,
+      );
+    }
+
     const trade = await createTradePassport({
       buyerOrgId: membership.organisationId,
       sellerOrgId: body.sellerOrgId ? String(body.sellerOrgId) : null,
@@ -79,11 +90,10 @@ export async function POST(req: NextRequest) {
       value: body.value !== undefined ? decimalNumber(body.value) : null,
       currency: body.currency ? String(body.currency) : "USD",
       originCountry: body.originCountry ? String(body.originCountry) : null,
-      destinationCountry: body.destinationCountry
-        ? String(body.destinationCountry)
-        : null,
+      destinationCountry: dest,
       corridor: body.corridor ? String(body.corridor) : null,
       incoterms: body.incoterms ? String(body.incoterms) : null,
+      expectedEndAt: body.expectedEndAt ? String(body.expectedEndAt) : null,
       status: TradeStatus.DRAFT,
       notes: body.notes ? String(body.notes) : null,
     });

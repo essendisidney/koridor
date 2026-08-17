@@ -89,9 +89,9 @@ function OnboardingForm() {
         Register your organisation
       </h1>
       <p className="mt-2 text-sm text-[var(--fg-muted)]">
-        Kenyan farms and exporters list as origin KE. Importers in Oman, Iran,
-        or Iraq register as Buyer with destination country OM, IR, or IQ — then
-        RFQ Kenyan produce.
+        Kenyan cooperatives and exporters list as origin KE. Importers in Oman,
+        Saudi Arabia, Iran, or Iraq register as Buyer (OM, SA, IR, IQ) — then
+        publish a dated offtake RFQ.
       </p>
       <form onSubmit={onSubmit} className="mt-8 space-y-4">
         <Input label="Legal name" name="name" required />
@@ -117,8 +117,10 @@ function OnboardingForm() {
           <Input
             label="City"
             name="city"
-            placeholder={
-              defaultType === "BUYER" ? "Muscat / Tehran / Baghdad" : "Nairobi"
+              placeholder={
+              defaultType === "BUYER"
+                ? "Muscat / Jeddah / Tehran / Baghdad"
+                : "Nairobi"
             }
           />
         </div>

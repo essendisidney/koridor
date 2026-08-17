@@ -214,6 +214,7 @@ export async function PATCH(req: NextRequest, ctx: Ctx) {
       originCountry: rfq.originCountry,
       destinationCountry: rfq.destinationCountry,
       incoterms: offer.incoterm ?? rfq.incoterm,
+      expectedEndAt: rfq.neededBy,
       status: TradeStatus.NEGOTIATION,
       notes: `Formed from ${rfq.reference}`,
     });

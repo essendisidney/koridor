@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Kenya to Oman, Iran and Iraq",
+  title: "Kenya to Oman, Saudi Arabia, Iran and Iraq",
   description:
-    "Buy Kenyan farm produce from verified exporters — avocado, tea, coffee and horticulture — with contracts, Halal/COO, escrow and Mombasa shipping to Oman, Iran and Iraq.",
+    "Buy Kenyan farm produce from verified cooperatives and exporters — avocado, tea, coffee and horticulture — with dated offtake, Halal/COO, escrow and Mombasa shipping to Oman, Saudi Arabia, Iran and Iraq.",
 };
 
 export default function KenyaLayout({

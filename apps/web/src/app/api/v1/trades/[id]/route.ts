@@ -22,6 +22,7 @@ import {
   STATUS_STAGE,
   syncMilestonesFromWorld,
 } from "@/lib/trade-passport";
+import { scoreExecutableCorridorSafe } from "@/lib/corridor-completion";
 
 export const runtime = "nodejs";
 
@@ -138,12 +139,13 @@ export async function GET(req: NextRequest, ctx: Ctx) {
     });
     if (!trade) return fail("Trade not found", 404);
 
-    const [readiness, completion] = await Promise.all([
+    const [readiness, completion, executable] = await Promise.all([
       computeReadiness(id),
       computeCompletion(id),
+      scoreExecutableCorridorSafe(id),
     ]);
 
-    return ok({ ...trade, readiness, completion });
+    return ok({ ...trade, readiness, completion, executable });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Failed";
     return fail(
@@ -173,7 +175,8 @@ export async function POST(req: NextRequest, ctx: Ctx) {
       const updated = await recomputeTradeScores(id, user.id);
       const readiness = await computeReadiness(id);
       const completion = await computeCompletion(id);
-      return ok({ trade: updated, readiness, completion });
+      const executable = await scoreExecutableCorridorSafe(id);
+      return ok({ trade: updated, readiness, completion, executable });
     }
 
     if (action === "advance") {

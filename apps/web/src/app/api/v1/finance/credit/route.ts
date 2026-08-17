@@ -92,6 +92,13 @@ export async function POST(req: NextRequest) {
       const supplierOrgId = String(body.supplierOrgId ?? "");
       const amount = Number(body.amount);
       if (!supplierOrgId) return fail("supplierOrgId is required", 400);
+      const tradeId = String(body.tradeId ?? "").trim();
+      if (!tradeId) {
+        return fail(
+          "tradeId is required — issue in-kind credit against a locked Trade Passport",
+          400,
+        );
+      }
       if (!Number.isFinite(amount) || amount <= 0) {
         return fail("amount must be a positive number", 400);
       }
@@ -100,7 +107,7 @@ export async function POST(req: NextRequest) {
         organisationId: membership.organisationId,
         supplierOrgId,
         amount,
-        tradeId: body.tradeId ? String(body.tradeId) : undefined,
+        tradeId,
         description: body.description
           ? String(body.description)
           : undefined,

@@ -37,7 +37,7 @@ const NAV = [
   { href: "/dashboard/analytics", label: "Analytics", icon: BarChart3 },
   { href: "/dashboard/ai", label: "AI", icon: Bot },
   { href: "/dashboard/trade", label: "Trade", icon: Handshake },
-  { href: "/kenya", label: "Kenya–Gulf", icon: Globe },
+  { href: "/cropchain", label: "CropChain", icon: Globe },
   { href: "/dashboard/rfqs", label: "RFQs", icon: ClipboardList },
   { href: "/dashboard/contracts", label: "Contracts", icon: FileSignature },
   { href: "/dashboard/finance", label: "Finance", icon: Wallet },

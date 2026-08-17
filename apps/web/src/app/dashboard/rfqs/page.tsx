@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { CountrySelect } from "@/components/country-select";
 import { Select } from "@/components/ui/select";
-import { KENYA_PRODUCE } from "@/lib/corridors";
+import { KENYA_PRODUCE, GULF_INCOTERMS } from "@/lib/corridors";
 
 type Rfq = {
   id: string;
@@ -19,6 +19,9 @@ type Rfq = {
   unit: string;
   status: string;
   currency: string;
+  originCountry?: string | null;
+  destinationCountry?: string | null;
+  neededBy?: string | null;
   buyerOrg?: { name: string };
   _count?: { offers: number };
 };
@@ -63,6 +66,7 @@ export default function RfqsPage() {
           originCountry: String(form.get("originCountry") || ""),
           destinationCountry: String(form.get("destinationCountry") || ""),
           incoterm: String(form.get("incoterm") || ""),
+          neededBy: String(form.get("neededBy") || "") || undefined,
           notes: String(form.get("notes") || ""),
           publish: form.get("publish") === "on",
         },
@@ -82,8 +86,9 @@ export default function RfqsPage() {
           RFQs
         </h1>
         <p className="mt-1 text-sm text-[var(--fg-muted)]">
-          Buyers in Oman, Iran, and Iraq: origin Kenya, destination your
-          country. Kenyan exporters answer from Open market.
+          GCC and Iranian buyers: origin Kenya, destination Oman / Saudi Arabia
+          / Iran / Iraq, with a needed-by date so farmers plant against a sold
+          order.
         </p>
       </div>
 
@@ -122,6 +127,9 @@ export default function RfqsPage() {
               </div>
               <p className="text-xs text-[var(--fg-muted)]">
                 {r.reference} · {r.commodity} · {r.quantity} {r.unit}
+                {r.originCountry && r.destinationCountry
+                  ? ` · ${r.originCountry}→${r.destinationCountry}`
+                  : ""}
                 {r.buyerOrg ? ` · ${r.buyerOrg.name}` : ""}
                 {r._count ? ` · ${r._count.offers} offers` : ""}
               </p>
@@ -139,7 +147,7 @@ export default function RfqsPage() {
             Create RFQ
           </h2>
           <p className="text-sm text-[var(--fg-muted)]">
-            Default corridor is Kenya origin to Oman / Iran / Iraq.
+            Default corridor is Kenya origin to Oman / Saudi Arabia / Iran / Iraq.
           </p>
           <Input label="Title" name="title" required placeholder="Hass avocado — Kenya to Muscat" />
           <Select label="Commodity" name="commodity" required defaultValue="Avocado">
@@ -168,7 +176,17 @@ export default function RfqsPage() {
               type="number"
               step="0.01"
             />
-            <Input label="Incoterm" name="incoterm" placeholder="FOB Mombasa" defaultValue="FOB Mombasa" />
+            <Select
+              label="Incoterm"
+              name="incoterm"
+              defaultValue="FOB Mombasa"
+            >
+              {GULF_INCOTERMS.map((i) => (
+                <option key={i} value={i}>
+                  {i}
+                </option>
+              ))}
+            </Select>
           </div>
           <div className="grid gap-3 sm:grid-cols-2">
             <CountrySelect
@@ -184,6 +202,16 @@ export default function RfqsPage() {
               required
             />
           </div>
+          <Input
+            label="Needed by (delivery window)"
+            name="neededBy"
+            type="date"
+            required
+          />
+          <p className="text-xs text-[var(--fg-muted)]">
+            Order first: Gulf buyer locks volume and date; Kenyan farmers plant
+            against a sold contract.
+          </p>
           <Input label="Notes" name="notes" />
           <label className="flex items-center gap-2 text-sm">
             <input type="checkbox" name="publish" defaultChecked />

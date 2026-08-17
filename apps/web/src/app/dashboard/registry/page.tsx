@@ -32,6 +32,11 @@ type MyProfile = {
   exportMarkets: string[];
   yearsInOperation?: number | null;
   isListed: boolean;
+  attributes?: {
+    county?: string;
+    chamber?: string;
+    program?: string;
+  };
 } | null;
 
 const TYPES = ["", "EXPORTER", "BUYER", "FARMER", "COOPERATIVE"];
@@ -89,6 +94,11 @@ export default function RegistryPage() {
           commodities: String(form.get("commodities") || ""),
           exportMarkets: String(form.get("exportMarkets") || ""),
           yearsInOperation: String(form.get("yearsInOperation") || ""),
+          attributes: {
+            county: String(form.get("county") || ""),
+            chamber: String(form.get("chamber") || ""),
+            program: String(form.get("program") || ""),
+          },
           isListed: form.get("isListed") === "on",
         },
       });
@@ -109,9 +119,10 @@ export default function RegistryPage() {
           Registry
         </h1>
         <p className="mt-1 text-sm text-[var(--fg-muted)]">
-          Kenyan farmers and exporters, plus buyers in Oman, Iran, and Iraq.
-          List commodities and Gulf export markets (OM, IR, IQ) so importers can
-          find you.
+          Kenyan cooperatives, exporters, and producer groups, plus buyers in
+          Oman, Saudi Arabia, Iran, and Iraq. List commodities and export
+          markets (OM, SA, IR, IQ) so importers can find you. Onboard factories
+          and cooperatives — not 700,000 individual farmers.
         </p>
       </div>
 
@@ -134,9 +145,29 @@ export default function RegistryPage() {
           <Input
             label="Export / source markets (comma-separated ISO-2)"
             name="exportMarkets"
-            placeholder="OM, IR, IQ"
+            placeholder="OM, IR, IQ, SA"
             defaultValue={mine?.exportMarkets?.join(", ") ?? ""}
           />
+          <div className="grid gap-3 sm:grid-cols-3">
+            <Input
+              label="County (Kenya)"
+              name="county"
+              placeholder="Kericho"
+              defaultValue={mine?.attributes?.county ?? ""}
+            />
+            <Input
+              label="Chamber / union"
+              name="chamber"
+              placeholder="KNCCI / KTDA factory"
+              defaultValue={mine?.attributes?.chamber ?? ""}
+            />
+            <Input
+              label="Program"
+              name="program"
+              placeholder="KTDA diversification"
+              defaultValue={mine?.attributes?.program ?? ""}
+            />
+          </div>
           <Input
             label="Years in operation"
             name="yearsInOperation"
@@ -179,8 +210,6 @@ export default function RegistryPage() {
             ))}
           </select>
           <CountrySelect
-            label=""
-            name="countryFilter"
             allowEmpty
             emptyLabel="All countries"
             value={country}
@@ -209,7 +238,7 @@ export default function RegistryPage() {
         </div>
         <p className="text-xs text-[var(--fg-muted)]">
           Quick: Kenyan {KENYA_PRODUCE.slice(0, 4).join(", ").toLowerCase()}{" "}
-          towards Oman, Iran, Iraq.
+          towards Oman, Saudi Arabia, Iran, Iraq.
         </p>
         {error ? <p className="text-sm text-[var(--danger)]">{error}</p> : null}
         <div className="space-y-3">

@@ -3,7 +3,7 @@ import { Select } from "@/components/ui/select";
 import { SelectHTMLAttributes } from "react";
 
 type Props = Omit<SelectHTMLAttributes<HTMLSelectElement>, "children"> & {
-  label: string;
+  label?: string;
   allowEmpty?: boolean;
   emptyLabel?: string;
 };

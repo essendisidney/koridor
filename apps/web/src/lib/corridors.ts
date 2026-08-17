@@ -4,7 +4,7 @@ export type CountryOption = {
   region: string;
 };
 
-/** Origin: Kenya and East African supply. Destinations: Oman, Iran, Iraq first. */
+/** Origin: Kenya and East Africa. Destinations: Oman, Saudi Arabia, Iran, Iraq. */
 export const COUNTRIES: CountryOption[] = [
   { code: "KE", name: "Kenya", region: "East Africa (origin)" },
   { code: "UG", name: "Uganda", region: "East Africa (origin)" },
@@ -22,7 +22,16 @@ export const COUNTRIES: CountryOption[] = [
 
 export const KENYA_ORIGIN = "KE";
 
-export const GULF_WEST_ASIA_BUYERS = ["OM", "IR", "IQ"] as const;
+export const GULF_WEST_ASIA_BUYERS = ["OM", "IR", "IQ", "SA"] as const;
+
+/** Destinations that require Halal + certificate of origin on the lot. */
+export const GCC_FOOD_IMPORT = [
+  ...GULF_WEST_ASIA_BUYERS,
+  "AE",
+  "QA",
+  "BH",
+  "KW",
+] as const;
 
 export const FEATURED_CORRIDORS = [
   {
@@ -32,6 +41,14 @@ export const FEATURED_CORRIDORS = [
     title: "Kenya → Oman",
     ports: "Mombasa / Nairobi cargo → Sohar / Muscat",
     note: "Tea, avocado, coffee, and horticulture into GCC retail and food service.",
+  },
+  {
+    id: "KE-SA",
+    origin: "KE",
+    destination: "SA",
+    title: "Kenya → Saudi Arabia",
+    ports: "Mombasa → Jeddah / Dammam",
+    note: "Government-backed agri commodity trade and food-security offtake.",
   },
   {
     id: "KE-IR",
@@ -80,6 +97,11 @@ export function isGulfWestAsiaBuyer(code?: string | null) {
   return (GULF_WEST_ASIA_BUYERS as readonly string[]).includes(
     code.toUpperCase(),
   );
+}
+
+export function isGulfFoodImport(code?: string | null) {
+  if (!code) return false;
+  return (GCC_FOOD_IMPORT as readonly string[]).includes(code.toUpperCase());
 }
 
 export function groupedCountries() {

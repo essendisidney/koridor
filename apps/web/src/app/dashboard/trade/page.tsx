@@ -66,6 +66,7 @@ export default function TradePage() {
           originCountry: String(form.get("originCountry") || ""),
           destinationCountry: String(form.get("destinationCountry") || ""),
           incoterms: String(form.get("incoterms") || ""),
+          expectedEndAt: String(form.get("expectedEndAt") || "") || undefined,
         },
       });
       window.location.href = `/dashboard/trades/${trade.id}`;
@@ -84,8 +85,8 @@ export default function TradePage() {
             Trade Passports
           </h1>
           <p className="mt-1 text-sm text-[var(--fg-muted)]">
-            Living trades — the single source of truth for parties, documents,
-            living trades with origin Kenya and destination Oman, Iran, or Iraq.
+            One passport for parties, documents, finance, and shipping. Default
+            corridor is Kenya origin to Oman, Saudi Arabia, Iran, or Iraq.
           </p>
         </div>
         <div className="flex gap-2">
@@ -178,10 +179,16 @@ export default function TradePage() {
           <CountrySelect
             label="Destination"
             name="destinationCountry"
-            defaultValue="IQ"
+            defaultValue="OM"
             required
           />
         </div>
+        <Input
+          label="Needed by (delivery window)"
+          name="expectedEndAt"
+          type="date"
+          required
+        />
         <Button type="submit" disabled={loading}>
           {loading ? "Creating…" : "Create draft passport"}
         </Button>

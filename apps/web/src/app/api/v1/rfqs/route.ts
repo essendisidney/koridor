@@ -8,6 +8,7 @@ import {
 } from "@/lib/org-access";
 import { Permission } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
+import { isGulfWestAsiaBuyer } from "@/lib/corridors";
 import { decimalNumber, recordTradeEvent, tradeReference } from "@/lib/trade";
 
 export const runtime = "nodejs";
@@ -66,6 +67,24 @@ export async function POST(req: NextRequest) {
       return fail("title, commodity and quantity are required", 400);
     }
 
+    const originCountry = body.originCountry
+      ? String(body.originCountry).toUpperCase().slice(0, 2)
+      : null;
+    const destinationCountry = body.destinationCountry
+      ? String(body.destinationCountry).toUpperCase().slice(0, 2)
+      : null;
+    const neededByRaw = body.neededBy ? String(body.neededBy) : "";
+    const neededBy = neededByRaw ? new Date(neededByRaw) : null;
+    if (neededBy && Number.isNaN(neededBy.getTime())) {
+      return fail("neededBy is invalid", 400);
+    }
+    if (isGulfWestAsiaBuyer(destinationCountry) && !neededBy) {
+      return fail(
+        "neededBy (delivery window) is required so Kenyan farmers plant against a sold offtake",
+        400,
+      );
+    }
+
     const publish = Boolean(body.publish);
     const rfq = await prisma.rfq.create({
       data: {
@@ -81,14 +100,10 @@ export async function POST(req: NextRequest) {
             ? decimalNumber(body.targetPrice)
             : null,
         currency: String(body.currency ?? "USD").slice(0, 3).toUpperCase(),
-        originCountry: body.originCountry
-          ? String(body.originCountry).toUpperCase().slice(0, 2)
-          : null,
-        destinationCountry: body.destinationCountry
-          ? String(body.destinationCountry).toUpperCase().slice(0, 2)
-          : null,
+        originCountry,
+        destinationCountry,
         incoterm: body.incoterm ? String(body.incoterm) : null,
-        neededBy: body.neededBy ? new Date(String(body.neededBy)) : null,
+        neededBy,
         notes: body.notes ? String(body.notes) : null,
         status: publish ? RfqStatus.OPEN : RfqStatus.DRAFT,
         publishedAt: publish ? new Date() : null,

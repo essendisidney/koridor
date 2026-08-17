@@ -672,6 +672,7 @@ export type CreateTradeInput = {
   currency?: string;
   originCountry?: string | null;
   destinationCountry?: string | null;
+  expectedEndAt?: Date | string | null;
   corridor?: string | null;
   incoterms?: string | null;
   status?: TradeStatus;
@@ -705,6 +706,11 @@ export async function createTradePassport(input: CreateTradeInput) {
           ? `${String(input.originCountry).toUpperCase()}-${String(input.destinationCountry).toUpperCase()}`
           : null),
       incoterms: input.incoterms ?? null,
+      expectedEndAt: (() => {
+        if (!input.expectedEndAt) return null;
+        const d = new Date(input.expectedEndAt);
+        return Number.isNaN(d.getTime()) ? null : d;
+      })(),
       ownerId: input.ownerId,
       notes: input.notes ?? null,
       createdBy: input.actorId,

@@ -57,8 +57,8 @@ export default function DashboardPage() {
             Welcome, {user?.firstName}
           </h1>
           <p className="mt-1 text-sm text-[var(--fg-muted)]">
-            Kenya origin to Oman, Iran, and Iraq — RFQs, contracts, and shipping
-            on one Trade Passport.
+            Kenya origin to Oman, Saudi Arabia, Iran, and Iraq — RFQs,
+            contracts, and shipping on one Trade Passport.
           </p>
         </div>
         {!user?.organisationId ? (
@@ -78,8 +78,8 @@ export default function DashboardPage() {
       </div>
 
       <div className="flex flex-wrap gap-3">
-        <Link href="/kenya">
-          <Button size="sm">Kenya → Oman / Iran / Iraq</Button>
+        <Link href="/cropchain">
+          <Button size="sm">CropChain Africa</Button>
         </Link>
         <Link href="/dashboard/rfqs">
           <Button variant="secondary" size="sm">

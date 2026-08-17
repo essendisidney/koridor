@@ -81,11 +81,16 @@ export async function issueTradeCreditDraw(input: {
   organisationId: string;
   supplierOrgId: string;
   amount: number;
-  tradeId?: string;
+  tradeId: string;
   description?: string;
   actorId?: string;
 }) {
   if (input.amount <= 0) throw new Error("Amount must be positive");
+  if (!input.tradeId) {
+    throw new Error(
+      "Issue credit against a Trade Passport so settlement stays bound to the lot",
+    );
+  }
   if (input.supplierOrgId === input.organisationId) {
     throw new Error("Supplier must be a different organisation");
   }
@@ -95,19 +100,17 @@ export async function issueTradeCreditDraw(input: {
   });
   if (!supplier) throw new Error("Supplier organisation not found");
 
-  if (input.tradeId) {
-    const trade = await prisma.trade.findFirst({
-      where: {
-        id: input.tradeId,
-        deletedAt: null,
-        OR: [
-          { buyerOrgId: input.organisationId },
-          { sellerOrgId: input.organisationId },
-        ],
-      },
-    });
-    if (!trade) throw new Error("Trade not found for this organisation");
-  }
+  const trade = await prisma.trade.findFirst({
+    where: {
+      id: input.tradeId,
+      deletedAt: null,
+      OR: [
+        { buyerOrgId: input.organisationId },
+        { sellerOrgId: input.organisationId },
+      ],
+    },
+  });
+  if (!trade) throw new Error("Trade not found for this organisation");
 
   const facility = await syncTradeCreditFacility({
     organisationId: input.organisationId,
@@ -170,7 +173,7 @@ export async function issueTradeCreditDraw(input: {
         reference,
         amount: input.amount,
         supplierOrgId: input.supplierOrgId,
-        tradeId: input.tradeId ?? null,
+        tradeId: input.tradeId,
       },
     },
   });

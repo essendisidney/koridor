@@ -55,7 +55,9 @@ function RegisterForm() {
             ? "FARMER"
             : selected === "COOPERATIVE"
               ? "COOPERATIVE"
-              : "EXPORTER";
+              : selected === "CHAMBER_OF_COMMERCE"
+                ? "CHAMBER_OF_COMMERCE"
+                : "EXPORTER";
       const qs = new URLSearchParams();
       qs.set("type", orgType);
       if (country) qs.set("country", country.toUpperCase());
@@ -82,7 +84,7 @@ function RegisterForm() {
       </h1>
       <p className="mt-2 text-sm text-[var(--fg-muted)]">
         {defaultRole === "BUYER"
-          ? "Importers in Oman, Iran, and Iraq: register as Buyer, then RFQ Kenyan farm produce."
+          ? "Importers in Oman, Saudi Arabia, Iran, and Iraq: register as Buyer, then RFQ Kenyan farm produce."
           : "Register as a participant in the Koridor network — Kenyan supply to Gulf and West Asian buyers."}
       </p>
       <form onSubmit={onSubmit} className="mt-8 space-y-4">

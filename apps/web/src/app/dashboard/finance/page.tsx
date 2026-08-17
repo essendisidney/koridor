@@ -372,8 +372,8 @@ export default function FinancePage() {
           <Link href="/dashboard/bankability" className="underline">
             bankability
           </Link>
-          . Issue supplier credit for inputs/goods (not cash). Settle after
-          delivery — wallet debit by default.
+          . Issue supplier credit for inputs/goods (not cash) against a locked
+          Trade Passport. Settle after delivery — wallet debit by default.
         </p>
         {credit?.facility ? (
           <div className="grid gap-4 sm:grid-cols-3">
@@ -404,7 +404,7 @@ export default function FinancePage() {
             step="0.01"
             required
           />
-          <Input label="Trade id (optional)" name="tradeId" />
+          <Input label="Trade Passport id" name="tradeId" required />
           <Input label="Description" name="description" />
           <Button type="submit" disabled={loading}>
             Issue supplier credit

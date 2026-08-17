@@ -99,6 +99,26 @@ type TradeDetail = {
   }[];
   readiness: Readiness;
   completion: Completion;
+  executable?: {
+    executable: boolean;
+    readyToExecute?: boolean;
+    settled?: boolean;
+    pct: number;
+    pillars: Record<
+      string,
+      { ok: boolean; passed: number; total: number }
+    >;
+    tests: {
+      id: string;
+      pillar: string;
+      question: string;
+      ok: boolean;
+      detail: string;
+      href?: string;
+      blocking?: boolean;
+    }[];
+    nextAction: string;
+  };
 };
 
 const EVIDENCE_TYPES = [
@@ -303,6 +323,80 @@ export default function TradeWorkspacePage() {
         )}
       </section>
 
+      {trade.executable ? (
+        <section className="space-y-3 border-t border-[var(--border)] pt-6">
+          <div className="flex flex-wrap items-end justify-between gap-3">
+            <div>
+              <h2 className="font-[family-name:var(--font-display)] text-xl font-semibold">
+                Executable corridor
+              </h2>
+              <p className="text-sm text-[var(--fg-muted)]">
+                Trust · Rules · Events · Finance — finish the lot on this
+                passport.
+              </p>
+            </div>
+            <div className="text-right">
+              <p className="font-[family-name:var(--font-display)] text-3xl font-semibold text-[var(--accent)]">
+                {trade.executable.pct}%
+              </p>
+              <p className="text-xs text-[var(--fg-muted)]">
+                {trade.executable.settled
+                  ? "Settled"
+                  : trade.executable.readyToExecute || trade.executable.executable
+                    ? "Ready to execute"
+                    : "Not yet executable"}
+              </p>
+            </div>
+          </div>
+          <div className="h-2 overflow-hidden rounded-sm bg-[var(--border)]">
+            <div
+              className="h-full bg-[var(--accent)] transition-all"
+              style={{ width: `${Math.min(100, trade.executable.pct)}%` }}
+            />
+          </div>
+          <div className="grid gap-3 sm:grid-cols-4">
+            {(["trust", "rules", "events", "finance"] as const).map((key) => {
+              const p = trade.executable!.pillars[key];
+              return (
+                <div key={key}>
+                  <p className="text-xs uppercase tracking-[0.12em] text-[var(--fg-muted)]">
+                    {key}
+                  </p>
+                  <p className="text-sm font-medium">
+                    {p?.ok ? "Ready" : "Open"} · {p?.passed}/{p?.total}
+                  </p>
+                </div>
+              );
+            })}
+          </div>
+          <ul className="divide-y divide-[var(--border)] border-y border-[var(--border)]">
+            {trade.executable.tests.map((t) => (
+              <li key={t.id} className="py-2 text-sm">
+                <p>
+                  <span className="mr-2">{t.ok ? "✓" : "○"}</span>
+                  {t.question}
+                  {t.blocking && !t.ok ? (
+                    <span className="ml-2 text-xs text-[var(--danger)]">
+                      Required
+                    </span>
+                  ) : null}
+                </p>
+                <p className="pl-6 text-xs text-[var(--fg-muted)]">{t.detail}</p>
+                {!t.ok && t.href ? (
+                  <Link
+                    href={t.href}
+                    className="pl-6 text-xs text-[var(--accent)] underline"
+                  >
+                    Fix
+                  </Link>
+                ) : null}
+              </li>
+            ))}
+          </ul>
+          <p className="text-sm font-medium">{trade.executable.nextAction}</p>
+        </section>
+      ) : null}
+
       <section className="space-y-2 border-t border-[var(--border)] pt-6">
         <h2 className="font-[family-name:var(--font-display)] text-xl font-semibold">
           Parties
@@ -359,6 +453,7 @@ export default function TradeWorkspacePage() {
       </section>
 
       <form
+        id="evidence"
         className="space-y-3 border-t border-[var(--border)] pt-6"
         onSubmit={(e: FormEvent<HTMLFormElement>) => {
           e.preventDefault();
