@@ -108,13 +108,42 @@ export function safeNextPath(raw: string | null) {
   return raw;
 }
 
-export function personaCopy(persona: Persona) {
+export type WorkspaceMetric = {
+  label: string;
+  value: string | number;
+  href?: string;
+};
+
+export type WorkspaceHighlight = {
+  title: string;
+  subtitle: string;
+  href: string;
+  badge?: string;
+};
+
+export type WorkspaceView = {
+  headline: string;
+  subhead: string;
+  primaryCta: { label: string; href: string };
+  secondaryCta?: { label: string; href: string };
+  metrics: WorkspaceMetric[];
+  highlights: WorkspaceHighlight[];
+};
+
+export function personaCopy(persona: Persona, isAdmin = false) {
+  if (isAdmin) {
+    return {
+      headline: "What needs attention?",
+      blurb:
+        "Live demand, open RFQs, deal rooms, and verification queues across the corridor.",
+    };
+  }
   switch (persona) {
     case "buyer":
       return {
-        headline: "Your Kenya–GCC offtake",
+        headline: "What are you looking to source?",
         blurb:
-          "Verify, publish a dated RFQ, accept a Kenyan offer, then finish the lot on one Trade Passport.",
+          "Post a structured buying requirement. Koridor will match Kenyan supply, aggregate capacity, and issue RFQs.",
       };
     case "chamber":
       return {
@@ -130,9 +159,106 @@ export function personaCopy(persona: Persona) {
       };
     default:
       return {
-        headline: "Your Kenyan supply workspace",
+        headline: "What are buyers looking for?",
         blurb:
-          "Verify the cooperative or exporter, list on the registry, answer a Gulf offtake, then execute on the passport.",
+          "Browse verified international demand, declare supply lots, and respond to RFQs from one mobile-first workspace.",
       };
   }
+}
+
+export function buyerWorkspace(
+  stats: {
+    requirements: number;
+    matches: number;
+    openRfqs: number;
+    deals: number;
+  },
+  highlights: WorkspaceHighlight[],
+): WorkspaceView {
+  return {
+    headline: "What are you looking to source?",
+    subhead:
+      "Tell Koridor what you need — product, quantity, destination, and delivery window.",
+    primaryCta: {
+      label: "+ Post buying requirement",
+      href: "/dashboard/requirements/new",
+    },
+    secondaryCta: {
+      label: "View my requirements",
+      href: "/dashboard/requirements",
+    },
+    metrics: [
+      { label: "Active requirements", value: stats.requirements, href: "/dashboard/requirements" },
+      { label: "Matched supply", value: stats.matches, href: "/dashboard/requirements" },
+      { label: "Open RFQs", value: stats.openRfqs, href: "/dashboard/rfqs" },
+      { label: "Active deals", value: stats.deals, href: "/dashboard/deals" },
+    ],
+    highlights,
+  };
+}
+
+export function supplierWorkspace(
+  stats: {
+    supplyLots: number;
+    openDemand: number;
+    offers: number;
+    deals: number;
+  },
+  highlights: WorkspaceHighlight[],
+): WorkspaceView {
+  return {
+    headline: "What are buyers looking for?",
+    subhead:
+      "Verified demand from GCC and global buyers. Declare capacity and respond to RFQs.",
+    primaryCta: {
+      label: "+ Add supply",
+      href: "/dashboard/supply",
+    },
+    secondaryCta: {
+      label: "See all buyer demand",
+      href: "/dashboard/demand",
+    },
+    metrics: [
+      { label: "Supply lots", value: stats.supplyLots, href: "/dashboard/supply" },
+      { label: "Live buyer demand", value: stats.openDemand, href: "/dashboard/demand" },
+      { label: "Your offers", value: stats.offers, href: "/dashboard/rfqs" },
+      { label: "Active deals", value: stats.deals, href: "/dashboard/deals" },
+    ],
+    highlights,
+  };
+}
+
+export function adminWorkspace(
+  stats: {
+    requirements: number;
+    openRfqs: number;
+    deals: number;
+    verificationQueue: number;
+    supplyLots: number;
+  },
+): WorkspaceView {
+  return {
+    headline: "What needs attention?",
+    subhead: "Corridor pipeline, verification queue, and operational exceptions.",
+    primaryCta: {
+      label: "Open Control Tower",
+      href: "/dashboard/admin",
+    },
+    secondaryCta: {
+      label: "Verification queue",
+      href: "/dashboard/reviews",
+    },
+    metrics: [
+      { label: "Live requirements", value: stats.requirements, href: "/dashboard/requirements" },
+      { label: "Open RFQs", value: stats.openRfqs, href: "/dashboard/rfqs" },
+      { label: "Deal rooms", value: stats.deals, href: "/dashboard/deals" },
+      {
+        label: "Verification queue",
+        value: stats.verificationQueue,
+        href: "/dashboard/reviews",
+      },
+      { label: "Supply lots", value: stats.supplyLots, href: "/dashboard/supply" },
+    ],
+    highlights: [],
+  };
 }

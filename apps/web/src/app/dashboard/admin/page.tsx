@@ -42,17 +42,34 @@ export default function AdminPage() {
       user?.permissions?.includes("admin:all"),
   );
 
+  const [tower, setTower] = useState<{
+    requirements: number;
+    rfqsOpen: number;
+    deals: number;
+    supplyLots: number;
+  } | null>(null);
+
   const load = useCallback(async () => {
     if (!accessToken || !isAdmin) return;
     setLoading(true);
     setError(null);
     try {
-      const [ov, fl] = await Promise.all([
+      const [ov, fl, reqs, deals, lots, rfqs] = await Promise.all([
         api<Overview>("/admin?view=overview", { token: accessToken }),
         api<Flag[]>("/admin?view=flags", { token: accessToken }),
+        api<unknown[]>("/requirements?scope=public", { token: accessToken }),
+        api<unknown[]>("/deals", { token: accessToken }),
+        api<unknown[]>("/supply-lots?scope=public", { token: accessToken }),
+        api<unknown[]>("/rfqs?scope=open", { token: accessToken }),
       ]);
       setOverview(ov);
       setFlags(Array.isArray(fl) ? fl : []);
+      setTower({
+        requirements: Array.isArray(reqs) ? reqs.length : 0,
+        rfqsOpen: Array.isArray(rfqs) ? rfqs.length : 0,
+        deals: Array.isArray(deals) ? deals.length : 0,
+        supplyLots: Array.isArray(lots) ? lots.length : 0,
+      });
     } catch (e) {
       setError(e instanceof Error ? e.message : "Admin load failed");
     } finally {
@@ -124,10 +141,10 @@ export default function AdminPage() {
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <h1 className="font-[family-name:var(--font-display)] text-3xl font-semibold text-[var(--fg)]">
-            Administration
+            Control Tower
           </h1>
           <p className="mt-1 text-sm text-[var(--fg-muted)]">
-            Feature flags, health checks, and platform counts.
+            Pipeline, flags, health — Koridor operations.
           </p>
         </div>
         <div className="flex gap-2">
@@ -141,6 +158,15 @@ export default function AdminPage() {
       </div>
 
       {error ? <p className="text-sm text-red-600">{error}</p> : null}
+
+      {tower ? (
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <Stat label="Live requirements" value={String(tower.requirements)} />
+          <Stat label="Open RFQs" value={String(tower.rfqsOpen)} />
+          <Stat label="Deal rooms" value={String(tower.deals)} />
+          <Stat label="Supply lots" value={String(tower.supplyLots)} />
+        </div>
+      ) : null}
 
       {overview ? (
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">

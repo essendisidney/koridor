@@ -172,6 +172,53 @@ enum RfqStatus {
   CANCELLED
 }
 
+enum RequirementFrequency {
+  ONE_OFF
+  MONTHLY
+  QUARTERLY
+  ANNUAL
+}
+
+enum RequirementStatus {
+  DRAFT
+  PUBLISHED
+  MATCHING
+  RFQ_OPEN
+  PARTIALLY_FILLED
+  FILLED
+  CLOSED
+  CANCELLED
+}
+
+enum SupplyLotStatus {
+  DECLARED
+  VERIFIED
+  EXPORT_ELIGIBLE
+  CONTRACTED
+  IN_PRODUCTION
+  INSPECTED
+  IN_TRANSIT
+  DELIVERED
+}
+
+enum MatchStatus {
+  SUGGESTED
+  SELECTED
+  RFQ_SENT
+  OFFERED
+  ACCEPTED
+  REJECTED
+}
+
+enum DealStatus {
+  PENDING_CONTRACT
+  ACTIVE
+  IN_FULFILMENT
+  COMPLETED
+  CANCELLED
+  DISPUTED
+}
+
 enum OfferStatus {
   PENDING
   ACCEPTED
@@ -473,6 +520,11 @@ model Organisation {
   contacts           OrgContact[]
   verificationCases  VerificationCase[]
   registryProfile    RegistryProfile?
+  buyerRequirements  BuyerRequirement[]  @relation("RequirementBuyer")
+  supplyLots         SupplyLot[]         @relation("SupplyLotSupplier")
+  requirementMatches RequirementMatch[]  @relation("MatchSupplier")
+  dealsAsBuyer       Deal[]              @relation("DealBuyer")
+  dealsAsSeller      Deal[]              @relation("DealSeller")
   rfqsCreated        Rfq[]                @relation("RfqBuyer")
   offersSubmitted    Offer[]              @relation("OfferSeller")
   contractsAsBuyer   Contract[]           @relation("ContractBuyer")
@@ -806,6 +858,179 @@ model RegistryProfile {
 }
 
 // ─────────────────────────────────────────────────────────────
+// Demand engine (Koridor 2.0)
+// ─────────────────────────────────────────────────────────────
+
+model BuyerRequirement {
+  id                 String               @id @default(uuid()) @db.Uuid
+  reference          String               @unique
+  buyerOrgId         String               @map("buyer_org_id") @db.Uuid
+  createdById        String               @map("created_by_id") @db.Uuid
+  commodity          String
+  variety            String?
+  quantity           Decimal              @db.Decimal(18, 4)
+  unit               String               @default("MT")
+  frequency          RequirementFrequency @default(ONE_OFF)
+  deliveryStart      DateTime?            @map("delivery_start")
+  deliveryEnd        DateTime?            @map("delivery_end")
+  destinationCountry String               @map("destination_country") @db.Char(2)
+  destinationCity    String?              @map("destination_city")
+  destinationPort    String?              @map("destination_port")
+  originPreference   String?              @map("origin_preference") @db.Char(2)
+  grade              String?
+  sizeSpec           String?              @map("size_spec")
+  certifications     String[]             @default([])
+  packaging          String?
+  incoterm           String?
+  paymentTerms       String?              @map("payment_terms")
+  currency           String               @default("USD") @db.Char(3)
+  notes              String?
+  status             RequirementStatus    @default(DRAFT)
+  verifiedDemand     Boolean              @default(false) @map("verified_demand")
+  matchedQuantity    Decimal              @default(0) @map("matched_quantity") @db.Decimal(18, 4)
+  publishedAt        DateTime?            @map("published_at")
+  createdAt          DateTime             @default(now()) @map("created_at")
+  updatedAt          DateTime             @updatedAt @map("updated_at")
+  createdBy          String?              @map("created_by") @db.Uuid
+  updatedBy          String?              @map("updated_by") @db.Uuid
+  deletedAt          DateTime?            @map("deleted_at")
+
+  buyerOrg Organisation         @relation("RequirementBuyer", fields: [buyerOrgId], references: [id])
+  matches  RequirementMatch[]
+  rfqs     Rfq[]
+  deals    Deal[]
+
+  @@index([buyerOrgId])
+  @@index([status])
+  @@index([commodity])
+  @@index([destinationCountry])
+  @@index([deletedAt])
+  @@map("buyer_requirements")
+}
+
+model SupplyLot {
+  id                String         @id @default(uuid()) @db.Uuid
+  reference         String         @unique
+  supplierOrgId     String         @map("supplier_org_id") @db.Uuid
+  createdById       String         @map("created_by_id") @db.Uuid
+  commodity         String
+  variety           String?
+  originCountry     String         @map("origin_country") @db.Char(2)
+  originRegion      String?        @map("origin_region")
+  quantity          Decimal        @db.Decimal(18, 4)
+  availableQuantity Decimal        @map("available_quantity") @db.Decimal(18, 4)
+  unit              String         @default("MT")
+  harvestStart      DateTime?      @map("harvest_start")
+  harvestEnd        DateTime?      @map("harvest_end")
+  grade             String?
+  certifications    String[]       @default([])
+  packaging         String?
+  status            SupplyLotStatus @default(DECLARED)
+  notes             String?
+  createdAt         DateTime       @default(now()) @map("created_at")
+  updatedAt         DateTime       @updatedAt @map("updated_at")
+  createdBy         String?        @map("created_by") @db.Uuid
+  updatedBy         String?        @map("updated_by") @db.Uuid
+  deletedAt         DateTime?      @map("deleted_at")
+
+  supplierOrg Organisation       @relation("SupplyLotSupplier", fields: [supplierOrgId], references: [id])
+  matches     RequirementMatch[]
+
+  @@index([supplierOrgId])
+  @@index([status])
+  @@index([commodity])
+  @@index([originCountry])
+  @@index([deletedAt])
+  @@map("supply_lots")
+}
+
+model RequirementMatch {
+  id               String      @id @default(uuid()) @db.Uuid
+  requirementId    String      @map("requirement_id") @db.Uuid
+  supplyLotId      String?     @map("supply_lot_id") @db.Uuid
+  supplierOrgId    String      @map("supplier_org_id") @db.Uuid
+  score            Int         @default(0)
+  availableQty     Decimal     @map("available_qty") @db.Decimal(18, 4)
+  quantityMatched  Decimal     @default(0) @map("quantity_matched") @db.Decimal(18, 4)
+  reasons          Json        @default("[]")
+  status           MatchStatus @default(SUGGESTED)
+  selectedForRfq   Boolean     @default(false) @map("selected_for_rfq")
+  createdAt        DateTime    @default(now()) @map("created_at")
+  updatedAt        DateTime    @updatedAt @map("updated_at")
+  createdBy        String?     @map("created_by") @db.Uuid
+  updatedBy        String?     @map("updated_by") @db.Uuid
+  deletedAt        DateTime?   @map("deleted_at")
+
+  requirement BuyerRequirement @relation(fields: [requirementId], references: [id], onDelete: Cascade)
+  supplyLot   SupplyLot?       @relation(fields: [supplyLotId], references: [id], onDelete: SetNull)
+  supplierOrg Organisation     @relation("MatchSupplier", fields: [supplierOrgId], references: [id])
+
+  @@index([requirementId])
+  @@index([supplierOrgId])
+  @@index([supplyLotId])
+  @@index([status])
+  @@index([deletedAt])
+  @@map("requirement_matches")
+}
+
+model Deal {
+  id            String     @id @default(uuid()) @db.Uuid
+  reference     String     @unique
+  requirementId String?    @map("requirement_id") @db.Uuid
+  rfqId         String?    @map("rfq_id") @db.Uuid
+  offerId       String?    @unique @map("offer_id") @db.Uuid
+  contractId    String?    @unique @map("contract_id") @db.Uuid
+  tradeId       String?    @map("trade_id") @db.Uuid
+  buyerOrgId    String     @map("buyer_org_id") @db.Uuid
+  sellerOrgId   String     @map("seller_org_id") @db.Uuid
+  title         String
+  commodity     String
+  quantity      Decimal    @db.Decimal(18, 4)
+  unit          String     @default("MT")
+  value         Decimal?   @db.Decimal(18, 4)
+  currency      String     @default("USD") @db.Char(3)
+  status        DealStatus @default(PENDING_CONTRACT)
+  createdAt     DateTime   @default(now()) @map("created_at")
+  updatedAt     DateTime   @updatedAt @map("updated_at")
+  createdBy     String?    @map("created_by") @db.Uuid
+  updatedBy     String?    @map("updated_by") @db.Uuid
+  deletedAt     DateTime?  @map("deleted_at")
+
+  requirement BuyerRequirement? @relation(fields: [requirementId], references: [id], onDelete: SetNull)
+  rfq         Rfq?              @relation(fields: [rfqId], references: [id], onDelete: SetNull)
+  offer       Offer?            @relation(fields: [offerId], references: [id], onDelete: SetNull)
+  contract    Contract?         @relation(fields: [contractId], references: [id], onDelete: SetNull)
+  trade       Trade?            @relation(fields: [tradeId], references: [id], onDelete: SetNull)
+  buyerOrg    Organisation      @relation("DealBuyer", fields: [buyerOrgId], references: [id])
+  sellerOrg   Organisation      @relation("DealSeller", fields: [sellerOrgId], references: [id])
+  messages    DealMessage[]
+
+  @@index([requirementId])
+  @@index([rfqId])
+  @@index([buyerOrgId])
+  @@index([sellerOrgId])
+  @@index([status])
+  @@index([deletedAt])
+  @@map("deals")
+}
+
+model DealMessage {
+  id           String    @id @default(uuid()) @db.Uuid
+  dealId       String    @map("deal_id") @db.Uuid
+  authorUserId String    @map("author_user_id") @db.Uuid
+  body         String
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+  deletedAt    DateTime? @map("deleted_at")
+
+  deal Deal @relation(fields: [dealId], references: [id], onDelete: Cascade)
+
+  @@index([dealId])
+  @@index([authorUserId])
+  @@map("deal_messages")
+}
+
+// ─────────────────────────────────────────────────────────────
 // Trade Engine
 // ─────────────────────────────────────────────────────────────
 
@@ -813,6 +1038,7 @@ model Rfq {
   id               String    @id @default(uuid()) @db.Uuid
   reference        String    @unique
   tradeId          String?   @map("trade_id") @db.Uuid
+  requirementId    String?   @map("requirement_id") @db.Uuid
   buyerOrgId       String    @map("buyer_org_id") @db.Uuid
   createdById      String    @map("created_by_id") @db.Uuid
   title            String
@@ -835,13 +1061,16 @@ model Rfq {
   updatedBy        String?   @map("updated_by") @db.Uuid
   deletedAt        DateTime? @map("deleted_at")
 
-  trade     Trade?       @relation(fields: [tradeId], references: [id], onDelete: SetNull)
-  buyerOrg  Organisation @relation("RfqBuyer", fields: [buyerOrgId], references: [id])
-  offers    Offer[]
-  contracts Contract[]
-  events    TradeEvent[]
+  trade       Trade?            @relation(fields: [tradeId], references: [id], onDelete: SetNull)
+  requirement BuyerRequirement? @relation(fields: [requirementId], references: [id], onDelete: SetNull)
+  buyerOrg    Organisation      @relation("RfqBuyer", fields: [buyerOrgId], references: [id])
+  offers      Offer[]
+  contracts   Contract[]
+  events      TradeEvent[]
+  deals       Deal[]
 
   @@index([tradeId])
+  @@index([requirementId])
   @@index([buyerOrgId])
   @@index([status])
   @@index([commodity])
@@ -872,6 +1101,7 @@ model Offer {
   rfq       Rfq          @relation(fields: [rfqId], references: [id], onDelete: Cascade)
   sellerOrg Organisation @relation("OfferSeller", fields: [sellerOrgId], references: [id])
   contract  Contract?
+  deal      Deal?
 
   @@index([rfqId])
   @@index([sellerOrgId])
@@ -918,6 +1148,7 @@ model Contract {
   shipmentRequests ShipmentRequest[]
   events    TradeEvent[]
   certificates ComplianceCertificate[]
+  deal         Deal?
 
   @@index([tradeId])
   @@index([buyerOrgId])
@@ -1064,6 +1295,7 @@ model Trade {
   rfqs           Rfq[]
   contracts      Contract[]
   certificates   ComplianceCertificate[]
+  deals          Deal[]
 
   @@index([buyerOrgId])
   @@index([sellerOrgId])

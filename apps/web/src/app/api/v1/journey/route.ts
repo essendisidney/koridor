@@ -1,16 +1,22 @@
 import { NextRequest } from "next/server";
+import { DealStatus, RequirementStatus, RfqStatus, VerificationStatus } from "@prisma/client";
 import { fail, ok } from "@/lib/http";
 import { requireUser } from "@/lib/auth-server";
 import { prisma } from "@/lib/prisma";
 import { pickPrimaryMembership } from "@/lib/membership";
 import {
   JOURNEY_PHASES,
+  adminWorkspace,
+  buyerWorkspace,
   personaCopy,
   personaFrom,
+  supplierWorkspace,
   type JourneyPhase,
   type Persona,
   type PhaseId,
   type PhaseStatus,
+  type WorkspaceHighlight,
+  type WorkspaceView,
 } from "@/lib/journey";
 
 export const runtime = "nodejs";
@@ -65,7 +71,8 @@ export async function GET(req: NextRequest) {
         ? membership.organisation
         : null;
     const persona: Persona = personaFrom(user.roles, org?.type);
-    const copy = personaCopy(persona);
+    const isAdmin = user.roles.includes("SYSTEM_ADMIN");
+    const copy = personaCopy(persona, isAdmin);
 
     if (!org) {
       const next: NextAction = {
@@ -143,10 +150,10 @@ export async function GET(req: NextRequest) {
     } else if (persona === "buyer" && rfqCount === 0 && !activeTrade) {
       current = "negotiate";
       next = {
-        title: "Publish a dated offtake",
-        body: "Origin Kenya, destination your country, needed-by date. Farmers plant against this sold order.",
-        href: "/dashboard/rfqs",
-        cta: "Create RFQ",
+        title: "Post your first buying requirement",
+        body: "Structure product, quantity, destination, and delivery window. Koridor will match Kenyan supply and aggregate capacity.",
+        href: "/dashboard/requirements/new",
+        cta: "Post requirement",
       };
     } else if (persona === "supplier" && !listed) {
       current = "negotiate";
@@ -159,10 +166,10 @@ export async function GET(req: NextRequest) {
     } else if (persona === "supplier" && !hasDeal) {
       current = "negotiate";
       next = {
-        title: "Answer a Gulf offtake",
-        body: "Open-market RFQs from Oman, Saudi Arabia, Iran, and Iraq. Accepting an offer mints the Trade Passport.",
-        href: "/dashboard/rfqs",
-        cta: "View open RFQs",
+        title: "Respond to buyer demand",
+        body: "Browse verified international requirements and open RFQs. Declare supply lots so Koridor can match you automatically.",
+        href: "/dashboard/demand",
+        cta: "See buyer demand",
       };
     } else if (persona === "chamber") {
       current = listed ? "execute" : "negotiate";
@@ -218,9 +225,196 @@ export async function GET(req: NextRequest) {
     if (hasDeal && current === "execute") extras.negotiate = "complete";
     if (settled) extras.execute = "complete";
 
+    let workspace: WorkspaceView | null = null;
+
+    if (isAdmin) {
+      const [reqCount, rfqOpen, dealCount, lotCount, verifyQueue] =
+        await Promise.all([
+          prisma.buyerRequirement.count({
+            where: {
+              deletedAt: null,
+              status: {
+                in: [
+                  RequirementStatus.PUBLISHED,
+                  RequirementStatus.MATCHING,
+                  RequirementStatus.RFQ_OPEN,
+                  RequirementStatus.PARTIALLY_FILLED,
+                ],
+              },
+            },
+          }),
+          prisma.rfq.count({
+            where: {
+              deletedAt: null,
+              status: { in: [RfqStatus.OPEN] },
+            },
+          }),
+          prisma.deal.count({
+            where: {
+              deletedAt: null,
+              status: {
+                notIn: [DealStatus.COMPLETED, DealStatus.CANCELLED],
+              },
+            },
+          }),
+          prisma.supplyLot.count({ where: { deletedAt: null } }),
+          prisma.organisation.count({
+            where: {
+              deletedAt: null,
+              verificationStatus: VerificationStatus.PENDING,
+            },
+          }),
+        ]);
+      workspace = adminWorkspace({
+        requirements: reqCount,
+        openRfqs: rfqOpen,
+        deals: dealCount,
+        verificationQueue: verifyQueue,
+        supplyLots: lotCount,
+      });
+    } else if (persona === "buyer") {
+      const activeStatuses: RequirementStatus[] = [
+        RequirementStatus.PUBLISHED,
+        RequirementStatus.MATCHING,
+        RequirementStatus.RFQ_OPEN,
+        RequirementStatus.PARTIALLY_FILLED,
+        RequirementStatus.DRAFT,
+      ];
+      const [reqCount, matchCount, openRfqs, dealCount, recentReqs] =
+        await Promise.all([
+          prisma.buyerRequirement.count({
+            where: {
+              deletedAt: null,
+              buyerOrgId: orgId,
+              status: { in: activeStatuses },
+            },
+          }),
+          prisma.requirementMatch.count({
+            where: {
+              deletedAt: null,
+              requirement: { buyerOrgId: orgId, deletedAt: null },
+            },
+          }),
+          prisma.rfq.count({
+            where: {
+              deletedAt: null,
+              buyerOrgId: orgId,
+              status: { in: [RfqStatus.OPEN] },
+            },
+          }),
+          prisma.deal.count({
+            where: {
+              deletedAt: null,
+              buyerOrgId: orgId,
+              status: {
+                notIn: [DealStatus.COMPLETED, DealStatus.CANCELLED],
+              },
+            },
+          }),
+          prisma.buyerRequirement.findMany({
+            where: { deletedAt: null, buyerOrgId: orgId },
+            select: {
+              id: true,
+              reference: true,
+              commodity: true,
+              quantity: true,
+              unit: true,
+              destinationCountry: true,
+              status: true,
+              verifiedDemand: true,
+            },
+            orderBy: { updatedAt: "desc" },
+            take: 3,
+          }),
+        ]);
+      const highlights: WorkspaceHighlight[] = recentReqs.map((r) => ({
+        title: `${r.commodity} · ${Number(r.quantity)} ${r.unit}`,
+        subtitle: `${r.reference} · ${r.destinationCountry} · ${r.status.replaceAll("_", " ")}`,
+        href: `/dashboard/requirements/${r.id}`,
+        badge: r.verifiedDemand ? "Verified Demand" : undefined,
+      }));
+      workspace = buyerWorkspace(
+        {
+          requirements: reqCount,
+          matches: matchCount,
+          openRfqs,
+          deals: dealCount,
+        },
+        highlights,
+      );
+    } else if (persona === "supplier") {
+      const [lotCount, openDemand, dealCount, recentDemand] = await Promise.all([
+        prisma.supplyLot.count({
+          where: { deletedAt: null, supplierOrgId: orgId },
+        }),
+        prisma.buyerRequirement.count({
+          where: {
+            deletedAt: null,
+            status: {
+              in: [
+                RequirementStatus.PUBLISHED,
+                RequirementStatus.MATCHING,
+                RequirementStatus.RFQ_OPEN,
+                RequirementStatus.PARTIALLY_FILLED,
+              ],
+            },
+          },
+        }),
+        prisma.deal.count({
+          where: {
+            deletedAt: null,
+            sellerOrgId: orgId,
+            status: {
+              notIn: [DealStatus.COMPLETED, DealStatus.CANCELLED],
+            },
+          },
+        }),
+        prisma.buyerRequirement.findMany({
+          where: {
+            deletedAt: null,
+            status: {
+              in: [
+                RequirementStatus.PUBLISHED,
+                RequirementStatus.MATCHING,
+                RequirementStatus.RFQ_OPEN,
+              ],
+            },
+          },
+          select: {
+            id: true,
+            reference: true,
+            commodity: true,
+            quantity: true,
+            unit: true,
+            destinationCountry: true,
+            verifiedDemand: true,
+          },
+          orderBy: { publishedAt: "desc" },
+          take: 3,
+        }),
+      ]);
+      const highlights: WorkspaceHighlight[] = recentDemand.map((r) => ({
+        title: `${r.commodity} · ${Number(r.quantity)} ${r.unit}`,
+        subtitle: `${r.reference} → ${r.destinationCountry}`,
+        href: `/dashboard/requirements/${r.id}`,
+        badge: r.verifiedDemand ? "Verified Demand" : undefined,
+      }));
+      workspace = supplierWorkspace(
+        {
+          supplyLots: lotCount,
+          openDemand,
+          offers: offerCount,
+          deals: dealCount,
+        },
+        highlights,
+      );
+    }
+
     return ok({
       persona,
       copy,
+      isAdmin,
+      workspace,
       org: {
         id: org.id,
         name: org.name,

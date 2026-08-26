@@ -8,6 +8,7 @@ import { useAuth } from "@/lib/auth";
 import { formatDate } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { estimateLandedCostUsdPerKg } from "@/lib/matching";
 
 type Offer = {
   id: string;
@@ -32,6 +33,7 @@ type Rfq = {
   status: string;
   currency: string;
   targetPrice?: string | number | null;
+  destinationCountry?: string | null;
   incoterm?: string | null;
   notes?: string | null;
   buyerOrgId: string;
@@ -117,8 +119,17 @@ export default function RfqDetailPage() {
         token: accessToken,
         body: { offerId, decision },
       });
-      if (decision === "ACCEPTED" && result?.id) {
-        window.location.href = `/dashboard/contracts/${result.id}`;
+      if (decision === "ACCEPTED") {
+        const deal = await api<{ id: string }>("/deals", {
+          method: "POST",
+          token: accessToken,
+          body: { offerId },
+        });
+        if (result?.id) {
+          window.location.href = `/dashboard/deals/${deal.id}`;
+          return;
+        }
+        window.location.href = `/dashboard/deals/${deal.id}`;
         return;
       }
       load();
@@ -243,6 +254,19 @@ export default function RfqDetailPage() {
                   {o.quantity} {o.unit} · {o.status}
                   {o.notes ? ` · ${o.notes}` : ""}
                 </p>
+                {(() => {
+                  const landed = estimateLandedCostUsdPerKg({
+                    unitPrice: Number(o.unitPrice),
+                    unit: o.unit,
+                    destinationCountry: rfq.destinationCountry,
+                  });
+                  return (
+                    <p className="mt-1 text-xs text-[var(--accent)]">
+                      Est. CIF ~${landed.estimatedCif}/kg (product {landed.product} +
+                      freight {landed.freight})
+                    </p>
+                  );
+                })()}
               </div>
               {isBuyer && o.status === "PENDING" ? (
                 <div className="flex gap-2">

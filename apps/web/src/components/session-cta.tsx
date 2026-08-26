@@ -9,6 +9,7 @@ export function SessionCta({
   guestHref = "/start",
   guestLabel = "Get started",
   continueLabel = "Continue",
+  continueHref,
   size = "sm",
   className,
   variant = "primary",
@@ -16,6 +17,7 @@ export function SessionCta({
   guestHref?: string;
   guestLabel?: string;
   continueLabel?: string;
+  continueHref?: string;
   size?: "sm" | "lg";
   className?: string;
   variant?: "primary" | "secondary" | "hero";
@@ -32,7 +34,7 @@ export function SessionCta({
 
   if (accessToken && user) {
     return (
-      <Link href={postAuthPath(user)}>
+      <Link href={continueHref ?? postAuthPath(user)}>
         <Button size={size} className={className}>
           {continueLabel}
         </Button>

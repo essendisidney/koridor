@@ -56,30 +56,32 @@ export default function LandingPage() {
         />
         <div className="relative mx-auto flex min-h-[88vh] max-w-6xl flex-col justify-end px-6 pb-16 pt-28 md:pb-24">
           <p className="text-xs uppercase tracking-[0.16em] text-[var(--accent-soft)]">
-            Kenya → Oman · Saudi Arabia · Iran · Iraq
+            The world&apos;s demand. Africa&apos;s supply. One Koridor.
           </p>
           <h1 className="animate-fade-up mt-3 max-w-2xl font-[family-name:var(--font-display)] text-4xl font-semibold tracking-tight text-white md:text-6xl">
-            Signed foreign orders first. Kenyan farmers plant second.
+            Trade Africa with the world.
           </h1>
           <p className="animate-fade-up mt-4 max-w-xl text-base leading-relaxed text-white/80 delay-200 md:text-lg">
-            Four steps on one Trade Passport: connect, verify, negotiate,
-            execute. Not another marketplace.
+            Post what you need. Koridor finds, aggregates, verifies, and
+            executes Kenyan supply through one Trade Passport — starting GCC,
+            Europe, and Asia.
           </p>
           <div className="animate-fade-up mt-8 flex flex-wrap gap-3 delay-300">
             <SessionCta
               size="lg"
-              guestHref="#who"
-              guestLabel="Choose who you are"
-              continueLabel="Continue your lot"
+              guestHref="/register?role=BUYER"
+              guestLabel="Post a buying requirement"
+              continueLabel="Post a requirement"
+              continueHref="/dashboard/requirements/new"
               className="bg-[var(--accent)] text-white hover:bg-[#0c5a57]"
             />
-            <Link href="/cropchain">
+            <Link href="/discover">
               <Button
                 size="lg"
                 variant="secondary"
                 className="border-white/30 bg-white/10 text-white hover:bg-white/15"
               >
-                CropChain Africa
+                Discover demand
               </Button>
             </Link>
           </div>
@@ -124,7 +126,7 @@ export default function LandingPage() {
           <span className="font-[family-name:var(--font-display)] text-base text-white">
             Koridor
           </span>
-          <span>Kenya → Oman · Saudi Arabia · Iran · Iraq</span>
+          <span>Kenya → GCC · Europe · Asia</span>
           <Link href="/start" className="text-white underline">
             Get started
           </Link>

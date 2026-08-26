@@ -12,18 +12,23 @@ import {
   Bot,
   Building2,
   ClipboardList,
+  Compass,
   FileCheck2,
   FileSignature,
   FileText,
   Handshake,
   LayoutDashboard,
   LogOut,
+  Package,
   ScrollText,
+  Search,
   Settings,
   Shield,
   ShieldAlert,
   ShieldCheck,
   Ship,
+  Sprout,
+  Target,
   Users,
   Wallet,
 } from "lucide-react";
@@ -34,12 +39,34 @@ import { postAuthPath } from "@/lib/journey";
 
 const PRIMARY = [
   { href: "/dashboard", label: "Home", icon: LayoutDashboard },
+  { href: "/discover", label: "Discover", icon: Compass },
+];
+
+const BUY = [
+  { href: "/dashboard/requirements", label: "Requirements", icon: Target },
   { href: "/dashboard/rfqs", label: "RFQs", icon: ClipboardList },
-  { href: "/dashboard/trade", label: "Passports", icon: Handshake },
+];
+
+const SUPPLY = [
+  { href: "/dashboard/supply", label: "My Supply", icon: Sprout },
+  { href: "/dashboard/demand", label: "Buyer Demand", icon: Search },
+];
+
+const DEALS = [
+  { href: "/dashboard/deals", label: "Deal Rooms", icon: Handshake },
   { href: "/dashboard/contracts", label: "Contracts", icon: FileSignature },
-  { href: "/dashboard/finance", label: "Finance", icon: Wallet },
+];
+
+const TRADE = [
+  { href: "/dashboard/trade", label: "Passports", icon: Package },
   { href: "/dashboard/logistics", label: "Logistics", icon: Ship },
   { href: "/dashboard/compliance", label: "Compliance", icon: FileCheck2 },
+];
+
+const CAPITAL = [{ href: "/dashboard/finance", label: "Capital", icon: Wallet }];
+
+const INTELLIGENCE = [
+  { href: "/dashboard/analytics", label: "Intelligence", icon: BarChart3 },
 ];
 
 const SETUP = [
@@ -47,18 +74,13 @@ const SETUP = [
   { href: "/dashboard/trust", label: "Identity", icon: ShieldCheck },
   { href: "/dashboard/registry", label: "Registry", icon: BookOpen },
   { href: "/dashboard/organisation", label: "Organisation", icon: Building2 },
-  {
-    href: "/dashboard/settings",
-    label: "Settings",
-    icon: Settings,
-  },
+  { href: "/dashboard/settings", label: "Account", icon: Settings },
 ];
 
 const MORE = [
   { href: "/dashboard/bankability", label: "Bankability", icon: Shield },
   { href: "/dashboard/documents", label: "Documents", icon: FileText },
   { href: "/dashboard/members", label: "Members", icon: Users },
-  { href: "/dashboard/analytics", label: "Analytics", icon: BarChart3 },
   { href: "/dashboard/ai", label: "AI", icon: Bot },
   { href: "/dashboard/activity", label: "Activity", icon: Activity },
   { href: "/dashboard/audit", label: "Audit", icon: ScrollText },
@@ -66,7 +88,7 @@ const MORE = [
 
 const ADMIN_NAV = {
   href: "/dashboard/admin",
-  label: "Administration",
+  label: "Control Tower",
   icon: ShieldAlert,
 };
 
@@ -127,11 +149,17 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
             Koridor
           </Link>
         </div>
-        <NavGroup label="Corridor" items={PRIMARY} pathname={pathname} />
-        <NavGroup label="Setup" items={SETUP} pathname={pathname} />
+        <NavGroup label="Home" items={PRIMARY} pathname={pathname} />
+        <NavGroup label="Buy" items={BUY} pathname={pathname} />
+        <NavGroup label="Supply" items={SUPPLY} pathname={pathname} />
+        <NavGroup label="Deals" items={DEALS} pathname={pathname} />
+        <NavGroup label="Trade" items={TRADE} pathname={pathname} />
+        <NavGroup label="Capital" items={CAPITAL} pathname={pathname} />
+        <NavGroup label="Intelligence" items={INTELLIGENCE} pathname={pathname} />
+        <NavGroup label="Account" items={SETUP} pathname={pathname} />
         <NavGroup label="More" items={MORE} pathname={pathname} />
         {extras.length ? (
-          <NavGroup label="Reviews" items={extras} pathname={pathname} />
+          <NavGroup label="Ops" items={extras} pathname={pathname} />
         ) : null}
         <div className="mt-auto border-t border-white/10 px-4 py-4">
           <div className="mb-3 flex items-start gap-2">
@@ -158,10 +186,10 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
         <header className="flex h-16 items-center justify-between border-b border-[var(--border)] bg-white/80 px-6 backdrop-blur">
           <div>
             <p className="text-xs uppercase tracking-[0.14em] text-[var(--fg-muted)]">
-              Kenya–GCC corridor
+              Kenya → world
             </p>
             <p className="text-sm font-medium text-[var(--fg)]">
-              Connect · Verify · Negotiate · Execute
+              Demand · Match · Deal · Execute
             </p>
           </div>
           <div className="flex items-center gap-2">
