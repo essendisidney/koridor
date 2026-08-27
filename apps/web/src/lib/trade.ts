@@ -13,6 +13,7 @@ export async function recordTradeEvent(input: {
     | "RFQ_PUBLISHED"
     | "RFQ_CLOSED"
     | "OFFER_SUBMITTED"
+    | "OFFER_UPDATED"
     | "OFFER_ACCEPTED"
     | "OFFER_REJECTED"
     | "CONTRACT_CREATED"

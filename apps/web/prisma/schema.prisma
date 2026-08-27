@@ -262,6 +262,7 @@ enum TradeEventType {
   RFQ_PUBLISHED
   RFQ_CLOSED
   OFFER_SUBMITTED
+  OFFER_UPDATED
   OFFER_ACCEPTED
   OFFER_REJECTED
   CONTRACT_CREATED
@@ -1092,22 +1093,46 @@ model Offer {
   validUntil    DateTime?   @map("valid_until")
   status        OfferStatus @default(PENDING)
   notes         String?
+  currentVersion Int        @default(1) @map("current_version")
   createdAt     DateTime    @default(now()) @map("created_at")
   updatedAt     DateTime    @updatedAt @map("updated_at")
   createdBy     String?     @map("created_by") @db.Uuid
   updatedBy     String?     @map("updated_by") @db.Uuid
   deletedAt     DateTime?   @map("deleted_at")
 
-  rfq       Rfq          @relation(fields: [rfqId], references: [id], onDelete: Cascade)
-  sellerOrg Organisation @relation("OfferSeller", fields: [sellerOrgId], references: [id])
+  rfq       Rfq            @relation(fields: [rfqId], references: [id], onDelete: Cascade)
+  sellerOrg Organisation   @relation("OfferSeller", fields: [sellerOrgId], references: [id])
   contract  Contract?
   deal      Deal?
+  versions  OfferVersion[]
 
   @@index([rfqId])
   @@index([sellerOrgId])
   @@index([status])
   @@index([deletedAt])
   @@map("offers")
+}
+
+model OfferVersion {
+  id           String    @id @default(uuid()) @db.Uuid
+  offerId      String    @map("offer_id") @db.Uuid
+  version      Int
+  unitPrice    Decimal   @map("unit_price") @db.Decimal(18, 4)
+  currency     String    @default("USD") @db.Char(3)
+  quantity     Decimal   @db.Decimal(18, 4)
+  unit         String    @default("MT")
+  incoterm     String?
+  leadTimeDays Int?      @map("lead_time_days")
+  validUntil   DateTime? @map("valid_until")
+  notes        String?
+  createdAt    DateTime  @default(now()) @map("created_at")
+  createdById  String    @map("created_by_id") @db.Uuid
+
+  offer Offer @relation(fields: [offerId], references: [id], onDelete: Cascade)
+
+  @@unique([offerId, version])
+  @@index([offerId])
+  @@map("offer_versions")
 }
 
 model Contract {

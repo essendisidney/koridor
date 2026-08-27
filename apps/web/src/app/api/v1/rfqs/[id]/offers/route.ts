@@ -81,19 +81,14 @@ export async function POST(req: NextRequest, ctx: Ctx) {
         status: OfferStatus.PENDING,
       },
     });
-    if (existing) return fail("You already have a pending offer on this RFQ", 409);
-
-    const unitPrice = decimalNumber(body.unitPrice);
-    const quantity = decimalNumber(body.quantity, Number(rfq.quantity));
-    if (unitPrice <= 0 || quantity <= 0) {
-      return fail("unitPrice and quantity must be positive", 400);
-    }
-
-    const offer = await prisma.offer.create({
-      data: {
-        rfqId,
-        sellerOrgId: membership.organisationId,
-        createdById: user.id,
+    if (existing) {
+      const nextVersion = existing.currentVersion + 1;
+      const unitPrice = decimalNumber(body.unitPrice);
+      const quantity = decimalNumber(body.quantity, Number(rfq.quantity));
+      if (unitPrice <= 0 || quantity <= 0) {
+        return fail("unitPrice and quantity must be positive", 400);
+      }
+      const offerFields = {
         unitPrice,
         currency: String(body.currency ?? rfq.currency).slice(0, 3).toUpperCase(),
         quantity,
@@ -105,12 +100,96 @@ export async function POST(req: NextRequest, ctx: Ctx) {
             : null,
         validUntil: body.validUntil ? new Date(String(body.validUntil)) : null,
         notes: body.notes ? String(body.notes) : null,
-        createdBy: user.id,
         updatedBy: user.id,
-      },
-      include: {
-        sellerOrg: { select: { id: true, name: true, slug: true } },
-      },
+      };
+      const offer = await prisma.$transaction(async (tx) => {
+        await tx.offerVersion.create({
+          data: {
+            offerId: existing.id,
+            version: nextVersion,
+            ...offerFields,
+            createdById: user.id,
+          },
+        });
+        return tx.offer.update({
+          where: { id: existing.id },
+          data: { ...offerFields, currentVersion: nextVersion },
+          include: {
+            sellerOrg: { select: { id: true, name: true, slug: true } },
+            versions: { orderBy: { version: "desc" }, take: 5 },
+          },
+        });
+      });
+      await recordTradeEvent({
+        type: "OFFER_UPDATED",
+        message: `Offer revised v${nextVersion}: ${unitPrice} ${offer.currency}/${offer.unit}`,
+        actorId: user.id,
+        rfqId,
+      });
+      await prisma.activity.create({
+        data: {
+          type: ActivityType.OFFER_SUBMITTED,
+          title: "Offer revised",
+          description: `${rfq.title} · v${nextVersion}`,
+          actorId: user.id,
+          organisationId: membership.organisationId,
+          entityType: "Offer",
+          entityId: offer.id,
+        },
+      });
+      return ok(offer);
+    }
+
+    const unitPrice = decimalNumber(body.unitPrice);
+    const quantity = decimalNumber(body.quantity, Number(rfq.quantity));
+    if (unitPrice <= 0 || quantity <= 0) {
+      return fail("unitPrice and quantity must be positive", 400);
+    }
+
+    const offerFields = {
+      unitPrice,
+      currency: String(body.currency ?? rfq.currency).slice(0, 3).toUpperCase(),
+      quantity,
+      unit: String(body.unit ?? rfq.unit),
+      incoterm: body.incoterm ? String(body.incoterm) : rfq.incoterm,
+      leadTimeDays:
+        body.leadTimeDays !== undefined && body.leadTimeDays !== ""
+          ? Number(body.leadTimeDays)
+          : null,
+      validUntil: body.validUntil ? new Date(String(body.validUntil)) : null,
+      notes: body.notes ? String(body.notes) : null,
+    };
+
+    const offer = await prisma.$transaction(async (tx) => {
+      const created = await tx.offer.create({
+        data: {
+          rfqId,
+          sellerOrgId: membership.organisationId,
+          createdById: user.id,
+          ...offerFields,
+          currentVersion: 1,
+          createdBy: user.id,
+          updatedBy: user.id,
+        },
+        include: {
+          sellerOrg: { select: { id: true, name: true, slug: true } },
+        },
+      });
+      await tx.offerVersion.create({
+        data: {
+          offerId: created.id,
+          version: 1,
+          ...offerFields,
+          createdById: user.id,
+        },
+      });
+      return tx.offer.findUniqueOrThrow({
+        where: { id: created.id },
+        include: {
+          sellerOrg: { select: { id: true, name: true, slug: true } },
+          versions: { orderBy: { version: "desc" } },
+        },
+      });
     });
 
     await recordTradeEvent({

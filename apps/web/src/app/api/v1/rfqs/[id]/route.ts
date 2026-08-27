@@ -9,6 +9,7 @@ import {
 import { Permission } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
 import { recordTradeEvent } from "@/lib/trade";
+import { buildOfferComparisonRow, sortOfferRows } from "@/lib/offer-comparison";
 
 export const runtime = "nodejs";
 
@@ -28,7 +29,15 @@ export async function GET(req: NextRequest, ctx: Ctx) {
         offers: {
           where: { deletedAt: null },
           include: {
-            sellerOrg: { select: { id: true, name: true, slug: true } },
+            sellerOrg: {
+              select: {
+                id: true,
+                name: true,
+                slug: true,
+                trustProfile: { select: { trustScore: true } },
+              },
+            },
+            versions: { orderBy: { version: "desc" } },
           },
           orderBy: { createdAt: "desc" },
         },
@@ -36,6 +45,20 @@ export async function GET(req: NextRequest, ctx: Ctx) {
       },
     });
     if (!rfq) return fail("RFQ not found", 404);
+
+    const matchScores = rfq.requirementId
+      ? Object.fromEntries(
+          (
+            await prisma.requirementMatch.findMany({
+              where: {
+                requirementId: rfq.requirementId,
+                deletedAt: null,
+              },
+              select: { supplierOrgId: true, score: true },
+            })
+          ).map((m) => [m.supplierOrgId, m.score]),
+        )
+      : {};
 
     const isBuyer = rfq.buyerOrgId === membership.organisationId;
     const isOpen = rfq.status === RfqStatus.OPEN;
@@ -48,7 +71,25 @@ export async function GET(req: NextRequest, ctx: Ctx) {
       );
     }
 
-    return ok(rfq);
+    const comparison =
+      isBuyer && rfq.offers.length
+        ? sortOfferRows(
+            rfq.offers.map((o) =>
+              buildOfferComparisonRow({
+                offer: {
+                  ...o,
+                  unitPrice: Number(o.unitPrice),
+                  quantity: Number(o.quantity),
+                },
+                destinationCountry: rfq.destinationCountry,
+                matchScore: matchScores[o.sellerOrgId] ?? 0,
+              }),
+            ),
+            "best_match",
+          )
+        : [];
+
+    return ok({ ...rfq, comparison });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Failed";
     return fail(message, message === "Unauthorized" ? 401 : 400);
