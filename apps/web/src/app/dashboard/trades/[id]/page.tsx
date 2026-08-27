@@ -97,6 +97,26 @@ type TradeDetail = {
     status: string;
     type: string;
   }[];
+  deals?: {
+    id: string;
+    reference: string;
+    title: string;
+    status: string;
+    requirementId?: string | null;
+    rfqId?: string | null;
+  }[];
+  documentChecklist?: {
+    items: {
+      type: string;
+      label: string;
+      required: boolean;
+      present: boolean;
+      milestoneCode?: string;
+    }[];
+    complete: number;
+    total: number;
+    missing: string[];
+  };
   readiness: Readiness;
   completion: Completion;
   executable?: {
@@ -218,6 +238,72 @@ export default function TradeWorkspacePage() {
       </div>
 
       {error ? <p className="text-sm text-[var(--danger)]">{error}</p> : null}
+
+      {(trade.deals?.length || trade.documentChecklist) ? (
+        <section className="grid gap-4 lg:grid-cols-2">
+          {trade.deals?.length ? (
+            <div className="border border-[var(--border)] bg-white p-5 text-sm">
+              <p className="text-xs uppercase tracking-[0.12em] text-[var(--fg-muted)]">
+                Linked deal room
+              </p>
+              {trade.deals.map((d) => (
+                <div key={d.id} className="mt-2">
+                  <p className="font-medium">
+                    {d.reference} · {d.status.replaceAll("_", " ")}
+                  </p>
+                  <p className="text-xs text-[var(--fg-muted)]">{d.title}</p>
+                  <Link
+                    href={`/dashboard/deals/${d.id}`}
+                    className="mt-2 inline-block text-[var(--accent)] underline"
+                  >
+                    Open deal room
+                  </Link>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="border border-[var(--border)] bg-white p-5 text-sm text-[var(--fg-muted)]">
+              No deal room linked yet.
+            </div>
+          )}
+          {trade.documentChecklist ? (
+            <div className="border border-[var(--border)] bg-white p-5 text-sm">
+              <div className="flex items-baseline justify-between gap-2">
+                <p className="text-xs uppercase tracking-[0.12em] text-[var(--fg-muted)]">
+                  Document checklist
+                </p>
+                <p className="font-[family-name:var(--font-display)] text-xl font-semibold text-[var(--accent)]">
+                  {trade.documentChecklist.complete}/
+                  {trade.documentChecklist.total}
+                </p>
+              </div>
+              {trade.documentChecklist.total === 0 ? (
+                <p className="mt-2 text-[var(--fg-muted)]">
+                  No evidence types required yet.
+                </p>
+              ) : (
+                <ul className="mt-3 space-y-1">
+                  {trade.documentChecklist.items.map((item) => (
+                    <li key={item.type} className="flex justify-between gap-2">
+                      <span>
+                        {item.present ? "✓" : "○"} {item.label}
+                      </span>
+                      {!item.present ? (
+                        <span className="text-xs text-[var(--danger)]">Missing</span>
+                      ) : null}
+                    </li>
+                  ))}
+                </ul>
+              )}
+              {trade.documentChecklist.missing.length ? (
+                <p className="mt-3 text-xs text-[var(--fg-muted)]">
+                  Missing: {trade.documentChecklist.missing.join(", ")}
+                </p>
+              ) : null}
+            </div>
+          ) : null}
+        </section>
+      ) : null}
 
       {trade.executable ? (
         <section className="space-y-4 border border-[var(--border)] bg-white p-6">

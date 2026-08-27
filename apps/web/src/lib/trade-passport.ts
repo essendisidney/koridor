@@ -266,6 +266,59 @@ export async function computeReadiness(tradeId: string) {
   };
 }
 
+export type DocumentChecklistItem = {
+  type: string;
+  label: string;
+  required: boolean;
+  present: boolean;
+  milestoneCode?: string;
+};
+
+/** Unified trade document checklist from milestone evidence requirements. */
+export function buildDocumentChecklist(
+  milestones: {
+    code: string;
+    title: string;
+    status: string;
+    requiredEvidenceTypes: string[];
+    evidence: { type: string }[];
+  }[],
+): {
+  items: DocumentChecklistItem[];
+  complete: number;
+  total: number;
+  missing: string[];
+} {
+  const byType = new Map<string, DocumentChecklistItem>();
+
+  for (const m of milestones) {
+    const have = new Set(m.evidence.map((e) => e.type));
+    for (const type of m.requiredEvidenceTypes) {
+      const existing = byType.get(type);
+      const present = have.has(type) || Boolean(existing?.present);
+      byType.set(type, {
+        type,
+        label: type.replaceAll("_", " "),
+        required: true,
+        present,
+        milestoneCode: existing?.milestoneCode ?? m.code,
+      });
+    }
+  }
+
+  const items = [...byType.values()].sort((a, b) =>
+    a.label.localeCompare(b.label),
+  );
+  const total = items.length;
+  const complete = items.filter((i) => i.present).length;
+  return {
+    items,
+    complete,
+    total,
+    missing: items.filter((i) => !i.present).map((i) => i.label),
+  };
+}
+
 export async function computeCompletion(tradeId: string) {
   const milestones = await prisma.tradeMilestone.findMany({
     where: { tradeId, deletedAt: null },

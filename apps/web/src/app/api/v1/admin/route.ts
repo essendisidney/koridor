@@ -9,6 +9,10 @@ import {
   runHealthChecks,
   upsertFeatureFlag,
 } from "@/lib/admin";
+import {
+  controlTowerPipeline,
+  listControlExceptions,
+} from "@/lib/control-tower";
 
 export const runtime = "nodejs";
 
@@ -22,6 +26,8 @@ export async function GET(req: NextRequest) {
     if (view === "flags") return ok(await listFeatureFlags());
     if (view === "health") return ok(await runHealthChecks(user.id));
     if (view === "health_logs") return ok(await recentHealthLogs());
+    if (view === "exceptions") return ok(await listControlExceptions());
+    if (view === "tower") return ok(await controlTowerPipeline());
     return ok(await adminOverview());
   } catch (error) {
     const message = error instanceof Error ? error.message : "Failed";

@@ -66,7 +66,8 @@ const TRADE = [
 const CAPITAL = [{ href: "/dashboard/finance", label: "Capital", icon: Wallet }];
 
 const INTELLIGENCE = [
-  { href: "/dashboard/analytics", label: "Intelligence", icon: BarChart3 },
+  { href: "/dashboard/intelligence", label: "Intelligence", icon: BarChart3 },
+  { href: "/dashboard/analytics", label: "Analytics", icon: Activity },
 ];
 
 const SETUP = [

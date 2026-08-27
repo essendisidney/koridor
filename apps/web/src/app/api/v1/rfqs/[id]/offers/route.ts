@@ -391,6 +391,16 @@ export async function PATCH(req: NextRequest, ctx: Ctx) {
     await syncMilestonesFromWorld(trade.id, user.id);
     await recomputeTradeScores(trade.id, user.id);
 
+    // Bidirectional link: attach Trade Passport to any deal for this offer/RFQ
+    await prisma.deal.updateMany({
+      where: {
+        deletedAt: null,
+        OR: [{ offerId }, { rfqId }],
+        tradeId: null,
+      },
+      data: { tradeId: trade.id, contractId: result.id, updatedBy: user.id },
+    });
+
     await prisma.activity.create({
       data: {
         type: ActivityType.CONTRACT_CREATED,

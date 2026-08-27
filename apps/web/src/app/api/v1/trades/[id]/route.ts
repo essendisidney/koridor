@@ -17,6 +17,7 @@ import {
   completeMilestoneIfReady,
   computeCompletion,
   computeReadiness,
+  buildDocumentChecklist,
   nextStatus,
   recomputeTradeScores,
   STATUS_STAGE,
@@ -135,6 +136,18 @@ export async function GET(req: NextRequest, ctx: Ctx) {
           take: 20,
         },
         rfqs: { where: { deletedAt: null }, take: 5 },
+        deals: {
+          where: { deletedAt: null },
+          select: {
+            id: true,
+            reference: true,
+            title: true,
+            status: true,
+            requirementId: true,
+            rfqId: true,
+          },
+          take: 5,
+        },
       },
     });
     if (!trade) return fail("Trade not found", 404);
@@ -145,7 +158,15 @@ export async function GET(req: NextRequest, ctx: Ctx) {
       scoreExecutableCorridorSafe(id),
     ]);
 
-    return ok({ ...trade, readiness, completion, executable });
+    const documentChecklist = buildDocumentChecklist(trade.milestones);
+
+    return ok({
+      ...trade,
+      readiness,
+      completion,
+      executable,
+      documentChecklist,
+    });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Failed";
     return fail(
