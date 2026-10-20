@@ -11,6 +11,7 @@ import { Permission } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
 import { aggregateMatches } from "@/lib/matching";
 import { rematchRequirement } from "@/lib/match-engine";
+import { createDispatchNotifications } from "@/lib/messaging";
 import { decimalNumber, tradeReference } from "@/lib/trade";
 import { reviewSummaries } from "@/lib/trade-reviews";
 
@@ -213,19 +214,18 @@ export async function POST(
           deletedAt: null,
           organisationId: { in: picks.map((p) => p.supplierOrgId) },
         },
-        select: { userId: true },
+        select: { userId: true, organisationId: true },
       });
-      if (invited.length) {
-        await prisma.notification.createMany({
-          data: invited.map((m) => ({
-            userId: m.userId,
-            title: `RFQ open: ${requirement.commodity}`,
-            body: `You were shortlisted for ${requirement.reference}. Submit your offer now.`,
-            link: `/dashboard/rfqs/${rfq.id}`,
-            metadata: { kind: "RFQ_INVITE", rfqId: rfq.id, requirementId: id },
-          })),
-        });
-      }
+      await createDispatchNotifications(
+        invited.map((m) => ({
+          userId: m.userId,
+          organisationId: m.organisationId,
+          title: `RFQ open: ${requirement.commodity}`,
+          body: `You were shortlisted for ${requirement.reference}. Submit your offer now.`,
+          link: `/dashboard/rfqs/${rfq.id}`,
+          metadata: { kind: "RFQ_INVITE", rfqId: rfq.id, requirementId: id },
+        })),
+      );
 
       return ok(rfq, { status: 201 });
     }

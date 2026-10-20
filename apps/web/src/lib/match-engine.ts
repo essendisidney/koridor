@@ -6,6 +6,7 @@ import {
   type MatchCandidate,
 } from "@/lib/matching";
 import { reviewSummaries } from "@/lib/trade-reviews";
+import { createDispatchNotifications } from "@/lib/messaging";
 
 /** Requirement states where buyers are still sourcing and new supply should be matched. */
 export const OPEN_DEMAND_STATUSES: RequirementStatus[] = [
@@ -228,9 +229,11 @@ async function notifyMatchedSuppliers(
     select: { userId: true, organisationId: true },
   });
   if (!members.length) return;
-  await prisma.notification.createMany({
-    data: members.map((m) => ({
+  // In-app now; WhatsApp/SMS after the response (lib/messaging.ts).
+  await createDispatchNotifications(
+    members.map((m) => ({
       userId: m.userId,
+      organisationId: m.organisationId,
       title: `New buyer match: ${r.commodity}`,
       body: `A buyer in ${r.destinationCountry} needs ${r.quantity} ${r.unit} of ${r.commodity} (${r.reference}). Your supply fits — respond before other farms do.`,
       link: "/dashboard/demand",
@@ -240,7 +243,7 @@ async function notifyMatchedSuppliers(
         supplierOrgId: m.organisationId,
       },
     })),
-  });
+  );
 }
 
 /**
