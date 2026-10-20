@@ -16,6 +16,9 @@ export type MatchCandidate = {
   exportEligible?: boolean;
   /** False for registry-only suppliers who have not declared a lot yet. */
   capacityDeclared?: boolean;
+  /** Average post-trade review rating (1-5) received by the supplier org. */
+  reviewAverage?: number | null;
+  reviewCount?: number;
 };
 
 export type HardFilterResult = {
@@ -129,6 +132,13 @@ export function evaluateMatch(
   return { ...scored, hardPass: true, failures: [] };
 }
 
+/** Small weight (0-5): unreviewed suppliers get a neutral 2 so newcomers are not buried. */
+export function reviewPoints(average?: number | null, count?: number) {
+  if (!count || average == null) return 2;
+  const clamped = Math.min(5, Math.max(1, average));
+  return Math.round(((clamped - 1) / 4) * 5);
+}
+
 export function scoreMatch(
   req: RequirementInput,
   cand: MatchCandidate,
@@ -189,6 +199,12 @@ export function scoreMatch(
     reasons.push("Export experience");
   } else if ((cand.yearsInOperation ?? 0) > 0) {
     score += 5;
+  }
+
+  const reviewPts = reviewPoints(cand.reviewAverage, cand.reviewCount);
+  score += reviewPts;
+  if ((cand.reviewCount ?? 0) > 0 && (cand.reviewAverage ?? 0) >= 4) {
+    reasons.push(`Rated ${cand.reviewAverage!.toFixed(1)}★ (${cand.reviewCount})`);
   }
 
   if (cand.isListed) {

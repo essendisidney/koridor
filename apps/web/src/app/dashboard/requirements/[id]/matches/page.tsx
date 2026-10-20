@@ -22,6 +22,7 @@ type MatchRow = {
     trustProfile?: { trustScore: number } | null;
   };
   supplyLot?: { reference: string; availableQuantity: string | number } | null;
+  supplierReviews?: { average: number | null; count: number };
 };
 
 type Payload = {
@@ -152,7 +153,11 @@ export default function RequirementMatchesPage() {
               </p>
               <p className="text-xs text-[var(--fg-muted)]">
                 {countryName(m.supplierOrg.countryCode)} · Trust{" "}
-                {m.supplierOrg.trustProfile?.trustScore ?? "—"} · Available{" "}
+                {m.supplierOrg.trustProfile?.trustScore ?? "—"} ·{" "}
+                {m.supplierReviews?.count && m.supplierReviews.average != null
+                  ? `★ ${m.supplierReviews.average.toFixed(1)} (${m.supplierReviews.count})`
+                  : "No reviews"}{" "}
+                · Available{" "}
                 {m.availableQty} · {m.supplierOrg.verificationStatus}
               </p>
               {Array.isArray(m.reasons) && m.reasons.length ? (

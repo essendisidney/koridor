@@ -5,6 +5,7 @@ import {
   evaluateMatch,
   type MatchCandidate,
 } from "@/lib/matching";
+import { reviewSummaries } from "@/lib/trade-reviews";
 
 /** Requirement states where buyers are still sourcing and new supply should be matched. */
 export const OPEN_DEMAND_STATUSES: RequirementStatus[] = [
@@ -118,6 +119,13 @@ export async function rematchRequirement(requirementId: string) {
       exportEligible: r.organisation.verificationStatus === "VERIFIED",
       capacityDeclared: false,
     });
+  }
+
+  const ratings = await reviewSummaries(candidates.map((c) => c.supplierOrgId));
+  for (const c of candidates) {
+    const r = ratings.get(c.supplierOrgId);
+    c.reviewAverage = r?.average ?? null;
+    c.reviewCount = r?.count ?? 0;
   }
 
   const reqInput = {

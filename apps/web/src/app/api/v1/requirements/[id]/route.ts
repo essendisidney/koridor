@@ -11,6 +11,7 @@ import { prisma } from "@/lib/prisma";
 import { aggregateMatches } from "@/lib/matching";
 import { rematchRequirement } from "@/lib/match-engine";
 import { decimalNumber, tradeReference } from "@/lib/trade";
+import { reviewSummaries } from "@/lib/trade-reviews";
 
 export const runtime = "nodejs";
 
@@ -84,7 +85,13 @@ export async function GET(
       Number(requirement.quantity),
     );
 
-    return ok({ requirement, matches, aggregation: agg });
+    const ratings = await reviewSummaries(matches.map((m) => m.supplierOrgId));
+    const withRatings = matches.map((m) => ({
+      ...m,
+      supplierReviews: ratings.get(m.supplierOrgId) ?? { average: null, count: 0 },
+    }));
+
+    return ok({ requirement, matches: withRatings, aggregation: agg });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Failed";
     return fail(message, message === "Unauthorized" ? 401 : 400);

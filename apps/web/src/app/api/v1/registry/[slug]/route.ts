@@ -3,6 +3,7 @@ import { fail, ok } from "@/lib/http";
 import { requireAuth, requirePermission } from "@/lib/org-access";
 import { Permission } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
+import { reviewSummary } from "@/lib/trade-reviews";
 
 export const runtime = "nodejs";
 
@@ -29,6 +30,8 @@ export async function GET(req: NextRequest, ctx: Ctx) {
       return fail("Registry profile not found", 404);
     }
 
+    const reviews = await reviewSummary(org.id);
+
     return ok({
       organisation: {
         id: org.id,
@@ -45,6 +48,7 @@ export async function GET(req: NextRequest, ctx: Ctx) {
       },
       registry: org.registryProfile,
       primaryContact: org.contacts[0] ?? null,
+      reviews,
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Failed";
