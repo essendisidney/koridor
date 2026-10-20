@@ -14,6 +14,8 @@ export type MatchCandidate = {
   yearsInOperation?: number | null;
   isListed?: boolean;
   exportEligible?: boolean;
+  /** False for registry-only suppliers who have not declared a lot yet. */
+  capacityDeclared?: boolean;
 };
 
 export type HardFilterResult = {
@@ -110,7 +112,7 @@ export function passesHardFilters(
     failures.push("Delivery window does not overlap harvest");
   }
 
-  if (cand.availableQty <= 0) {
+  if (cand.capacityDeclared !== false && cand.availableQty <= 0) {
     failures.push("No available quantity");
   }
 
@@ -196,6 +198,10 @@ export function scoreMatch(
     score += 4;
   }
 
+  if (cand.capacityDeclared === false) {
+    reasons.push("Capacity not declared — invite to confirm volume");
+  }
+
   const quantityMatched = Math.min(cand.availableQty, req.quantity);
   return {
     supplierOrgId: cand.supplierOrgId,
@@ -213,6 +219,7 @@ export function aggregateMatches(matches: MatchResult[], targetQty: number) {
   const packed: (MatchResult & { packedQty: number })[] = [];
   for (const m of sorted) {
     if (remaining <= 0) break;
+    if (m.availableQty <= 0) continue;
     const packedQty = Math.min(m.availableQty, remaining);
     packed.push({ ...m, packedQty });
     remaining -= packedQty;

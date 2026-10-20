@@ -83,6 +83,8 @@ function RegisterForm() {
       const qs = new URLSearchParams();
       qs.set("type", orgType);
       if (country) qs.set("country", country.toUpperCase());
+      const commodity = params.get("commodity");
+      if (commodity) qs.set("commodity", commodity);
       router.push(`/onboarding/organisation?${qs.toString()}`);
     } catch (err) {
       setError(

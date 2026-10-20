@@ -8,11 +8,8 @@ import {
 } from "@/lib/org-access";
 import { Permission } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
-import {
-  aggregateMatches,
-  evaluateMatch,
-  type MatchCandidate,
-} from "@/lib/matching";
+import { aggregateMatches } from "@/lib/matching";
+import { rematchRequirement } from "@/lib/match-engine";
 import { decimalNumber, tradeReference } from "@/lib/trade";
 
 export const runtime = "nodejs";
@@ -31,133 +28,6 @@ async function loadRequirement(id: string) {
       },
     },
   });
-}
-
-async function rematch(requirementId: string) {
-  const req = await loadRequirement(requirementId);
-  if (!req) throw new Error("Requirement not found");
-
-  const lots = await prisma.supplyLot.findMany({
-    where: {
-      deletedAt: null,
-      status: { in: ["DECLARED", "VERIFIED", "EXPORT_ELIGIBLE"] },
-      availableQuantity: { gt: 0 },
-    },
-    include: {
-      supplierOrg: {
-        include: {
-          trustProfile: { select: { trustScore: true } },
-          registryProfile: {
-            select: { yearsInOperation: true, isListed: true },
-          },
-        },
-      },
-    },
-    take: 80,
-  });
-
-  const candidates: MatchCandidate[] = lots.map((lot) => ({
-    supplierOrgId: lot.supplierOrgId,
-    supplyLotId: lot.id,
-    commodity: lot.commodity,
-    certifications: lot.certifications,
-    availableQty: Number(lot.availableQuantity),
-    grade: lot.grade,
-    harvestStart: lot.harvestStart,
-    harvestEnd: lot.harvestEnd,
-    originCountry: lot.originCountry,
-    trustScore: lot.supplierOrg.trustProfile?.trustScore ?? 50,
-    yearsInOperation: lot.supplierOrg.registryProfile?.yearsInOperation ?? null,
-    isListed: lot.supplierOrg.registryProfile?.isListed ?? false,
-    exportEligible: ["VERIFIED", "EXPORT_ELIGIBLE"].includes(lot.status),
-  }));
-
-  // Also match registry exporters without lots
-  const registries = await prisma.registryProfile.findMany({
-    where: {
-      deletedAt: null,
-      isListed: true,
-      organisation: {
-        deletedAt: null,
-        type: { in: ["EXPORTER", "COOPERATIVE", "FARMER"] },
-        countryCode: req.originPreference ?? "KE",
-      },
-    },
-    include: {
-      organisation: {
-        include: { trustProfile: { select: { trustScore: true } } },
-      },
-    },
-    take: 40,
-  });
-
-  for (const r of registries) {
-    if (candidates.some((c) => c.supplierOrgId === r.organisationId)) continue;
-    const commodities = r.commodities ?? [];
-    const hit = commodities.some((c) =>
-      c.toLowerCase().includes(req.commodity.toLowerCase()) ||
-      req.commodity.toLowerCase().includes(c.toLowerCase()),
-    );
-    if (!hit && commodities.length) continue;
-    candidates.push({
-      supplierOrgId: r.organisationId,
-      supplyLotId: null,
-      commodity: commodities[0] ?? req.commodity,
-      certifications: [],
-      availableQty: Number(req.quantity) * 0.4,
-      originCountry: r.organisation.countryCode,
-      trustScore: r.organisation.trustProfile?.trustScore ?? 50,
-      yearsInOperation: r.yearsInOperation,
-      isListed: r.isListed,
-      exportEligible: r.organisation.verificationStatus === "VERIFIED",
-    });
-  }
-
-  const reqInput = {
-    commodity: req.commodity,
-    quantity: Number(req.quantity),
-    certifications: req.certifications,
-    grade: req.grade,
-    deliveryStart: req.deliveryStart,
-    deliveryEnd: req.deliveryEnd,
-    originPreference: req.originPreference,
-  };
-
-  const scored = candidates
-    .map((c) => evaluateMatch(reqInput, c))
-    .filter((m): m is NonNullable<typeof m> => m !== null)
-    .sort((a, b) => b.score - a.score);
-
-  const agg = aggregateMatches(scored, Number(req.quantity));
-
-  await prisma.requirementMatch.deleteMany({ where: { requirementId } });
-  if (scored.length) {
-    await prisma.requirementMatch.createMany({
-      data: scored.map((m) => ({
-        requirementId,
-        supplyLotId: m.supplyLotId ?? undefined,
-        supplierOrgId: m.supplierOrgId,
-        score: m.score,
-        availableQty: m.availableQty,
-        quantityMatched: m.quantityMatched,
-        reasons: m.reasons,
-        status: MatchStatus.SUGGESTED,
-      })),
-    });
-  }
-
-  await prisma.buyerRequirement.update({
-    where: { id: requirementId },
-    data: {
-      matchedQuantity: agg.matchedQuantity,
-      status:
-        req.status === RequirementStatus.DRAFT
-          ? req.status
-          : RequirementStatus.MATCHING,
-    },
-  });
-
-  return { matches: scored, aggregation: agg };
 }
 
 export async function GET(
@@ -240,7 +110,7 @@ export async function POST(
     const action = String(body.action ?? "rematch");
 
     if (action === "rematch") {
-      const result = await rematch(id);
+      const result = await rematchRequirement(id);
       return ok(result);
     }
 
@@ -322,6 +192,25 @@ export async function POST(
         where: { id },
         data: { status: RequirementStatus.RFQ_OPEN },
       });
+
+      const invited = await prisma.organisationMember.findMany({
+        where: {
+          deletedAt: null,
+          organisationId: { in: picks.map((p) => p.supplierOrgId) },
+        },
+        select: { userId: true },
+      });
+      if (invited.length) {
+        await prisma.notification.createMany({
+          data: invited.map((m) => ({
+            userId: m.userId,
+            title: `RFQ open: ${requirement.commodity}`,
+            body: `You were shortlisted for ${requirement.reference}. Submit your offer now.`,
+            link: `/dashboard/rfqs/${rfq.id}`,
+            metadata: { kind: "RFQ_INVITE", rfqId: rfq.id, requirementId: id },
+          })),
+        });
+      }
 
       return ok(rfq, { status: 201 });
     }

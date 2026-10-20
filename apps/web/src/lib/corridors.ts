@@ -23,8 +23,30 @@ export const COUNTRIES: CountryOption[] = [
   { code: "IT", name: "Italy", region: "Europe (buyers)" },
   { code: "DE", name: "Germany", region: "Europe (buyers)" },
   { code: "FR", name: "France", region: "Europe (buyers)" },
+  { code: "ES", name: "Spain", region: "Europe (buyers)" },
+  { code: "BE", name: "Belgium", region: "Europe (buyers)" },
+  { code: "PL", name: "Poland", region: "Europe (buyers)" },
+  { code: "CH", name: "Switzerland", region: "Europe (buyers)" },
+  { code: "SE", name: "Sweden", region: "Europe (buyers)" },
+  { code: "TR", name: "Türkiye", region: "Europe (buyers)" },
   { code: "IN", name: "India", region: "Asia (buyers)" },
   { code: "CN", name: "China", region: "Asia (buyers)" },
+  { code: "JP", name: "Japan", region: "Asia (buyers)" },
+  { code: "KR", name: "South Korea", region: "Asia (buyers)" },
+  { code: "SG", name: "Singapore", region: "Asia (buyers)" },
+  { code: "MY", name: "Malaysia", region: "Asia (buyers)" },
+  { code: "HK", name: "Hong Kong", region: "Asia (buyers)" },
+  { code: "PK", name: "Pakistan", region: "Asia (buyers)" },
+  { code: "BD", name: "Bangladesh", region: "Asia (buyers)" },
+  { code: "VN", name: "Vietnam", region: "Asia (buyers)" },
+  { code: "EG", name: "Egypt", region: "Africa & Levant (buyers)" },
+  { code: "JO", name: "Jordan", region: "Africa & Levant (buyers)" },
+  { code: "LB", name: "Lebanon", region: "Africa & Levant (buyers)" },
+  { code: "ZA", name: "South Africa", region: "Africa & Levant (buyers)" },
+  { code: "NG", name: "Nigeria", region: "Africa & Levant (buyers)" },
+  { code: "US", name: "United States", region: "Americas & Oceania (buyers)" },
+  { code: "CA", name: "Canada", region: "Americas & Oceania (buyers)" },
+  { code: "AU", name: "Australia", region: "Americas & Oceania (buyers)" },
 ];
 
 export const KENYA_ORIGIN = "KE";
@@ -153,8 +175,10 @@ export function isGulfFoodImport(code?: string | null) {
 export function freightUsdPerKg(dest?: string | null) {
   const d = (dest ?? "").toUpperCase();
   if (["AE", "SA", "OM", "QA", "BH", "KW", "IR", "IQ"].includes(d)) return 0.35;
-  if (["NL", "GB", "IT", "DE", "FR"].includes(d)) return 0.42;
-  if (["IN", "CN"].includes(d)) return 0.4;
+  if (["NL", "GB", "IT", "DE", "FR", "ES", "BE", "PL", "CH", "SE", "TR"].includes(d)) return 0.42;
+  if (["IN", "CN", "PK", "BD"].includes(d)) return 0.4;
+  if (["JP", "KR", "SG", "MY", "HK", "VN"].includes(d)) return 0.48;
+  if (["US", "CA", "AU"].includes(d)) return 0.6;
   return 0.38;
 }
 

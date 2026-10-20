@@ -17,17 +17,27 @@ type Req = {
   verifiedDemand: boolean;
   status: string;
   buyerOrg?: { name: string; countryCode: string; verificationStatus: string };
+  match?: { score: number; reasons: string[]; status: string };
+  openRfqId?: string | null;
 };
 
 export default function BuyerDemandPage() {
   const { accessToken } = useAuth();
   const [rows, setRows] = useState<Req[]>([]);
+  const [forMe, setForMe] = useState<Req[]>([]);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!accessToken) return;
-    api<Req[]>("/requirements?scope=public", { token: accessToken })
-      .then(setRows)
+    Promise.all([
+      api<Req[]>("/requirements?scope=for-me", { token: accessToken }),
+      api<Req[]>("/requirements?scope=public", { token: accessToken }),
+    ])
+      .then(([mine, all]) => {
+        setForMe(mine);
+        const matchedIds = new Set(mine.map((r) => r.id));
+        setRows(all.filter((r) => !matchedIds.has(r.id)));
+      })
       .catch((e) =>
         setError(e instanceof ApiError ? e.message : "Failed"),
       );
@@ -44,6 +54,55 @@ export default function BuyerDemandPage() {
         </p>
       </div>
       {error ? <p className="text-sm text-[var(--danger)]">{error}</p> : null}
+      {forMe.length ? (
+        <section className="space-y-3">
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-[var(--fg-muted)]">
+            Matched to your supply
+          </h2>
+          <ul className="divide-y divide-[var(--border)] border-y border-[var(--border)]">
+            {forMe.map((r) => (
+              <li
+                key={r.id}
+                className="flex flex-wrap items-center justify-between gap-3 py-4"
+              >
+                <div>
+                  <p className="font-medium">
+                    {r.commodity} · {r.quantity} {r.unit}
+                    {r.match ? (
+                      <span className="ml-2 text-xs text-[var(--fg-muted)]">
+                        {r.match.score}% fit
+                      </span>
+                    ) : null}
+                  </p>
+                  <p className="text-xs text-[var(--fg-muted)]">
+                    {countryName(r.destinationCountry)} · {r.reference}
+                    {r.verifiedDemand ? " · Verified Demand" : ""}
+                  </p>
+                  {r.match?.reasons?.length ? (
+                    <p className="mt-1 text-xs text-[var(--fg-muted)]">
+                      {r.match.reasons.slice(0, 3).join(" · ")}
+                    </p>
+                  ) : null}
+                </div>
+                {r.openRfqId ? (
+                  <Link href={`/dashboard/rfqs/${r.openRfqId}`}>
+                    <Button>Send offer</Button>
+                  </Link>
+                ) : (
+                  <span className="text-xs text-[var(--fg-muted)]">
+                    Buyer is shortlisting — you&apos;ll be notified when the RFQ opens
+                  </span>
+                )}
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
+      {forMe.length ? (
+        <h2 className="text-sm font-semibold uppercase tracking-wide text-[var(--fg-muted)]">
+          All open demand
+        </h2>
+      ) : null}
       <ul className="divide-y divide-[var(--border)] border-y border-[var(--border)]">
         {rows.map((r) => (
           <li

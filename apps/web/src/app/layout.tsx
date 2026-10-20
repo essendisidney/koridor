@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { IBM_Plex_Sans, Source_Serif_4 } from "next/font/google";
 import { AuthProvider } from "@/lib/auth";
+import { BRAND } from "@/lib/brand";
 import "./globals.css";
 
 const sans = IBM_Plex_Sans({
@@ -17,11 +18,10 @@ const display = Source_Serif_4({
 
 export const metadata: Metadata = {
   title: {
-    default: "Koridor",
-    template: "%s · Koridor",
+    default: `${BRAND.name} — ${BRAND.tagline}`,
+    template: `%s · ${BRAND.name}`,
   },
-  description:
-    "Operating system for Kenyan farm produce to Oman, Saudi Arabia, Iran, Iraq, and the GCC.",
+  description: BRAND.description,
 };
 
 export default function RootLayout({

@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import {
   RequirementFrequency,
   RequirementStatus,
+  RfqStatus,
   VerificationStatus,
 } from "@prisma/client";
 import { fail, ok } from "@/lib/http";
@@ -14,6 +15,7 @@ import { Permission } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
 import { decimalNumber } from "@/lib/trade";
 import { requirementReference } from "@/lib/matching";
+import { OPEN_DEMAND_STATUSES, rematchRequirement } from "@/lib/match-engine";
 
 export const runtime = "nodejs";
 
@@ -55,6 +57,48 @@ export async function GET(req: NextRequest) {
     const user = await requireAuth(req);
     await requirePermission(user, Permission.TRADE_READ);
     const membership = await requireOrgMembership(user.id);
+
+    if (scope === "for-me") {
+      // Supplier feed: open demand this org was matched to, best fit first.
+      const matches = await prisma.requirementMatch.findMany({
+        where: {
+          deletedAt: null,
+          supplierOrgId: membership.organisationId,
+          requirement: { deletedAt: null, status: { in: OPEN_DEMAND_STATUSES } },
+        },
+        include: {
+          requirement: {
+            include: {
+              buyerOrg: {
+                select: { name: true, countryCode: true, verificationStatus: true },
+              },
+              rfqs: {
+                where: { deletedAt: null, status: RfqStatus.OPEN },
+                select: { id: true },
+                orderBy: { createdAt: "desc" },
+                take: 1,
+              },
+            },
+          },
+        },
+        orderBy: { score: "desc" },
+        take: 50,
+      });
+      const seen = new Set<string>();
+      const feed = matches
+        .filter((m) => !seen.has(m.requirementId) && seen.add(m.requirementId))
+        .map((m) => ({
+          ...m.requirement,
+          match: {
+            score: m.score,
+            reasons: m.reasons,
+            status: m.status,
+            quantityMatched: m.quantityMatched,
+          },
+          openRfqId: m.requirement.rfqs[0]?.id ?? null,
+        }));
+      return ok(feed);
+    }
 
     const rows = await prisma.buyerRequirement.findMany({
       where: {
@@ -138,6 +182,12 @@ export async function POST(req: NextRequest) {
         createdBy: user.id,
       },
     });
+
+    // Publishing dispatches the requirement to matching farms immediately.
+    if (publish) {
+      const { aggregation } = await rematchRequirement(row.id);
+      return ok({ ...row, aggregation }, { status: 201 });
+    }
 
     return ok(row, { status: 201 });
   } catch (error) {

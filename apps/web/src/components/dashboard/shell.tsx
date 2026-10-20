@@ -36,56 +36,50 @@ import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { postAuthPath } from "@/lib/journey";
+import { BRAND } from "@/lib/brand";
 
-const PRIMARY = [
+type NavItem = { href: string; label: string; icon: typeof LayoutDashboard };
+
+/** Five things a buyer does. Everything else lives under "More". */
+const BUYER_NAV: NavItem[] = [
   { href: "/dashboard", label: "Home", icon: LayoutDashboard },
-  { href: "/discover", label: "Discover", icon: Compass },
+  { href: "/dashboard/requirements", label: "My requests", icon: Target },
+  { href: "/dashboard/deals", label: "Deals", icon: Handshake },
+  { href: "/dashboard/logistics", label: "Shipments", icon: Ship },
+  { href: "/dashboard/finance", label: "Payments", icon: Wallet },
 ];
 
-const BUY = [
-  { href: "/dashboard/requirements", label: "Requirements", icon: Target },
-  { href: "/dashboard/rfqs", label: "RFQs", icon: ClipboardList },
+/** Five things a farm / exporter does. */
+const SELLER_NAV: NavItem[] = [
+  { href: "/dashboard", label: "Home", icon: LayoutDashboard },
+  { href: "/dashboard/demand", label: "Buyers for you", icon: Search },
+  { href: "/dashboard/supply", label: "My produce", icon: Sprout },
+  { href: "/dashboard/deals", label: "Deals", icon: Handshake },
+  { href: "/dashboard/finance", label: "Payments", icon: Wallet },
 ];
 
-const SUPPLY = [
-  { href: "/dashboard/supply", label: "My Supply", icon: Sprout },
-  { href: "/dashboard/demand", label: "Buyer Demand", icon: Search },
-];
-
-const DEALS = [
-  { href: "/dashboard/deals", label: "Deal Rooms", icon: Handshake },
+const MORE: NavItem[] = [
+  { href: "/products", label: "Browse products", icon: Compass },
+  { href: "/dashboard/rfqs", label: "Quotes (RFQs)", icon: ClipboardList },
   { href: "/dashboard/contracts", label: "Contracts", icon: FileSignature },
-];
-
-const TRADE = [
-  { href: "/dashboard/trade", label: "Passports", icon: Package },
-  { href: "/dashboard/logistics", label: "Logistics", icon: Ship },
-  { href: "/dashboard/compliance", label: "Compliance", icon: FileCheck2 },
-];
-
-const CAPITAL = [{ href: "/dashboard/finance", label: "Capital", icon: Wallet }];
-
-const INTELLIGENCE = [
-  { href: "/dashboard/intelligence", label: "Intelligence", icon: BarChart3 },
-  { href: "/dashboard/analytics", label: "Analytics", icon: Activity },
-];
-
-const SETUP = [
+  { href: "/dashboard/trade", label: "Trade records", icon: Package },
+  { href: "/dashboard/compliance", label: "Export documents", icon: FileCheck2 },
+  { href: "/dashboard/documents", label: "Files", icon: FileText },
   { href: "/dashboard/verification", label: "Verification", icon: BadgeCheck },
   { href: "/dashboard/trust", label: "Identity", icon: ShieldCheck },
-  { href: "/dashboard/registry", label: "Registry", icon: BookOpen },
-  { href: "/dashboard/organisation", label: "Organisation", icon: Building2 },
+  { href: "/dashboard/registry", label: "Directory", icon: BookOpen },
+  { href: "/dashboard/bankability", label: "Credit score", icon: Shield },
+  { href: "/dashboard/intelligence", label: "Market insights", icon: BarChart3 },
+  { href: "/dashboard/analytics", label: "Analytics", icon: Activity },
+  { href: "/dashboard/ai", label: "Assistant", icon: Bot },
+  { href: "/dashboard/organisation", label: "Company", icon: Building2 },
+  { href: "/dashboard/members", label: "Team", icon: Users },
+  { href: "/dashboard/activity", label: "Activity", icon: Activity },
+  { href: "/dashboard/audit", label: "Audit log", icon: ScrollText },
   { href: "/dashboard/settings", label: "Account", icon: Settings },
 ];
 
-const MORE = [
-  { href: "/dashboard/bankability", label: "Bankability", icon: Shield },
-  { href: "/dashboard/documents", label: "Documents", icon: FileText },
-  { href: "/dashboard/members", label: "Members", icon: Users },
-  { href: "/dashboard/ai", label: "AI", icon: Bot },
-  { href: "/dashboard/activity", label: "Activity", icon: Activity },
-  { href: "/dashboard/audit", label: "Audit", icon: ScrollText },
-];
+const SELLER_ROLES = ["FARMER", "COOPERATIVE", "EXPORTER"];
 
 const ADMIN_NAV = {
   href: "/dashboard/admin",
@@ -134,6 +128,10 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
     );
   }
 
+  const isSeller = user.roles.some((r) => SELLER_ROLES.includes(r));
+  const primary = isSeller ? SELLER_NAV : BUYER_NAV;
+  const moreActive = MORE.some((i) => pathname.startsWith(i.href));
+
   const extras = [
     ...(isAdmin ? [KYB_NAV, ADMIN_NAV] : []),
     ...(canReviewCompliance ? [COMPLIANCE_APPROVALS_NAV] : []),
@@ -147,18 +145,16 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
             href="/dashboard"
             className="font-[family-name:var(--font-display)] text-xl font-semibold"
           >
-            Koridor
+            {BRAND.name}
           </Link>
         </div>
-        <NavGroup label="Home" items={PRIMARY} pathname={pathname} />
-        <NavGroup label="Buy" items={BUY} pathname={pathname} />
-        <NavGroup label="Supply" items={SUPPLY} pathname={pathname} />
-        <NavGroup label="Deals" items={DEALS} pathname={pathname} />
-        <NavGroup label="Trade" items={TRADE} pathname={pathname} />
-        <NavGroup label="Capital" items={CAPITAL} pathname={pathname} />
-        <NavGroup label="Intelligence" items={INTELLIGENCE} pathname={pathname} />
-        <NavGroup label="Account" items={SETUP} pathname={pathname} />
-        <NavGroup label="More" items={MORE} pathname={pathname} />
+        <NavGroup items={primary} pathname={pathname} />
+        <details className="px-3 pb-4" open={moreActive}>
+          <summary className="cursor-pointer list-none px-3 py-2 text-sm text-[var(--sidebar-muted)] hover:text-white">
+            More
+          </summary>
+          <NavGroup items={MORE} pathname={pathname} />
+        </details>
         {extras.length ? (
           <NavGroup label="Ops" items={extras} pathname={pathname} />
         ) : null}
@@ -185,21 +181,14 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
       </aside>
       <div className="min-w-0">
         <header className="flex h-16 items-center justify-between border-b border-[var(--border)] bg-white/80 px-6 backdrop-blur">
-          <div>
-            <p className="text-xs uppercase tracking-[0.14em] text-[var(--fg-muted)]">
-              Kenya → world
-            </p>
-            <p className="text-sm font-medium text-[var(--fg)]">
-              Demand · Match · Deal · Execute
-            </p>
-          </div>
+          <Link
+            href={isSeller ? "/dashboard/supply" : "/dashboard/requirements/new"}
+          >
+            <Button size="sm">
+              {isSeller ? "List produce" : "New request"}
+            </Button>
+          </Link>
           <div className="flex items-center gap-2">
-            <Link
-              href="/cropchain"
-              className="hidden text-sm font-medium text-[var(--fg-muted)] sm:inline"
-            >
-              CropChain
-            </Link>
             <Link href="/dashboard/notifications">
               <Button variant="secondary" size="sm">
                 <Bell className="h-4 w-4" />
@@ -219,15 +208,17 @@ function NavGroup({
   items,
   pathname,
 }: {
-  label: string;
-  items: { href: string; label: string; icon: typeof LayoutDashboard }[];
+  label?: string;
+  items: NavItem[];
   pathname: string;
 }) {
   return (
     <div className="px-3 pb-4">
-      <p className="px-3 pb-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--sidebar-muted)]">
-        {label}
-      </p>
+      {label ? (
+        <p className="px-3 pb-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--sidebar-muted)]">
+          {label}
+        </p>
+      ) : null}
       <nav className="space-y-0.5">
         {items.map((item) => {
           const active =

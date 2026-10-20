@@ -9,6 +9,7 @@ import {
 import { Permission } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
 import { supplyLotReference } from "@/lib/matching";
+import { matchOpenDemandForLot } from "@/lib/match-engine";
 import { decimalNumber } from "@/lib/trade";
 
 export const runtime = "nodejs";
@@ -104,7 +105,9 @@ export async function POST(req: NextRequest) {
         createdBy: user.id,
       },
     });
-    return ok(row, { status: 201 });
+    // New supply is matched against open buyer demand straight away.
+    const matchedRequirements = await matchOpenDemandForLot(row);
+    return ok({ ...row, matchedRequirements }, { status: 201 });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Failed";
     return fail(message, message === "Unauthorized" ? 401 : 400);

@@ -83,4 +83,23 @@ describe("matching hard filters", () => {
     assert.equal(agg.fullyMatched, true);
     assert.equal(agg.matchedQuantity, 2000);
   });
+
+  it("surfaces undeclared-capacity prospects without counting them toward fill", () => {
+    const prospect = evaluateMatch(
+      req({ certifications: [] }),
+      cand({ supplierOrgId: "p", availableQty: 0, capacityDeclared: false }),
+    );
+    assert.ok(prospect);
+    assert.equal(prospect.quantityMatched, 0);
+    assert.ok(prospect.reasons.some((r) => r.includes("Capacity not declared")));
+    const lot = evaluateMatch(req(), cand({ availableQty: 700 }));
+    const agg = aggregateMatches([prospect, lot!], 2000);
+    assert.equal(agg.matchedQuantity, 700);
+    assert.equal(agg.packed.length, 1);
+  });
+
+  it("still rejects declared lots with no quantity", () => {
+    const hard = passesHardFilters(req(), cand({ availableQty: 0 }));
+    assert.equal(hard.pass, false);
+  });
 });

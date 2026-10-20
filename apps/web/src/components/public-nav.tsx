@@ -2,29 +2,33 @@
 
 import Link from "next/link";
 import { SessionCta, SessionTextLink } from "@/components/session-cta";
+import { BRAND } from "@/lib/brand";
 
 export function PublicNav({
-  ctaHref = "/start",
-  ctaLabel = "Get started",
+  ctaHref = "/register?role=BUYER",
+  ctaLabel = "Get quotes",
 }: {
   ctaHref?: string;
   ctaLabel?: string;
 }) {
   return (
     <header className="border-b border-[var(--border)] bg-white">
-      <div className="mx-auto flex h-16 max-w-5xl items-center justify-between px-6">
+      <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
         <Link
           href="/"
           className="font-[family-name:var(--font-display)] text-xl font-semibold"
         >
-          Koridor
+          {BRAND.name}
         </Link>
         <nav className="flex items-center gap-4">
-          <Link href="/cropchain" className="hidden text-sm font-medium sm:inline">
-            CropChain
+          <Link href="/products" className="hidden text-sm font-medium sm:inline">
+            Products
           </Link>
-          <Link href="/kenya" className="hidden text-sm font-medium sm:inline">
-            Kenya–GCC
+          <Link
+            href="/register?role=FARMER"
+            className="hidden text-sm font-medium sm:inline"
+          >
+            Sell
           </Link>
           <SessionTextLink className="text-sm font-medium" />
           <SessionCta guestHref={ctaHref} guestLabel={ctaLabel} />
@@ -37,14 +41,19 @@ export function PublicNav({
 export function PublicFooter() {
   return (
     <footer className="border-t border-[var(--border)] bg-[#0b1f33] text-white/70">
-      <div className="mx-auto flex max-w-5xl flex-col gap-2 px-6 py-8 text-sm md:flex-row md:items-center md:justify-between">
+      <div className="mx-auto flex max-w-6xl flex-col gap-3 px-4 py-8 text-sm sm:px-6 md:flex-row md:items-center md:justify-between">
         <span className="font-[family-name:var(--font-display)] text-base text-white">
-          Koridor
+          {BRAND.name}
         </span>
-        <span>Kenya → Oman · Saudi Arabia · Iran · Iraq</span>
-        <Link href="/start" className="text-white underline">
-          Get started
-        </Link>
+        <span>Kenyan farms → buyers worldwide</span>
+        <div className="flex gap-4">
+          <Link href="/products" className="text-white underline">
+            Products
+          </Link>
+          <Link href="/register?role=FARMER" className="text-white underline">
+            Sell on {BRAND.name}
+          </Link>
+        </div>
       </div>
     </footer>
   );

@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { api, ApiError } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
@@ -46,6 +46,14 @@ export default function NewRequirementPage() {
 
   const set = (key: keyof typeof form, value: string) =>
     setForm((f) => ({ ...f, [key]: value }));
+
+  // Arriving from a product page ("Get quotes") pre-fills the product.
+  useEffect(() => {
+    const commodity = new URLSearchParams(window.location.search).get("commodity");
+    if (commodity) {
+      setForm((f) => ({ ...f, commodity, variety: "" }));
+    }
+  }, []);
 
   async function publish(e: FormEvent) {
     e.preventDefault();

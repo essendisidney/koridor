@@ -82,7 +82,12 @@ function OnboardingForm() {
         },
       });
       await refreshProfile();
-      router.push("/dashboard");
+      const commodity = params.get("commodity");
+      router.push(
+        commodity && defaultType === "BUYER"
+          ? `/dashboard/requirements/new?commodity=${encodeURIComponent(commodity)}`
+          : "/dashboard",
+      );
     } catch (err) {
       setError(
         err instanceof ApiError
