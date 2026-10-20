@@ -279,7 +279,7 @@ export default function FinancePage() {
             <span className="mb-1.5 block font-medium">Mode</span>
             <select
               name="mode"
-              className="h-11 w-full rounded-md border border-[var(--border)] bg-white px-3"
+              className="h-11 w-full rounded-xl border border-[var(--border)] bg-white px-3"
               defaultValue="provider"
             >
               <option value="provider">Configured provider</option>

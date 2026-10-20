@@ -36,7 +36,7 @@ import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { postAuthPath } from "@/lib/journey";
-import { BRAND } from "@/lib/brand";
+import { Logo } from "@/components/public-nav";
 
 type NavItem = { href: string; label: string; icon: typeof LayoutDashboard };
 
@@ -122,7 +122,8 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
 
   if (loading || !user) {
     return (
-      <div className="flex min-h-screen items-center justify-center text-sm text-[var(--fg-muted)]">
+      <div className="flex min-h-screen flex-col items-center justify-center gap-3 text-sm text-[var(--fg-muted)]">
+        <span className="h-6 w-6 animate-spin rounded-full border-2 border-[var(--border)] border-t-[var(--accent)]" />
         Loading workspace…
       </div>
     );
@@ -138,19 +139,22 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
   ];
 
   return (
-    <div className="min-h-screen lg:grid lg:grid-cols-[240px_1fr]">
-      <aside className="bg-[var(--sidebar)] text-[var(--sidebar-fg)]">
-        <div className="flex h-16 items-center px-6">
-          <Link
-            href="/dashboard"
-            className="font-[family-name:var(--font-display)] text-xl font-semibold"
-          >
-            {BRAND.name}
+    <div className="min-h-screen lg:grid lg:grid-cols-[256px_1fr]">
+      <aside className="relative flex flex-col bg-[var(--sidebar)] text-[var(--sidebar-fg)] lg:sticky lg:top-0 lg:h-screen lg:overflow-y-auto">
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-x-0 top-0 h-64 bg-[radial-gradient(ellipse_at_top_left,rgba(180,138,62,0.18),transparent_70%)]"
+        />
+        <div className="relative flex h-16 items-center px-6">
+          <Link href="/dashboard" aria-label="Workspace home">
+            <Logo light />
           </Link>
         </div>
-        <NavGroup items={primary} pathname={pathname} />
+        <div className="relative">
+          <NavGroup items={primary} pathname={pathname} />
+        </div>
         <details className="px-3 pb-4" open={moreActive}>
-          <summary className="cursor-pointer list-none px-3 py-2 text-sm text-[var(--sidebar-muted)] hover:text-white">
+          <summary className="cursor-pointer list-none px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--sidebar-muted)] hover:text-white">
             More
           </summary>
           <NavGroup items={MORE} pathname={pathname} />
@@ -159,19 +163,21 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
           <NavGroup label="Ops" items={extras} pathname={pathname} />
         ) : null}
         <div className="mt-auto border-t border-white/10 px-4 py-4">
-          <div className="mb-3 flex items-start gap-2">
-            <Shield className="mt-0.5 h-4 w-4 text-[var(--sidebar-muted)]" />
-            <div>
-              <p className="text-sm font-medium">
+          <div className="mb-3 flex items-center gap-3">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#d4b06a] to-[#9c7430] text-xs font-semibold text-[#1a1407]">
+              {(user.firstName?.[0] ?? "") + (user.lastName?.[0] ?? "")}
+            </span>
+            <div className="min-w-0">
+              <p className="truncate text-sm font-medium">
                 {user.firstName} {user.lastName}
               </p>
-              <p className="text-xs text-[var(--sidebar-muted)]">{user.email}</p>
+              <p className="truncate text-xs text-[var(--sidebar-muted)]">{user.email}</p>
             </div>
           </div>
           <Button
             variant="secondary"
             size="sm"
-            className="w-full border-white/15 bg-white/5 text-white hover:bg-white/10"
+            className="w-full border-white/15 bg-white/5 text-white shadow-none hover:border-white/25 hover:bg-white/10"
             onClick={() => logout().then(() => router.push("/login"))}
           >
             <LogOut className="h-4 w-4" />
@@ -180,7 +186,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
         </div>
       </aside>
       <div className="min-w-0">
-        <header className="flex h-16 items-center justify-between border-b border-[var(--border)] bg-white/80 px-6 backdrop-blur">
+        <header className="glass sticky top-0 z-30 flex h-16 items-center justify-between border-b border-[var(--border)]/70 px-6">
           <Link
             href={isSeller ? "/dashboard/supply" : "/dashboard/requirements/new"}
           >
@@ -197,7 +203,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
             </Link>
           </div>
         </header>
-        <main className="px-6 py-8">{children}</main>
+        <main className="mx-auto max-w-6xl px-6 py-10">{children}</main>
       </div>
     </div>
   );
@@ -230,13 +236,13 @@ function NavGroup({
               key={item.href}
               href={item.href}
               className={cn(
-                "flex items-center gap-3 rounded-md px-3 py-2 text-sm transition",
+                "relative flex items-center gap-3 rounded-xl px-3 py-2 text-sm transition",
                 active
-                  ? "bg-white/10 text-white"
+                  ? "bg-white/[0.08] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] before:absolute before:left-0 before:top-1/2 before:h-4 before:w-[3px] before:-translate-y-1/2 before:rounded-full before:bg-[var(--gold)]"
                   : "text-[var(--sidebar-muted)] hover:bg-white/5 hover:text-white",
               )}
             >
-              <Icon className="h-4 w-4" />
+              <Icon className={cn("h-4 w-4", active && "text-[#d4b06a]")} />
               {item.label}
             </Link>
           );

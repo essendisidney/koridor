@@ -101,7 +101,7 @@ export default function NewRequirementPage() {
         <RestrictedMarketNotice className="mt-3" />
       </div>
 
-      <form onSubmit={publish} className="space-y-4 border border-[var(--border)] bg-white p-6">
+      <form onSubmit={publish} className="space-y-4 rounded-2xl border border-[var(--border)] bg-white shadow-[var(--shadow-card)] p-6">
         {step === 0 ? (
           <>
             <label className="block text-sm">

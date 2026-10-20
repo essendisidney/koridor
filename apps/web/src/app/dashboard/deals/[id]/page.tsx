@@ -301,7 +301,7 @@ export default function DealRoomPage() {
 
       {tab === "overview" ? (
         <section className="grid gap-4 lg:grid-cols-2">
-          <div className="space-y-3 border border-[var(--border)] bg-white p-5 text-sm">
+          <div className="space-y-3 rounded-2xl border border-[var(--border)] bg-white shadow-[var(--shadow-card)] p-5 text-sm">
             <h2 className="font-[family-name:var(--font-display)] text-lg font-semibold">
               Deal summary
             </h2>
@@ -324,7 +324,7 @@ export default function DealRoomPage() {
               and Trade Passport.
             </p>
           </div>
-          <div className="space-y-2 border border-[var(--border)] bg-white p-5 text-sm">
+          <div className="space-y-2 rounded-2xl border border-[var(--border)] bg-white shadow-[var(--shadow-card)] p-5 text-sm">
             <h2 className="font-[family-name:var(--font-display)] text-lg font-semibold">
               Quick links
             </h2>
@@ -355,7 +355,7 @@ export default function DealRoomPage() {
           ].map(({ label, org }) => (
             <div
               key={label}
-              className="border border-[var(--border)] bg-white p-5"
+              className="rounded-2xl border border-[var(--border)] bg-white shadow-[var(--shadow-card)] p-5"
             >
               <p className="text-xs uppercase tracking-[0.12em] text-[var(--fg-muted)]">
                 {label}
@@ -380,7 +380,7 @@ export default function DealRoomPage() {
 
       {tab === "commercial" ? (
         <section className="space-y-6">
-          <dl className="grid gap-3 border border-[var(--border)] bg-white p-5 text-sm sm:grid-cols-2">
+          <dl className="grid gap-3 rounded-2xl border border-[var(--border)] bg-white shadow-[var(--shadow-card)] p-5 text-sm sm:grid-cols-2">
             <div>
               <dt className="text-[var(--fg-muted)]">Commodity</dt>
               <dd>{deal.commodity}</dd>
@@ -442,7 +442,7 @@ export default function DealRoomPage() {
 
           <form
             onSubmit={proposeTerm}
-            className="space-y-3 border border-[var(--border)] bg-white p-5"
+            className="space-y-3 rounded-2xl border border-[var(--border)] bg-white shadow-[var(--shadow-card)] p-5"
           >
             <h2 className="font-[family-name:var(--font-display)] text-lg font-semibold">
               Propose commercial change
@@ -493,7 +493,7 @@ export default function DealRoomPage() {
             {deal.messages.map((m) => (
               <li
                 key={m.id}
-                className="border border-[var(--border)] bg-white px-4 py-3 text-sm"
+                className="rounded-2xl border border-[var(--border)] bg-white shadow-[var(--shadow-card)] px-4 py-3 text-sm"
               >
                 {m.kind === "TERM_CHANGE" ? (
                   <p className="text-xs font-semibold uppercase tracking-wide text-[var(--accent)]">
@@ -530,7 +530,7 @@ export default function DealRoomPage() {
       ) : null}
 
       {tab === "contract" ? (
-        <section className="space-y-3 border border-[var(--border)] bg-white p-5 text-sm">
+        <section className="space-y-3 rounded-2xl border border-[var(--border)] bg-white shadow-[var(--shadow-card)] p-5 text-sm">
           {deal.contract ? (
             <>
               <p className="font-medium">
@@ -598,7 +598,7 @@ export default function DealRoomPage() {
             deal.shipments!.map((s) => (
               <div
                 key={s.id}
-                className="border border-[var(--border)] bg-white px-4 py-3 text-sm"
+                className="rounded-2xl border border-[var(--border)] bg-white shadow-[var(--shadow-card)] px-4 py-3 text-sm"
               >
                 <p className="font-medium">
                   {s.reference} · {s.status}
@@ -622,7 +622,7 @@ export default function DealRoomPage() {
       ) : null}
 
       {tab === "finance" ? (
-        <section className="space-y-3 border border-[var(--border)] bg-white p-5 text-sm">
+        <section className="space-y-3 rounded-2xl border border-[var(--border)] bg-white shadow-[var(--shadow-card)] p-5 text-sm">
           <p>
             V1 stores payment milestones and finance requests — Koridor does not
             process payments.
@@ -638,7 +638,7 @@ export default function DealRoomPage() {
       ) : null}
 
       {tab === "passport" ? (
-        <section className="space-y-3 border border-[var(--border)] bg-white p-5 text-sm">
+        <section className="space-y-3 rounded-2xl border border-[var(--border)] bg-white shadow-[var(--shadow-card)] p-5 text-sm">
           {deal.trade ? (
             <>
               <p className="font-medium">

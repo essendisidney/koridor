@@ -107,7 +107,7 @@ export default function DocumentsPage() {
           <select
             name="type"
             required
-            className="h-11 w-full rounded-md border border-[var(--border)] bg-white px-3"
+            className="h-11 w-full rounded-xl border border-[var(--border)] bg-white px-3"
             defaultValue="TRADE_LICENSE"
           >
             {DOC_TYPES.map((t) => (

@@ -132,7 +132,7 @@ export default function DiscoverPage() {
         {tab === "markets" ? (
           <div className="grid gap-4 sm:grid-cols-2">
             {FEATURED_CORRIDORS.map((c) => (
-              <div key={c.id} className="border border-[var(--border)] bg-white p-5">
+              <div key={c.id} className="rounded-2xl border border-[var(--border)] bg-white shadow-[var(--shadow-card)] p-5">
                 <p className="font-[family-name:var(--font-display)] text-xl font-semibold">
                   {c.title}
                 </p>

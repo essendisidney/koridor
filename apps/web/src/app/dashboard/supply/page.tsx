@@ -78,7 +78,7 @@ export default function SupplyPage() {
 
       <form
         onSubmit={onCreate}
-        className="grid gap-3 border border-[var(--border)] bg-white p-5 sm:grid-cols-3"
+        className="grid gap-3 rounded-2xl border border-[var(--border)] bg-white shadow-[var(--shadow-card)] p-5 sm:grid-cols-3"
       >
         <label className="text-sm sm:col-span-1">
           Commodity

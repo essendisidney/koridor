@@ -70,7 +70,7 @@ export default function CropChainPage() {
 
         <section className="grid gap-4 sm:grid-cols-2">
           {STEPS.map((s) => (
-            <div key={s.title} className="border border-[var(--border)] bg-white p-5">
+            <div key={s.title} className="rounded-2xl border border-[var(--border)] bg-white shadow-[var(--shadow-card)] p-5">
               <p className="font-[family-name:var(--font-display)] text-xl font-semibold">
                 {s.title}
               </p>
@@ -86,7 +86,7 @@ export default function CropChainPage() {
             Why each side says yes
           </h2>
           <div className="mt-4 grid gap-4 sm:grid-cols-2">
-            <div className="border border-[var(--border)] bg-white p-5">
+            <div className="rounded-2xl border border-[var(--border)] bg-white shadow-[var(--shadow-card)] p-5">
               <p className="font-medium">Farmer / cooperative</p>
               <p className="mt-2 text-sm text-[var(--fg-muted)] leading-relaxed">
                 Guaranteed price before planting, inputs on credit against the
@@ -94,7 +94,7 @@ export default function CropChainPage() {
                 after harvest.
               </p>
             </div>
-            <div className="border border-[var(--border)] bg-white p-5">
+            <div className="rounded-2xl border border-[var(--border)] bg-white shadow-[var(--shadow-card)] p-5">
               <p className="font-medium">Gulf buyer</p>
               <p className="mt-2 text-sm text-[var(--fg-muted)] leading-relaxed">
                 One institutional counterparty, one quality standard, dated

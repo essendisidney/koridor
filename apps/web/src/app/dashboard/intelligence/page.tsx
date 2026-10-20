@@ -41,7 +41,7 @@ export default function IntelligencePage() {
         {INTELLIGENCE_SECTIONS.map((s) => (
           <div
             key={s.id}
-            className="border border-[var(--border)] bg-white/70 px-4 py-3"
+            className="rounded-2xl border border-[var(--border)] bg-white shadow-[var(--shadow-card)] px-4 py-3"
           >
             <h2 className="font-[family-name:var(--font-display)] text-lg font-semibold">
               {s.title}
@@ -80,7 +80,7 @@ export default function IntelligencePage() {
           {CURATED_BRIEFS.map((b) => (
             <article
               key={b.id}
-              className="border border-[var(--border)] bg-white p-5"
+              className="rounded-2xl border border-[var(--border)] bg-white shadow-[var(--shadow-card)] p-5"
             >
               <div className="flex flex-wrap items-baseline justify-between gap-2">
                 <h3 className="font-[family-name:var(--font-display)] text-xl font-semibold">

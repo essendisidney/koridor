@@ -113,7 +113,7 @@ export default function RequirementMatchesPage() {
       </div>
 
       {agg ? (
-        <section className="border border-[var(--border)] bg-white p-5">
+        <section className="rounded-2xl border border-[var(--border)] bg-white shadow-[var(--shadow-card)] p-5">
           <p className="text-sm">
             Koridor can fulfil{" "}
             <strong>

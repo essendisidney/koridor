@@ -84,19 +84,19 @@ export default function RequirementDetailPage() {
           </div>
 
           <section className="grid gap-4 sm:grid-cols-3">
-            <div className="border border-[var(--border)] bg-white p-4">
+            <div className="rounded-2xl border border-[var(--border)] bg-white shadow-[var(--shadow-card)] p-4">
               <p className="text-xs text-[var(--fg-muted)]">Matched</p>
               <p className="text-2xl font-semibold">
                 {matched} {r.unit}
               </p>
             </div>
-            <div className="border border-[var(--border)] bg-white p-4">
+            <div className="rounded-2xl border border-[var(--border)] bg-white shadow-[var(--shadow-card)] p-4">
               <p className="text-xs text-[var(--fg-muted)]">Unmatched</p>
               <p className="text-2xl font-semibold">
                 {Math.max(0, qty - matched)} {r.unit}
               </p>
             </div>
-            <div className="border border-[var(--border)] bg-white p-4">
+            <div className="rounded-2xl border border-[var(--border)] bg-white shadow-[var(--shadow-card)] p-4">
               <p className="text-xs text-[var(--fg-muted)]">Suppliers</p>
               <p className="text-2xl font-semibold">
                 {data?.matches.length ?? 0}

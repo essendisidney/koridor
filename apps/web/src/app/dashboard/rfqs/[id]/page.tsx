@@ -336,7 +336,7 @@ export default function RfqDetailPage() {
         {rfq.offers.length === 0 ? (
           <p className="text-sm text-[var(--fg-muted)]">No offers yet.</p>
         ) : isBuyer ? (
-          <div className="overflow-x-auto border border-[var(--border)] bg-white/70">
+          <div className="overflow-x-auto rounded-2xl border border-[var(--border)] bg-white shadow-[var(--shadow-card)]">
             <table className="min-w-full text-left text-sm">
               <thead className="border-b border-[var(--border)] text-xs uppercase tracking-wide text-[var(--fg-muted)]">
                 <tr>

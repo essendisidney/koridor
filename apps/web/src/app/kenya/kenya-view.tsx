@@ -73,7 +73,7 @@ export function KenyaView({
           {FEATURED_CORRIDORS.map((c) => (
             <div
               key={c.id}
-              className="border border-[var(--border)] bg-white p-5"
+              className="rounded-2xl border border-[var(--border)] bg-white shadow-[var(--shadow-card)] p-5"
             >
               <p className="font-[family-name:var(--font-display)] text-xl font-semibold">
                 {c.title}
@@ -144,7 +144,7 @@ export function KenyaView({
                 const next = e.target.value;
                 router.push(next ? `/kenya?destination=${next}` : "/kenya");
               }}
-              className="h-11 rounded-md border border-[var(--border)] bg-white px-3 text-sm"
+              className="h-11 rounded-xl border border-[var(--border)] bg-white px-3 text-sm"
             >
               <option value="">All GCC / West Asia buyers</option>
               {GULF_WEST_ASIA_BUYERS.map((c) => (

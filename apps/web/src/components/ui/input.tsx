@@ -16,7 +16,7 @@ export function Input({ className, label, error, id, ...props }: Props) {
       <input
         id={inputId}
         className={cn(
-          "h-11 rounded-md border border-[var(--border)] bg-white px-3 text-[var(--fg)] outline-none transition focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/20",
+          "h-11 rounded-xl border border-[var(--border)] bg-white px-3.5 shadow-[0_1px_2px_rgba(14,26,21,0.04)] text-[var(--fg)] outline-none transition focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/20",
           error && "border-[var(--danger)]",
           className,
         )}

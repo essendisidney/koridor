@@ -1,35 +1,30 @@
 @import "tailwindcss";
 
 :root {
-  --bg: #f3f5f7;
+  --bg: #f7f5ef;
   --bg-elevated: #ffffff;
-  --fg: #0b1f33;
-  --fg-muted: #5a6b7b;
-  --border: #d5dde5;
-  --primary: #0b1f33;
-  --primary-fg: #f7f9fb;
-  --accent: #0f6e6a;
-  --accent-soft: #e6f3f2;
-  --danger: #9b2c2c;
-  --success: #1f6f4a;
+  --fg: #0e1a15;
+  --fg-muted: #5d6a63;
+  --border: #e5e1d6;
+  --primary: #0f2e24;
+  --primary-fg: #f7f5ef;
+  --accent: #1d6b4f;
+  --accent-soft: #e6f0ea;
+  --gold: #b48a3e;
+  --gold-soft: #f6eedc;
+  --danger: #a1332b;
+  --success: #1d6b4f;
   --warning: #9a6700;
-  --ring: #0f6e6a;
-  --sidebar: #0b1f33;
-  --sidebar-fg: #e8eef4;
-  --sidebar-muted: #9fb0c0;
-  --hero-overlay: linear-gradient(
-    115deg,
-    rgba(11, 31, 51, 0.92) 0%,
-    rgba(11, 31, 51, 0.72) 48%,
-    rgba(15, 110, 106, 0.45) 100%
-  );
-  --surface-pattern: radial-gradient(
-      circle at 12% 18%,
-      rgba(15, 110, 106, 0.08),
-      transparent 36%
-    ),
-    radial-gradient(circle at 88% 0%, rgba(11, 31, 51, 0.08), transparent 42%),
-    linear-gradient(180deg, #f7f9fb 0%, #eef2f5 100%);
+  --ring: #1d6b4f;
+  --sidebar: #0c241c;
+  --sidebar-fg: #eef2ee;
+  --sidebar-muted: #93a79c;
+  --shadow-card: 0 1px 2px rgba(14, 26, 21, 0.04), 0 12px 32px -16px rgba(14, 26, 21, 0.18);
+  --shadow-lift: 0 2px 4px rgba(14, 26, 21, 0.05), 0 24px 48px -20px rgba(14, 26, 21, 0.28);
+  --hero-overlay: radial-gradient(ellipse 80% 60% at 85% 0%, rgba(180, 138, 62, 0.28), transparent 60%),
+    radial-gradient(ellipse 70% 70% at 0% 100%, rgba(29, 107, 79, 0.45), transparent 60%),
+    linear-gradient(160deg, #0f2e24 0%, #0a1f18 100%);
+  --surface-pattern: linear-gradient(180deg, #faf8f3 0%, #f4f1e9 100%);
 }
 
 @theme inline {
@@ -41,6 +36,8 @@
   --color-primary-foreground: var(--primary-fg);
   --color-accent: var(--accent);
   --color-accent-soft: var(--accent-soft);
+  --color-gold: var(--gold);
+  --color-gold-soft: var(--gold-soft);
   --color-danger: var(--danger);
   --color-success: var(--success);
   --color-sidebar: var(--sidebar);
@@ -63,7 +60,8 @@ body {
   margin: 0;
   background: var(--surface-pattern);
   color: var(--fg);
-  font-family: var(--font-sans), "IBM Plex Sans", sans-serif;
+  font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+  font-feature-settings: "ss01", "cv11";
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
 }
@@ -117,4 +115,82 @@ a {
 .animate-draw-line {
   transform-origin: left;
   animation: draw-line 0.9s ease-out both;
+}
+
+/* ---------- Premium surface utilities ---------- */
+
+.card {
+  border: 1px solid var(--border);
+  border-radius: 1.25rem;
+  background: var(--bg-elevated);
+  box-shadow: var(--shadow-card);
+}
+
+.card-hover {
+  transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+}
+.card-hover:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-lift);
+  border-color: color-mix(in srgb, var(--accent) 35%, var(--border));
+}
+
+.eyebrow {
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--gold);
+}
+
+.hero-surface {
+  position: relative;
+  isolation: isolate;
+  background: var(--hero-overlay);
+  color: #f7f5ef;
+}
+/* Fine grain so the gradient reads as material, not flat colour. */
+.hero-surface::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  opacity: 0.18;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E");
+  mix-blend-mode: overlay;
+  pointer-events: none;
+}
+.hero-surface::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background-image: linear-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+  background-size: 64px 64px;
+  mask-image: radial-gradient(ellipse 70% 60% at 50% 30%, black, transparent 75%);
+  pointer-events: none;
+}
+
+.glass {
+  background: color-mix(in srgb, var(--bg) 78%, transparent);
+  backdrop-filter: saturate(160%) blur(14px);
+  -webkit-backdrop-filter: saturate(160%) blur(14px);
+}
+
+.text-gradient-gold {
+  background: linear-gradient(100deg, #e9cf94 0%, #c99a4a 55%, #e9cf94 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-fade-up,
+  .animate-fade-in,
+  .animate-draw-line,
+  .card-hover {
+    animation: none !important;
+    transition: none !important;
+  }
 }

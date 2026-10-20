@@ -242,7 +242,7 @@ export default function TradeWorkspacePage() {
       {(trade.deals?.length || trade.documentChecklist) ? (
         <section className="grid gap-4 lg:grid-cols-2">
           {trade.deals?.length ? (
-            <div className="border border-[var(--border)] bg-white p-5 text-sm">
+            <div className="rounded-2xl border border-[var(--border)] bg-white shadow-[var(--shadow-card)] p-5 text-sm">
               <p className="text-xs uppercase tracking-[0.12em] text-[var(--fg-muted)]">
                 Linked deal room
               </p>
@@ -262,12 +262,12 @@ export default function TradeWorkspacePage() {
               ))}
             </div>
           ) : (
-            <div className="border border-[var(--border)] bg-white p-5 text-sm text-[var(--fg-muted)]">
+            <div className="rounded-2xl border border-[var(--border)] bg-white shadow-[var(--shadow-card)] p-5 text-sm text-[var(--fg-muted)]">
               No deal room linked yet.
             </div>
           )}
           {trade.documentChecklist ? (
-            <div className="border border-[var(--border)] bg-white p-5 text-sm">
+            <div className="rounded-2xl border border-[var(--border)] bg-white shadow-[var(--shadow-card)] p-5 text-sm">
               <div className="flex items-baseline justify-between gap-2">
                 <p className="text-xs uppercase tracking-[0.12em] text-[var(--fg-muted)]">
                   Document checklist
@@ -306,7 +306,7 @@ export default function TradeWorkspacePage() {
       ) : null}
 
       {trade.executable ? (
-        <section className="space-y-4 border border-[var(--border)] bg-white p-6">
+        <section className="space-y-4 rounded-2xl border border-[var(--border)] bg-white shadow-[var(--shadow-card)] p-6">
           <div className="flex flex-wrap items-end justify-between gap-3">
             <div>
               <p className="text-xs uppercase tracking-[0.14em] text-[var(--accent)]">
@@ -510,7 +510,7 @@ export default function TradeWorkspacePage() {
           <span className="mb-1.5 block font-medium">Type</span>
           <select
             name="type"
-            className="h-11 w-full rounded-md border border-[var(--border)] bg-white px-3"
+            className="h-11 w-full rounded-xl border border-[var(--border)] bg-white px-3"
             defaultValue="DOCUMENT"
           >
             {EVIDENCE_TYPES.map((t) => (

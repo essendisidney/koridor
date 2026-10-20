@@ -200,7 +200,7 @@ export default function RegistryPage() {
           <select
             value={type}
             onChange={(e) => setType(e.target.value)}
-            className="h-11 rounded-md border border-[var(--border)] bg-white px-3 text-sm"
+            className="h-11 rounded-xl border border-[var(--border)] bg-white px-3 text-sm"
           >
             <option value="">All types</option>
             {TYPES.filter(Boolean).map((t) => (
@@ -219,7 +219,7 @@ export default function RegistryPage() {
           <select
             value={market}
             onChange={(e) => setMarket(e.target.value)}
-            className="h-11 rounded-md border border-[var(--border)] bg-white px-3 text-sm"
+            className="h-11 rounded-xl border border-[var(--border)] bg-white px-3 text-sm"
           >
             <option value="">Any export market</option>
             {GULF_WEST_ASIA_BUYERS.map((c) => (
@@ -233,7 +233,7 @@ export default function RegistryPage() {
             value={q}
             onChange={(e) => setQ(e.target.value)}
             placeholder="Search name…"
-            className="h-11 min-w-[200px] flex-1 rounded-md border border-[var(--border)] bg-white px-3 text-sm"
+            className="h-11 min-w-[200px] flex-1 rounded-xl border border-[var(--border)] bg-white px-3 text-sm"
           />
         </div>
         <p className="text-xs text-[var(--fg-muted)]">

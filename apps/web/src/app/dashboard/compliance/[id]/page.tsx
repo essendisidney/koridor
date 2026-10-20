@@ -163,7 +163,7 @@ export default function ComplianceDetailPage() {
 
       <article
         id="certificate-document"
-        className="space-y-4 border border-[var(--border)] bg-white p-8 print:border-0"
+        className="space-y-4 rounded-2xl border border-[var(--border)] bg-white shadow-[var(--shadow-card)] p-8 print:border-0"
       >
         <p className="text-xs uppercase tracking-[0.18em] text-[var(--fg-muted)]">
           Koridor compliance document

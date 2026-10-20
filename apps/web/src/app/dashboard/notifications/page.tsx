@@ -63,7 +63,7 @@ export default function NotificationsPage() {
           Mark all read
         </Button>
       </div>
-      <div className="divide-y divide-[var(--border)] border border-[var(--border)] bg-white">
+      <div className="divide-y divide-[var(--border)] rounded-2xl border border-[var(--border)] bg-white shadow-[var(--shadow-card)]">
         {items.length === 0 ? (
           <p className="p-6 text-sm text-[var(--fg-muted)]">No notifications.</p>
         ) : (

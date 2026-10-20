@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { notFound } from "next/navigation";
-import { BadgeCheck } from "lucide-react";
+import { ArrowLeft, BadgeCheck } from "lucide-react";
 import { PublicFooter, PublicNav } from "@/components/public-nav";
 import { OPEN_DEMAND_STATUSES } from "@/lib/match-engine";
 import { prisma } from "@/lib/prisma";
@@ -82,32 +82,37 @@ export default async function ProductPage({
   const buyHref = `/register?role=BUYER&commodity=${encodeURIComponent(p.name)}`;
 
   return (
-    <div className="min-h-screen bg-[var(--bg)]">
+    <div className="min-h-screen">
       <PublicNav ctaHref={buyHref} />
-      <main className="mx-auto max-w-6xl space-y-10 px-4 py-10 sm:px-6">
-        <section className="flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
+      <section className="hero-surface">
+        <div className="mx-auto flex max-w-6xl flex-col gap-8 px-4 pb-14 pt-12 sm:px-6 md:flex-row md:items-end md:justify-between">
           <div>
-            <Link href="/products" className="text-sm text-[var(--fg-muted)]">
-              ← All products
+            <Link
+              href="/products"
+              className="inline-flex items-center gap-1.5 text-sm text-white/60 transition hover:text-white"
+            >
+              <ArrowLeft className="h-4 w-4" /> All products
             </Link>
-            <h1 className="mt-2 font-[family-name:var(--font-display)] text-4xl font-semibold">
-              Kenyan {p.name}
+            <p className="eyebrow mt-6">Direct from Kenya</p>
+            <h1 className="mt-2 font-[family-name:var(--font-display)] text-5xl tracking-[-0.03em] md:text-6xl">
+              Kenyan <span className="text-gradient-gold italic">{p.name}</span>
             </h1>
-            <p className="mt-2 max-w-xl text-[var(--fg-muted)]">{p.blurb}</p>
+            <p className="mt-4 max-w-xl leading-relaxed text-white/70">{p.blurb}</p>
           </div>
           <div className="flex flex-wrap gap-3">
             <Link href={buyHref}>
-              <Button size="lg">Get quotes</Button>
+              <Button size="lg" variant="gold">Get quotes</Button>
             </Link>
             <Link href="/register?role=FARMER">
-              <Button size="lg" variant="secondary">
+              <Button size="lg" variant="light">
                 I grow this
               </Button>
             </Link>
           </div>
-        </section>
-
-        <section className="grid gap-3 sm:grid-cols-3">
+        </div>
+      </section>
+      <main className="relative z-10 mx-auto -mt-8 max-w-6xl space-y-8 px-4 pb-20 sm:px-6">
+        <section className="grid gap-4 sm:grid-cols-3">
           <Stat label="Indicative price" value={`$${p.fobUsdPerKg[0]}–${p.fobUsdPerKg[1]}/kg`} note="FOB Kenya" />
           <Stat
             label="Available now"
@@ -121,22 +126,22 @@ export default async function ProductPage({
           />
         </section>
 
-        <section className="rounded-lg border border-[var(--border)] bg-white p-5">
-          <p className="text-sm font-medium">Harvest calendar (typical)</p>
-          <div className="mt-3 grid grid-cols-12 gap-1">
+        <section className="card p-6">
+          <p className="eyebrow">Harvest calendar · typical</p>
+          <div className="mt-4 grid grid-cols-6 gap-1.5 sm:grid-cols-12">
             {MONTHS.map((m, i) => {
               const on = p.seasonMonths.includes(i + 1);
               return (
                 <div
                   key={i}
-                  className={`rounded py-2 text-center text-xs ${on ? "bg-[var(--accent)] text-white" : "bg-[#eef2f5] text-[var(--fg-muted)]"}`}
+                  className={`rounded-lg py-2.5 text-center text-xs font-medium ${on ? "bg-[var(--accent)] text-white shadow-[0_6px_14px_-8px_rgba(29,107,79,0.9)]" : "bg-[#f1eee6] text-[var(--fg-muted)]"}`}
                 >
                   {m}
                 </div>
               );
             })}
           </div>
-          <dl className="mt-5 grid gap-4 text-sm sm:grid-cols-3">
+          <dl className="mt-6 grid gap-5 border-t border-[var(--border)] pt-5 text-sm sm:grid-cols-3">
             <div>
               <dt className="text-[var(--fg-muted)]">Varieties</dt>
               <dd>{p.varieties.join(", ")}</dd>
@@ -152,11 +157,11 @@ export default async function ProductPage({
           </dl>
         </section>
 
-        <section className="grid gap-8 md:grid-cols-2">
-          <div>
-            <h2 className="text-lg font-semibold">Farms selling now</h2>
+        <section className="grid gap-4 md:grid-cols-2">
+          <div className="card p-6">
+            <h2 className="font-[family-name:var(--font-display)] text-xl tracking-[-0.02em]">Farms selling now</h2>
             {lots.length ? (
-              <ul className="mt-3 divide-y divide-[var(--border)] border-y border-[var(--border)]">
+              <ul className="mt-3 divide-y divide-[var(--border)]">
                 {lots.map((l) => (
                   <li key={l.id} className="flex items-center justify-between gap-3 py-3 text-sm">
                     <div>
@@ -184,10 +189,10 @@ export default async function ProductPage({
               </p>
             )}
           </div>
-          <div>
-            <h2 className="text-lg font-semibold">Buyers looking for {p.name.toLowerCase()}</h2>
+          <div className="card p-6">
+            <h2 className="font-[family-name:var(--font-display)] text-xl tracking-[-0.02em]">Buyers looking for {p.name.toLowerCase()}</h2>
             {demand.length ? (
-              <ul className="mt-3 divide-y divide-[var(--border)] border-y border-[var(--border)]">
+              <ul className="mt-3 divide-y divide-[var(--border)]">
                 {demand.map((d) => (
                   <li key={d.id} className="flex items-center justify-between gap-3 py-3 text-sm">
                     <span>
@@ -221,10 +226,10 @@ export default async function ProductPage({
 
 function Stat({ label, value, note }: { label: string; value: string; note: string }) {
   return (
-    <div className="rounded-lg border border-[var(--border)] bg-white p-4">
-      <p className="text-xs text-[var(--fg-muted)]">{label}</p>
-      <p className="mt-1 text-2xl font-semibold">{value}</p>
-      <p className="text-xs text-[var(--fg-muted)]">{note}</p>
+    <div className="card p-5">
+      <p className="text-xs font-medium text-[var(--fg-muted)]">{label}</p>
+      <p className="mt-2 font-[family-name:var(--font-display)] text-3xl tracking-[-0.02em]">{value}</p>
+      <p className="mt-1 text-xs text-[var(--fg-muted)]">{note}</p>
     </div>
   );
 }

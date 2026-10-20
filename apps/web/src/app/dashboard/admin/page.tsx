@@ -185,7 +185,7 @@ export default function AdminPage() {
           <h2 className="text-sm font-semibold uppercase tracking-[0.12em] text-[var(--fg-muted)]">
             Exception center
           </h2>
-          <ul className="divide-y divide-[var(--border)] border-y border-[var(--border)] bg-white/70">
+          <ul className="divide-y divide-[var(--border)] overflow-hidden rounded-2xl border border-[var(--border)] bg-white shadow-[var(--shadow-card)]">
             {tower.exceptions.map((ex) => (
               <li
                 key={ex.id}
@@ -233,7 +233,7 @@ export default function AdminPage() {
         <h2 className="text-sm font-semibold uppercase tracking-[0.12em] text-[var(--fg-muted)]">
           Services
         </h2>
-        <div className="divide-y divide-[var(--border)] border-y border-[var(--border)] bg-white/70">
+        <div className="divide-y divide-[var(--border)] overflow-hidden rounded-2xl border border-[var(--border)] bg-white shadow-[var(--shadow-card)]">
           {(overview?.health.checks ?? []).map((c) => (
             <div key={c.service} className="flex items-center justify-between px-4 py-3 text-sm">
               <span className="font-medium text-[var(--fg)]">{c.service}</span>
@@ -250,7 +250,7 @@ export default function AdminPage() {
         <h2 className="text-sm font-semibold uppercase tracking-[0.12em] text-[var(--fg-muted)]">
           Feature flags
         </h2>
-        <div className="divide-y divide-[var(--border)] border-y border-[var(--border)] bg-white/70">
+        <div className="divide-y divide-[var(--border)] overflow-hidden rounded-2xl border border-[var(--border)] bg-white shadow-[var(--shadow-card)]">
           {flags.map((f) => (
             <div key={f.key} className="flex items-center justify-between gap-4 px-4 py-3">
               <div>
@@ -316,14 +316,14 @@ function Stat({
     return (
       <Link
         href={href}
-        className="border border-[var(--border)] bg-white/70 px-4 py-3 transition hover:border-[var(--accent)]"
+        className="rounded-2xl border border-[var(--border)] bg-white shadow-[var(--shadow-card)] px-4 py-3 transition hover:border-[var(--accent)]"
       >
         {inner}
       </Link>
     );
   }
   return (
-    <div className="border border-[var(--border)] bg-white/70 px-4 py-3">
+    <div className="rounded-2xl border border-[var(--border)] bg-white shadow-[var(--shadow-card)] px-4 py-3">
       {inner}
     </div>
   );

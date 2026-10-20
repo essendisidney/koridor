@@ -16,7 +16,7 @@ export function Select({ className, label, error, id, children, ...props }: Prop
       <select
         id={selectId}
         className={cn(
-          "h-11 rounded-md border border-[var(--border)] bg-white px-3 text-[var(--fg)] outline-none transition focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/20",
+          "h-11 rounded-xl border border-[var(--border)] bg-white px-3 text-[var(--fg)] outline-none transition focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/20",
           error && "border-[var(--danger)]",
           className,
         )}

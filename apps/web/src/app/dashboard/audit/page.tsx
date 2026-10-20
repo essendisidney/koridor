@@ -42,7 +42,7 @@ export default function AuditPage() {
       {error ? (
         <p className="text-sm text-[var(--danger)]">{error}</p>
       ) : (
-        <div className="overflow-x-auto border border-[var(--border)] bg-white">
+        <div className="overflow-x-auto rounded-2xl border border-[var(--border)] bg-white shadow-[var(--shadow-card)]">
           <table className="min-w-full text-left text-sm">
             <thead className="border-b border-[var(--border)] bg-[#f7f9fb] text-xs uppercase tracking-[0.1em] text-[var(--fg-muted)]">
               <tr>

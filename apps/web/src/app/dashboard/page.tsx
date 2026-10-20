@@ -114,14 +114,14 @@ export default function DashboardPage() {
               <Link
                 key={m.label}
                 href={m.href}
-                className="border border-[var(--border)] bg-white/70 px-4 py-3 transition hover:border-[var(--accent)]"
+                className="rounded-2xl border border-[var(--border)] bg-white shadow-[var(--shadow-card)] px-4 py-3 transition hover:border-[var(--accent)]"
               >
                 {inner}
               </Link>
             ) : (
               <div
                 key={m.label}
-                className="border border-[var(--border)] bg-white/70 px-4 py-3"
+                className="rounded-2xl border border-[var(--border)] bg-white shadow-[var(--shadow-card)] px-4 py-3"
               >
                 {inner}
               </div>
@@ -135,7 +135,7 @@ export default function DashboardPage() {
           <h2 className="text-sm font-semibold uppercase tracking-[0.12em] text-[var(--fg-muted)]">
             {journey?.persona === "buyer" ? "Your requirements" : "Live buyer demand"}
           </h2>
-          <ul className="divide-y divide-[var(--border)] border-y border-[var(--border)] bg-white/70">
+          <ul className="divide-y divide-[var(--border)] overflow-hidden rounded-2xl border border-[var(--border)] bg-white shadow-[var(--shadow-card)]">
             {workspace.highlights.map((h) => (
               <li key={h.href}>
                 <Link
@@ -172,7 +172,7 @@ export default function DashboardPage() {
       {journey ? <JourneyStepper phases={journey.phases} /> : null}
 
       {journey?.next ? (
-        <section className="border border-[var(--border)] bg-white p-6">
+        <section className="rounded-2xl border border-[var(--border)] bg-white shadow-[var(--shadow-card)] p-6">
           <p className="text-xs uppercase tracking-[0.14em] text-[var(--accent)]">
             {(() => {
               const idx = journey.phases.findIndex((p) => p.status === "current");

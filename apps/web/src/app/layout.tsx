@@ -1,19 +1,18 @@
 import type { Metadata } from "next";
-import { IBM_Plex_Sans, Source_Serif_4 } from "next/font/google";
+import { Fraunces, Geist } from "next/font/google";
 import { AuthProvider } from "@/lib/auth";
 import { BRAND } from "@/lib/brand";
 import "./globals.css";
 
-const sans = IBM_Plex_Sans({
+const sans = Geist({
   variable: "--font-sans",
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
 });
 
-const display = Source_Serif_4({
+const display = Fraunces({
   variable: "--font-display",
   subsets: ["latin"],
-  weight: ["500", "600", "700"],
+  axes: ["opsz", "SOFT"],
 });
 
 export const metadata: Metadata = {

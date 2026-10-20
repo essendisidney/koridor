@@ -94,7 +94,7 @@ export default function AiPage() {
         />
         <div className="flex flex-wrap gap-2">
           <input
-            className="flex-1 border border-[var(--border)] bg-white px-3 py-2 text-sm"
+            className="flex-1 rounded-xl border border-[var(--border)] bg-white px-3 py-2 text-sm"
             placeholder="Optional trade id"
             value={tradeId}
             onChange={(e) => setTradeId(e.target.value)}
@@ -120,7 +120,7 @@ export default function AiPage() {
           </h2>
           <div className="flex gap-2">
             <input
-              className="flex-1 border border-[var(--border)] bg-white px-3 py-2 text-sm"
+              className="flex-1 rounded-xl border border-[var(--border)] bg-white px-3 py-2 text-sm"
               placeholder="Trade UUID"
               value={tradeId}
               onChange={(e) => setTradeId(e.target.value)}
@@ -140,7 +140,7 @@ export default function AiPage() {
           </h2>
           <div className="flex gap-2">
             <input
-              className="flex-1 border border-[var(--border)] bg-white px-3 py-2 text-sm"
+              className="flex-1 rounded-xl border border-[var(--border)] bg-white px-3 py-2 text-sm"
               placeholder="Document UUID"
               value={documentId}
               onChange={(e) => setDocumentId(e.target.value)}
@@ -161,7 +161,7 @@ export default function AiPage() {
           <h2 className="text-sm font-semibold uppercase tracking-[0.12em] text-[var(--fg-muted)]">
             Latest result · {active.type} · {active.model ?? "heuristic"}
           </h2>
-          <div className="divide-y divide-[var(--border)] border-y border-[var(--border)] bg-white/70">
+          <div className="divide-y divide-[var(--border)] overflow-hidden rounded-2xl border border-[var(--border)] bg-white shadow-[var(--shadow-card)]">
             {(active.insights ?? []).map((i) => (
               <div key={i.id} className="px-4 py-3">
                 <p className="text-xs uppercase tracking-wide text-[var(--fg-muted)]">
@@ -180,7 +180,7 @@ export default function AiPage() {
         <h2 className="text-sm font-semibold uppercase tracking-[0.12em] text-[var(--fg-muted)]">
           Recent jobs
         </h2>
-        <div className="divide-y divide-[var(--border)] border-y border-[var(--border)] bg-white/70">
+        <div className="divide-y divide-[var(--border)] overflow-hidden rounded-2xl border border-[var(--border)] bg-white shadow-[var(--shadow-card)]">
           {jobs.length === 0 ? (
             <p className="py-6 text-sm text-[var(--fg-muted)]">
               No persisted jobs yet (tables optional until migration).

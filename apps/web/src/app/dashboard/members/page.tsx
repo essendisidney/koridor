@@ -107,7 +107,7 @@ export default function MembersPage() {
 
       <form
         onSubmit={onInvite}
-        className="grid max-w-2xl gap-3 border border-[var(--border)] bg-white p-4 sm:grid-cols-[1fr_160px_auto]"
+        className="grid max-w-2xl gap-3 rounded-2xl border border-[var(--border)] bg-white shadow-[var(--shadow-card)] p-4 sm:grid-cols-[1fr_160px_auto]"
       >
         <Input label="Invite email" name="email" type="email" required />
         <Select label="Role" name="role" defaultValue="MEMBER">
@@ -124,7 +124,7 @@ export default function MembersPage() {
         <p className="text-sm text-[var(--success)]">{message}</p>
       ) : null}
 
-      <div className="overflow-x-auto border border-[var(--border)] bg-white">
+      <div className="overflow-x-auto rounded-2xl border border-[var(--border)] bg-white shadow-[var(--shadow-card)]">
         <table className="min-w-full text-left text-sm">
           <thead className="border-b border-[var(--border)] bg-[#f7f9fb] text-xs uppercase tracking-[0.1em] text-[var(--fg-muted)]">
             <tr>

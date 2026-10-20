@@ -248,7 +248,7 @@ export default function TrustPage() {
         <h2 className="font-[family-name:var(--font-display)] text-xl font-semibold">
           Identity checklist
         </h2>
-        <div className="divide-y divide-[var(--border)] border-y border-[var(--border)] bg-white/70">
+        <div className="divide-y divide-[var(--border)] overflow-hidden rounded-2xl border border-[var(--border)] bg-white shadow-[var(--shadow-card)]">
           {checklist.map((item) => (
             <div
               key={item.key}
@@ -316,7 +316,7 @@ export default function TrustPage() {
             <select
               name="idDocumentType"
               required
-              className="h-11 w-full rounded-md border border-[var(--border)] bg-white px-3"
+              className="h-11 w-full rounded-xl border border-[var(--border)] bg-white px-3"
               defaultValue="NATIONAL_ID"
             >
               <option value="NATIONAL_ID">National ID</option>
@@ -331,7 +331,7 @@ export default function TrustPage() {
               name="idNumber"
               required
               minLength={4}
-              className="h-11 w-full rounded-md border border-[var(--border)] bg-white px-3"
+              className="h-11 w-full rounded-xl border border-[var(--border)] bg-white px-3"
             />
           </label>
           <label className="text-sm">
@@ -341,7 +341,7 @@ export default function TrustPage() {
               required
               maxLength={2}
               defaultValue="KE"
-              className="h-11 w-full rounded-md border border-[var(--border)] bg-white px-3 uppercase"
+              className="h-11 w-full rounded-xl border border-[var(--border)] bg-white px-3 uppercase"
             />
           </label>
           {kycError ? (

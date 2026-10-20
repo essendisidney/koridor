@@ -136,7 +136,7 @@ export default function VerificationPage() {
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               rows={3}
-              className="w-full rounded-md border border-[var(--border)] bg-white px-3 py-2"
+              className="w-full rounded-xl border border-[var(--border)] bg-white px-3 py-2"
             />
           </label>
           <Button type="submit" disabled={loading || docs.length === 0}>
