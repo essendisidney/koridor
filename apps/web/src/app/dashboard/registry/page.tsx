@@ -120,8 +120,8 @@ export default function RegistryPage() {
         </h1>
         <p className="mt-1 text-sm text-[var(--fg-muted)]">
           Kenyan cooperatives, exporters, and producer groups, plus buyers in
-          Oman, Saudi Arabia, Iran, and Iraq. List commodities and export
-          markets (OM, SA, IR, IQ) so importers can find you. Onboard factories
+          Oman, Saudi Arabia, and Iraq. List commodities and export
+          markets (OM, SA, IQ) so importers can find you. Onboard factories
           and cooperatives — not 700,000 individual farmers.
         </p>
       </div>
@@ -145,7 +145,7 @@ export default function RegistryPage() {
           <Input
             label="Export / source markets (comma-separated ISO-2)"
             name="exportMarkets"
-            placeholder="OM, IR, IQ, SA"
+            placeholder="OM, SA, IQ"
             defaultValue={mine?.exportMarkets?.join(", ") ?? ""}
           />
           <div className="grid gap-3 sm:grid-cols-3">
@@ -238,7 +238,7 @@ export default function RegistryPage() {
         </div>
         <p className="text-xs text-[var(--fg-muted)]">
           Quick: Kenyan {KENYA_PRODUCE.slice(0, 4).join(", ").toLowerCase()}{" "}
-          towards Oman, Saudi Arabia, Iran, Iraq.
+          towards Oman, Saudi Arabia, Iraq.
         </p>
         {error ? <p className="text-sm text-[var(--danger)]">{error}</p> : null}
         <div className="space-y-3">

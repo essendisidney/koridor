@@ -5,6 +5,7 @@ import {
   VerificationStatus,
 } from "@prisma/client";
 import { fail, ok } from "@/lib/http";
+import { restrictedMarketBlock } from "@/lib/sanctions-gate";
 import {
   requireAuth,
   requireOrgMembership,
@@ -91,8 +92,18 @@ export async function POST(req: NextRequest) {
       return fail("commodity, quantity and destinationCountry are required", 400);
     }
 
-    const count = await prisma.buyerRequirement.count();
     const publish = Boolean(body.publish);
+    if (publish) {
+      const blocked = await restrictedMarketBlock({
+        action: "publish_requirement",
+        countries: [destinationCountry, body.originPreference],
+        organisationIds: [membership.organisationId],
+        actorId: user.id,
+      });
+      if (blocked) return blocked;
+    }
+
+    const count = await prisma.buyerRequirement.count();
     const verifiedDemand =
       membership.organisation.verificationStatus === VerificationStatus.VERIFIED &&
       publish;

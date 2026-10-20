@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { MatchStatus, RequirementStatus, RfqStatus } from "@prisma/client";
 import { fail, ok } from "@/lib/http";
+import { restrictedMarketBlock } from "@/lib/sanctions-gate";
 import {
   requireAuth,
   requireOrgMembership,
@@ -262,6 +263,13 @@ export async function POST(
     }
 
     if (action === "create_rfq") {
+      const blocked = await restrictedMarketBlock({
+        action: "publish_rfq",
+        countries: [requirement.destinationCountry, requirement.originPreference],
+        organisationIds: [requirement.buyerOrgId],
+        actorId: user.id,
+      });
+      if (blocked) return blocked;
       const selected = await prisma.requirementMatch.findMany({
         where: { requirementId: id, selectedForRfq: true, deletedAt: null },
       });

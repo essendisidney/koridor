@@ -56,6 +56,10 @@ export async function POST(req: NextRequest) {
         enabled: Boolean(body.enabled),
         percentage:
           body.percentage !== undefined ? Number(body.percentage) : undefined,
+        audience:
+          body.audience !== undefined && typeof body.audience === "object"
+            ? body.audience
+            : undefined,
         actorId: user.id,
       });
       return ok(flag);

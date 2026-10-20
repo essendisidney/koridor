@@ -5,6 +5,7 @@ import {
   MilestoneStatus,
 } from "@prisma/client";
 import { fail, ok } from "@/lib/http";
+import { restrictedMarketBlock } from "@/lib/sanctions-gate";
 import {
   requireAuth,
   requireOrgMembership,
@@ -162,6 +163,12 @@ export async function POST(req: NextRequest, ctx: Ctx) {
     }
 
     if (action === "escrow") {
+      const blocked = await restrictedMarketBlock({
+        action: "request_escrow",
+        contractId: id,
+        actorId: user.id,
+      });
+      if (blocked) return blocked;
       const amount = decimalNumber(body.amount, Number(contract.totalValue));
       const escrow = await prisma.escrowRequest.create({
         data: {

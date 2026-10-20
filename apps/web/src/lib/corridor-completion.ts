@@ -154,7 +154,7 @@ export function evaluateExecutableCorridor(
         ok: hasHalal,
         detail: hasHalal
           ? "Approved Halal certificate is bound to the passport."
-          : "Gulf / Iranian food clearance needs an approved Halal certificate on this lot.",
+          : "Gulf food clearance needs an approved Halal certificate on this lot.",
       },
       {
         id: "gcc_coo",

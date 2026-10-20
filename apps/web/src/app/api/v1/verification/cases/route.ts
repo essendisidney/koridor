@@ -15,6 +15,7 @@ import {
 import { Permission } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
 import { recomputeTrustScore } from "@/lib/trust-score";
+import { screenCounterparty } from "@/lib/screening";
 
 export const runtime = "nodejs";
 
@@ -91,6 +92,15 @@ export async function POST(req: NextRequest) {
         })
       : [];
 
+    const org = membership.organisation;
+    const screening = await screenCounterparty({
+      organisationId: membership.organisationId,
+      name: org.name,
+      countryCode: org.countryCode,
+      registrationNumber: org.registrationNumber,
+      taxId: org.taxId,
+    });
+
     const created = await prisma.$transaction(async (tx) => {
       const verificationCase = await tx.verificationCase.create({
         data: {
@@ -117,6 +127,16 @@ export async function POST(req: NextRequest) {
           type: VerificationEventType.SUBMITTED,
           message: "KYB package submitted for review",
           actorId: user.id,
+          createdBy: user.id,
+        },
+      });
+
+      await tx.verificationEvent.create({
+        data: {
+          verificationCaseId: verificationCase.id,
+          type: VerificationEventType.NOTE_ADDED,
+          message: `Counterparty screening: ${screening.status} (${screening.provider})`,
+          metadata: { screening },
           createdBy: user.id,
         },
       });

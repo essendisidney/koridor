@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { ActivityType } from "@prisma/client";
 import { fail, ok } from "@/lib/http";
+import { restrictedMarketBlock } from "@/lib/sanctions-gate";
 import {
   canOperateFinance,
   requireAuth,
@@ -77,6 +78,13 @@ export async function POST(req: NextRequest) {
       }
       organisationId = String(body.organisationId);
     }
+
+    const blocked = await restrictedMarketBlock({
+      action: "wallet_top_up",
+      organisationIds: [organisationId],
+      actorId: user.id,
+    });
+    if (blocked) return blocked;
 
     const amount = decimalNumber(body.amount);
     if (amount <= 0) return fail("amount must be positive", 400);

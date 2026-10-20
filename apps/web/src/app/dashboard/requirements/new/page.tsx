@@ -7,6 +7,7 @@ import { useAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { KENYA_PRODUCE, WORLD_BUYER_DESTINATIONS, countryName } from "@/lib/corridors";
+import { RestrictedMarketNotice } from "@/components/restricted-market-notice";
 
 const STEPS = [
   "Product",
@@ -89,6 +90,7 @@ export default function NewRequirementPage() {
         <p className="mt-2 text-sm text-[var(--fg-muted)]">
           Step {step + 1} of {STEPS.length}: {STEPS[step]}
         </p>
+        <RestrictedMarketNotice className="mt-3" />
       </div>
 
       <form onSubmit={publish} className="space-y-4 border border-[var(--border)] bg-white p-6">

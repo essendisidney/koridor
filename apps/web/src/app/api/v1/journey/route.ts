@@ -159,7 +159,7 @@ export async function GET(req: NextRequest) {
       current = "negotiate";
       next = {
         title: "List on the Kenya–GCC registry",
-        body: "Commodities and export markets (OM, SA, IR, IQ) so Gulf buyers can find this cooperative or exporter.",
+        body: "Commodities and export markets (OM, SA, IQ) so Gulf buyers can find this cooperative or exporter.",
         href: "/dashboard/registry",
         cta: "Publish listing",
       };

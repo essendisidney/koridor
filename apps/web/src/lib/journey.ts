@@ -47,7 +47,7 @@ export const START_PATHS = [
     role: "BUYER",
     country: "OM",
     title: "I buy from Kenya",
-    body: "GCC or Iranian importer. Publish a dated offtake, then Kenyan cooperatives fulfil it.",
+    body: "GCC importer. Publish a dated offtake, then Kenyan cooperatives fulfil it.",
     cta: "Continue as buyer",
   },
   {

@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { ActivityType, RfqStatus } from "@prisma/client";
 import { fail, ok } from "@/lib/http";
+import { restrictedMarketBlock } from "@/lib/sanctions-gate";
 import {
   requireAuth,
   requireOrgMembership,
@@ -114,6 +115,13 @@ export async function POST(req: NextRequest, ctx: Ctx) {
       if (rfq.status !== RfqStatus.DRAFT) {
         return fail("Only draft RFQs can be published", 409);
       }
+      const blocked = await restrictedMarketBlock({
+        action: "publish_rfq",
+        countries: [rfq.originCountry, rfq.destinationCountry],
+        organisationIds: [rfq.buyerOrgId],
+        actorId: user.id,
+      });
+      if (blocked) return blocked;
       const updated = await prisma.rfq.update({
         where: { id },
         data: {

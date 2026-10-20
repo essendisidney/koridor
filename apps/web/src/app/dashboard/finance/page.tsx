@@ -7,6 +7,7 @@ import { useAuth } from "@/lib/auth";
 import { formatDate } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { RestrictedMarketNotice } from "@/components/restricted-market-notice";
 
 type WalletPayload = {
   provider?: string;
@@ -233,6 +234,7 @@ export default function FinancePage() {
         <p className="mt-1 text-sm text-[var(--fg-muted)]">
           Organisation wallet, ledger, escrow, and in-kind trade credit.
         </p>
+        <RestrictedMarketNotice className="mt-3" />
       </div>
 
       {error ? <p className="text-sm text-[var(--danger)]">{error}</p> : null}

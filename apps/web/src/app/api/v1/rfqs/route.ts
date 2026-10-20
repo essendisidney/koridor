@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { ActivityType, RfqStatus } from "@prisma/client";
 import { fail, ok } from "@/lib/http";
+import { restrictedMarketBlock } from "@/lib/sanctions-gate";
 import {
   requireAuth,
   requireOrgMembership,
@@ -86,6 +87,15 @@ export async function POST(req: NextRequest) {
     }
 
     const publish = Boolean(body.publish);
+    if (publish) {
+      const blocked = await restrictedMarketBlock({
+        action: "publish_rfq",
+        countries: [originCountry, destinationCountry],
+        organisationIds: [membership.organisationId],
+        actorId: user.id,
+      });
+      if (blocked) return blocked;
+    }
     const rfq = await prisma.rfq.create({
       data: {
         reference: tradeReference("RFQ"),

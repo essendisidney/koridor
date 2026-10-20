@@ -41,7 +41,7 @@ export function PublicFooter() {
         <span className="font-[family-name:var(--font-display)] text-base text-white">
           Koridor
         </span>
-        <span>Kenya → Oman · Saudi Arabia · Iran · Iraq</span>
+        <span>Kenya → Oman · Saudi Arabia · Iraq</span>
         <Link href="/start" className="text-white underline">
           Get started
         </Link>
