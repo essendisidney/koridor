@@ -1,5 +1,6 @@
 import { NextRequest } from "next/server";
 import { fail, ok } from "@/lib/http";
+import { restrictedMarketBlock } from "@/lib/sanctions-gate";
 import {
   requireAuth,
   requireOrgMembership,
@@ -102,6 +103,13 @@ export async function POST(req: NextRequest) {
       if (!Number.isFinite(amount) || amount <= 0) {
         return fail("amount must be a positive number", 400);
       }
+      const blocked = await restrictedMarketBlock({
+        action: "credit_draw",
+        tradeId,
+        organisationIds: [membership.organisationId, supplierOrgId],
+        actorId: user.id,
+      });
+      if (blocked) return blocked;
 
       const draw = await issueTradeCreditDraw({
         organisationId: membership.organisationId,

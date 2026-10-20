@@ -12,7 +12,7 @@ export const metadata: Metadata = {
 const STEPS = [
   {
     title: "Connect",
-    body: "Gulf and Iranian buyers meet Kenyan cooperatives, exporters, KNCCI members, and county producer groups — not 5,000 one-off farmers.",
+    body: "Gulf buyers meet Kenyan cooperatives, exporters, KNCCI members, and county producer groups — not 5,000 one-off farmers.",
   },
   {
     title: "Verify",
@@ -95,7 +95,7 @@ export default function CropChainPage() {
               </p>
             </div>
             <div className="border border-[var(--border)] bg-white p-5">
-              <p className="font-medium">Gulf / Iranian buyer</p>
+              <p className="font-medium">Gulf buyer</p>
               <p className="mt-2 text-sm text-[var(--fg-muted)] leading-relaxed">
                 One institutional counterparty, one quality standard, dated
                 delivery into Sohar, Jeddah, Bandar Abbas, or Umm Qasr — not
@@ -126,7 +126,7 @@ export default function CropChainPage() {
             One corridor. One transaction type.
           </h2>
           <p className="mt-3 max-w-2xl text-sm leading-relaxed text-[var(--fg-muted)]">
-            Kenya horticulture, tea, and coffee → Oman, Saudi Arabia, Iran, and
+            Kenya horticulture, tea, and coffee → Oman, Saudi Arabia, and
             Iraq. Pre-sold B2B offtake. Cooperatives (including KTDA-linked
             factories) onboarded county by county. Chambers vet producer groups.
             In-kind credit against the locked order. Settlement only when

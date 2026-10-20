@@ -1,3 +1,5 @@
+import { isRestrictedMarket } from "@/lib/sanctions";
+
 export type CountryOption = {
   code: string;
   name: string;
@@ -16,7 +18,8 @@ export const COUNTRIES: CountryOption[] = [
   { code: "QA", name: "Qatar", region: "Gulf (buyers)" },
   { code: "BH", name: "Bahrain", region: "Gulf (buyers)" },
   { code: "KW", name: "Kuwait", region: "Gulf (buyers)" },
-  { code: "IR", name: "Iran", region: "West Asia (buyers)" },
+  // Restricted market (see lib/sanctions.ts): kept for name lookup, hidden from pickers.
+  { code: "IR", name: "Iran", region: "Restricted (compliance review)" },
   { code: "IQ", name: "Iraq", region: "West Asia (buyers)" },
   { code: "NL", name: "Netherlands", region: "Europe (buyers)" },
   { code: "GB", name: "United Kingdom", region: "Europe (buyers)" },
@@ -52,7 +55,7 @@ export const COUNTRIES: CountryOption[] = [
 export const KENYA_ORIGIN = "KE";
 
 /** Legacy Gulf/West Asia focus (kept for Kenya directory filters). */
-export const GULF_WEST_ASIA_BUYERS = ["OM", "IR", "IQ", "SA"] as const;
+export const GULF_WEST_ASIA_BUYERS = ["OM", "IQ", "SA"] as const;
 
 /** Primary V1 world destinations for Kenya export procurement. */
 export const WORLD_BUYER_DESTINATIONS = [
@@ -62,11 +65,14 @@ export const WORLD_BUYER_DESTINATIONS = [
   "NL",
   "GB",
   "IN",
-  "IR",
   "IQ",
 ] as const;
 
-/** Destinations that require Halal + certificate of origin on the lot. */
+/**
+ * Destinations that require Halal + certificate of origin on the lot.
+ * IR stays listed as a document rule only; trade there is blocked by
+ * RESTRICTED_MARKETS unless a compliance override is set.
+ */
 export const GCC_FOOD_IMPORT = [
   "OM",
   "AE",
@@ -182,9 +188,11 @@ export function freightUsdPerKg(dest?: string | null) {
   return 0.38;
 }
 
-export function groupedCountries() {
+/** Country picker groups. Restricted (sanctioned) markets are omitted by default. */
+export function groupedCountries(opts?: { includeRestricted?: boolean }) {
   const groups = new Map<string, CountryOption[]>();
   for (const c of COUNTRIES) {
+    if (!opts?.includeRestricted && isRestrictedMarket(c.code)) continue;
     const list = groups.get(c.region) ?? [];
     list.push(c);
     groups.set(c.region, list);

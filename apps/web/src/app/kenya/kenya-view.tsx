@@ -50,7 +50,7 @@ export function KenyaView({
             Executable corridor
           </p>
           <h1 className="mt-2 font-[family-name:var(--font-display)] text-4xl font-semibold md:text-5xl">
-            Kenyan farm produce for Oman, Saudi Arabia, Iran, and Iraq
+            Kenyan farm produce for Oman, Saudi Arabia, and Iraq
           </h1>
           <p className="mt-4 max-w-2xl text-[var(--fg-muted)] leading-relaxed">
             Signed offtake first — then Kenyan cooperatives plant. Importers
@@ -195,7 +195,7 @@ export function KenyaView({
           {!data?.gulfBuyers?.length ? (
             <div className="space-y-3">
               <p className="text-sm text-[var(--fg-muted)]">
-                Listed importers in Oman, Saudi Arabia, Iran, and Iraq appear
+                Listed importers in Oman, Saudi Arabia, and Iraq appear
                 here. Open a buyer seat if you offtake Kenyan lots.
               </p>
               <ul className="divide-y divide-[var(--border)] border-y border-[var(--border)]">

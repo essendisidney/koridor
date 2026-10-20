@@ -1,5 +1,6 @@
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
+import { RESTRICTED_MARKET_OVERRIDE_FLAG } from "@/lib/sanctions";
 
 const DEFAULT_FLAGS: {
   key: string;
@@ -30,6 +31,13 @@ const DEFAULT_FLAGS: {
     name: "Finance escrow",
     description: "Wallet hold/release escrow flows",
     enabled: true,
+  },
+  {
+    key: RESTRICTED_MARKET_OVERRIDE_FLAG,
+    name: "Restricted-market compliance override",
+    description:
+      "Allow trade/escrow/payments for sanctioned markets after legal review. Set audience {markets:[\"IR\"], organisationIds?:[...]}.",
+    enabled: false,
   },
 ];
 
@@ -91,6 +99,7 @@ export async function upsertFeatureFlag(input: {
   description?: string | null;
   enabled: boolean;
   percentage?: number;
+  audience?: Prisma.InputJsonValue | null;
   actorId?: string;
 }) {
   const key = input.key.trim().toLowerCase().replace(/\s+/g, "_");
@@ -105,6 +114,7 @@ export async function upsertFeatureFlag(input: {
         description: input.description ?? null,
         enabled: input.enabled,
         percentage: input.percentage ?? 100,
+        audience: input.audience ?? Prisma.JsonNull,
         createdBy: input.actorId,
         updatedBy: input.actorId,
       },
@@ -113,6 +123,10 @@ export async function upsertFeatureFlag(input: {
         description: input.description,
         enabled: input.enabled,
         percentage: input.percentage,
+        audience:
+          input.audience === undefined
+            ? undefined
+            : (input.audience ?? Prisma.JsonNull),
         updatedBy: input.actorId,
         deletedAt: null,
       },

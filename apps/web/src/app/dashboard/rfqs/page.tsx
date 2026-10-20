@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { CountrySelect } from "@/components/country-select";
 import { Select } from "@/components/ui/select";
 import { KENYA_PRODUCE, GULF_INCOTERMS } from "@/lib/corridors";
+import { RestrictedMarketNotice } from "@/components/restricted-market-notice";
 
 type Rfq = {
   id: string;
@@ -86,10 +87,11 @@ export default function RfqsPage() {
           RFQs
         </h1>
         <p className="mt-1 text-sm text-[var(--fg-muted)]">
-          GCC and Iranian buyers: this is Negotiate. Origin Kenya, destination
-          Oman / Saudi Arabia / Iran / Iraq, with a needed-by date so farmers
+          GCC buyers: this is Negotiate. Origin Kenya, destination
+          Oman / Saudi Arabia / Iraq, with a needed-by date so farmers
           plant against a sold order.
         </p>
+        <RestrictedMarketNotice className="mt-3" />
       </div>
 
       <div className="flex gap-2 border-b border-[var(--border)] pb-3">
@@ -147,7 +149,7 @@ export default function RfqsPage() {
             Create RFQ
           </h2>
           <p className="text-sm text-[var(--fg-muted)]">
-            Default corridor is Kenya origin to Oman / Saudi Arabia / Iran / Iraq.
+            Default corridor is Kenya origin to Oman / Saudi Arabia / Iraq.
           </p>
           <Input label="Title" name="title" required placeholder="Hass avocado — Kenya to Muscat" />
           <Select label="Commodity" name="commodity" required defaultValue="Avocado">

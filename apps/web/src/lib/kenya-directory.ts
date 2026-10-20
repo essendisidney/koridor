@@ -10,7 +10,7 @@ export function parseKenyaDest(raw?: string | null) {
   const dest = raw?.toUpperCase();
   if (!dest) return null;
   if (!(GULF_WEST_ASIA_BUYERS as readonly string[]).includes(dest)) {
-    throw new Error("Unknown destination. Use OM, SA, IR, or IQ.");
+    throw new Error("Unknown destination. Use OM, SA, or IQ.");
   }
   return dest;
 }

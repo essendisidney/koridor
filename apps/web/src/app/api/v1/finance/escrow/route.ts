@@ -5,6 +5,7 @@ import {
   EscrowRequestStatus,
 } from "@prisma/client";
 import { fail, ok } from "@/lib/http";
+import { restrictedMarketBlock } from "@/lib/sanctions-gate";
 import {
   canOperateFinance,
   requireAuth,
@@ -97,6 +98,12 @@ export async function POST(req: NextRequest) {
       if (!isParty && !canOperateFinance(user)) {
         return fail("Forbidden", 403);
       }
+      const blocked = await restrictedMarketBlock({
+        action: "open_escrow",
+        contractId: request.contractId,
+        actorId: user.id,
+      });
+      if (blocked) return blocked;
 
       const holdWallet = await ensureWallet({
         organisationId: request.contract.buyerOrgId,
@@ -140,6 +147,14 @@ export async function POST(req: NextRequest) {
       const isBuyer = account.buyerOrgId === membership.organisationId;
       const isSeller = account.sellerOrgId === membership.organisationId;
       const operate = canOperateFinance(user);
+
+      const blocked = await restrictedMarketBlock({
+        action: action === "fund" ? "fund_escrow" : "release_escrow",
+        contractId: account.contractId,
+        organisationIds: [account.buyerOrgId, account.sellerOrgId],
+        actorId: user.id,
+      });
+      if (blocked) return blocked;
 
       if (action === "fund") {
         if (!isBuyer && !operate) return fail("Forbidden", 403);

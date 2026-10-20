@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { CountrySelect } from "@/components/country-select";
 import { Select } from "@/components/ui/select";
 import { KENYA_PRODUCE } from "@/lib/corridors";
+import { RestrictedMarketNotice } from "@/components/restricted-market-notice";
 
 type Trade = {
   id: string;
@@ -86,8 +87,9 @@ export default function TradePage() {
           </h1>
           <p className="mt-1 text-sm text-[var(--fg-muted)]">
             One passport for parties, documents, finance, and shipping. Default
-            corridor is Kenya origin to Oman, Saudi Arabia, Iran, or Iraq.
+            corridor is Kenya origin to Oman, Saudi Arabia, or Iraq.
           </p>
+          <RestrictedMarketNotice className="mt-3" />
         </div>
         <div className="flex gap-2">
           <Link href="/dashboard/rfqs">

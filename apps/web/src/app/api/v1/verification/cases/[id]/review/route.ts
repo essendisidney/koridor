@@ -13,6 +13,7 @@ import { isAdmin, requireAuth, requirePermission } from "@/lib/org-access";
 import { Permission } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
 import { recomputeTrustScore } from "@/lib/trust-score";
+import { screenCounterparty, screeningBlocksApproval } from "@/lib/screening";
 
 export const runtime = "nodejs";
 
@@ -46,6 +47,33 @@ export async function POST(req: NextRequest, ctx: Ctx) {
     }
 
     const approved = decision === "APPROVED";
+
+    if (approved) {
+      const screening = await screenCounterparty({
+        organisationId: existing.organisationId,
+        name: existing.organisation.name,
+        countryCode: existing.organisation.countryCode,
+        registrationNumber: existing.organisation.registrationNumber,
+        taxId: existing.organisation.taxId,
+      });
+      if (screeningBlocksApproval(screening)) {
+        await prisma.verificationEvent.create({
+          data: {
+            verificationCaseId: id,
+            type: VerificationEventType.NOTE_ADDED,
+            message: `Approval blocked by counterparty screening: ${screening.status}`,
+            actorId: user.id,
+            metadata: { screening },
+            createdBy: user.id,
+          },
+        });
+        return fail(
+          `Cannot approve: counterparty screening returned ${screening.status} (${screening.reasons.join("; ")})`,
+          451,
+          "SCREENING_BLOCKED",
+        );
+      }
+    }
 
     await prisma.$transaction(async (tx) => {
       await tx.verificationCase.update({

@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { TradeStatus } from "@prisma/client";
 import { fail, ok } from "@/lib/http";
+import { restrictedMarketBlock } from "@/lib/sanctions-gate";
 import {
   requireAuth,
   requireOrgMembership,
@@ -77,6 +78,17 @@ export async function POST(req: NextRequest) {
         400,
       );
     }
+
+    const blocked = await restrictedMarketBlock({
+      action: "create_trade",
+      countries: [body.originCountry, dest],
+      organisationIds: [
+        membership.organisationId,
+        body.sellerOrgId ? String(body.sellerOrgId) : null,
+      ],
+      actorId: user.id,
+    });
+    if (blocked) return blocked;
 
     const trade = await createTradePassport({
       buyerOrgId: membership.organisationId,
