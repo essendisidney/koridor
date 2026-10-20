@@ -42,18 +42,16 @@ then pushed to the farm manager's phone **after the response is sent**
 | Provider | Channel | Env | Behaviour |
 |----------|---------|-----|-----------|
 | `demo` (default) | `IN_APP` | — | Logs the message to the server console |
-| `twilio` | `WHATSAPP` | `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_WHATSAPP_FROM` (e.g. `+14155238886`), optional `TWILIO_WHATSAPP_CONTENT_SID` | WhatsApp via Twilio Messages API |
-| `africastalking` | `SMS` | `AFRICASTALKING_USERNAME` (`sandbox` uses the sandbox host), `AFRICASTALKING_API_KEY`, optional `AFRICASTALKING_SENDER_ID` | SMS via Africa's Talking |
+| `taifa` | `SMS` | `TAIFA_API_KEY`, `TAIFA_SENDER_NAME` (approved sender ID or shortcode) | SMS via Taifa Mobile (`POST https://api.taifamobile.co.ke/sms/sendsms`, status `1000` = sent) |
+| `africastalking` | `SMS` | `AFRICASTALKING_USERNAME`, `AFRICASTALKING_API_KEY`, optional `AFRICASTALKING_SENDER_ID` | SMS via Africa's Talking (fallback) |
+| `twilio` | `WHATSAPP` | `TWILIO_*` | WhatsApp — **not used unless named in `MESSAGING_PROVIDER`** (WhatsApp provider still to be chosen) |
 
-- `MESSAGING_PROVIDER` — optional ordered chain, e.g. `twilio,africastalking`
-  (WhatsApp first, SMS fallback) or `demo` to force logging. Default: every
-  provider whose keys are set, WhatsApp before SMS; `demo` if none are set.
+- `MESSAGING_PROVIDER` — optional ordered chain, e.g. `taifa` or
+  `taifa,africastalking`, or `demo` to force logging. Default: `taifa` then
+  `africastalking`, whichever has keys; `demo` if none are set.
 - `MESSAGING_DEFAULT_COUNTRY_CODE` — prefix for local numbers (default `254`,
   so `0712 345 678` → `+254712345678`).
-- WhatsApp outside a 24h user session requires an approved template: set
-  `TWILIO_WHATSAPP_CONTENT_SID` to a Content template with variables
-  `{{1}}` title, `{{2}}` body, `{{3}}` link. Without it a free-form body is sent
-  (works in the Twilio sandbox / open sessions only).
+- Taifa messages are capped at 920 characters (6 SMS units; each unit is billed).
 
 **Recipient phone**: `User.phone`, falling back to the supplier org's
 `OrgContact.phone` (primary contact first). Numbers are deduplicated per dispatch.
