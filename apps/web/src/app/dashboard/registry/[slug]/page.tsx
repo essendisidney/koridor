@@ -31,6 +31,7 @@ type Detail = {
     phone?: string | null;
     title?: string | null;
   } | null;
+  reviews?: { average: number | null; count: number };
 };
 
 export default function RegistryDetailPage() {
@@ -65,7 +66,7 @@ export default function RegistryDetailPage() {
     );
   }
 
-  const { organisation: org, registry, primaryContact } = detail;
+  const { organisation: org, registry, primaryContact, reviews } = detail;
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">
@@ -83,6 +84,19 @@ export default function RegistryDetailPage() {
           {org.type.replaceAll("_", " ")} · {org.countryCode}
           {org.city ? ` · ${org.city}` : ""} · {org.verificationStatus} · Trust{" "}
           {org.trustScore}
+        </p>
+        <p className="mt-1 text-sm">
+          {reviews?.count && reviews.average != null ? (
+            <>
+              <span className="font-medium">★ {reviews.average.toFixed(1)}</span>
+              <span className="text-[var(--fg-muted)]">
+                {" "}
+                · {reviews.count} trade review{reviews.count === 1 ? "" : "s"}
+              </span>
+            </>
+          ) : (
+            <span className="text-[var(--fg-muted)]">No trade reviews yet</span>
+          )}
         </p>
       </div>
       {registry.summary ? (

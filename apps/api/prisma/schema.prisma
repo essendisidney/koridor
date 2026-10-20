@@ -542,6 +542,8 @@ model Organisation {
   tradeParticipations    TradeParticipant[]
   tradeCreditFacility    TradeCreditFacility?
   tradeCreditDrawsAsSupplier TradeCreditDraw[] @relation("TradeCreditSupplier")
+  tradeReviewsGiven      TradeReview[]    @relation("TradeReviewReviewer")
+  tradeReviewsReceived   TradeReview[]    @relation("TradeReviewReviewee")
 
   @@index([slug])
   @@index([type])
@@ -1325,6 +1327,7 @@ model Trade {
   contracts      Contract[]
   certificates   ComplianceCertificate[]
   deals          Deal[]
+  reviews        TradeReview[]
 
   @@index([buyerOrgId])
   @@index([sellerOrgId])
@@ -1332,6 +1335,30 @@ model Trade {
   @@index([ownerId])
   @@index([deletedAt])
   @@map("trades")
+}
+
+/// Two-sided post-trade review. One per reviewer org per completed trade.
+model TradeReview {
+  id                 String   @id @default(uuid()) @db.Uuid
+  tradeId            String   @map("trade_id") @db.Uuid
+  reviewerOrgId      String   @map("reviewer_org_id") @db.Uuid
+  revieweeOrgId      String   @map("reviewee_org_id") @db.Uuid
+  rating             Int
+  qualityScore       Int?     @map("quality_score")
+  onTimeScore        Int?     @map("on_time_score")
+  documentationScore Int?     @map("documentation_score")
+  paymentScore       Int?     @map("payment_score")
+  comment            String?
+  createdById        String   @map("created_by_id") @db.Uuid
+  createdAt          DateTime @default(now()) @map("created_at")
+
+  trade       Trade        @relation(fields: [tradeId], references: [id], onDelete: Cascade)
+  reviewerOrg Organisation @relation("TradeReviewReviewer", fields: [reviewerOrgId], references: [id])
+  revieweeOrg Organisation @relation("TradeReviewReviewee", fields: [revieweeOrgId], references: [id])
+
+  @@unique([tradeId, reviewerOrgId])
+  @@index([revieweeOrgId])
+  @@map("trade_reviews")
 }
 
 model TradeParticipant {

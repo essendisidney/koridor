@@ -4,6 +4,7 @@ import {
   aggregateMatches,
   evaluateMatch,
   passesHardFilters,
+  reviewPoints,
 } from "./matching";
 
 function req(overrides: Record<string, unknown> = {}) {
@@ -82,5 +83,19 @@ describe("matching hard filters", () => {
     const agg = aggregateMatches(lots, 2000);
     assert.equal(agg.fullyMatched, true);
     assert.equal(agg.matchedQuantity, 2000);
+  });
+
+  it("boosts well-reviewed suppliers with a small weight", () => {
+    const strong = evaluateMatch(req(), cand({ reviewAverage: 4.8, reviewCount: 6 }));
+    const none = evaluateMatch(req(), cand());
+    const weak = evaluateMatch(req(), cand({ reviewAverage: 1.5, reviewCount: 4 }));
+    assert.ok(strong && none && weak);
+    assert.ok(strong.score > none.score);
+    assert.ok(none.score > weak.score);
+    assert.ok(strong.score - weak.score <= 5);
+    assert.ok(strong.reasons.some((r) => r.startsWith("Rated 4.8")));
+    assert.equal(reviewPoints(null, 0), 2);
+    assert.equal(reviewPoints(5, 1), 5);
+    assert.equal(reviewPoints(1, 1), 0);
   });
 });

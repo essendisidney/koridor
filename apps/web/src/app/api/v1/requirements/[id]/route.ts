@@ -14,6 +14,7 @@ import {
   type MatchCandidate,
 } from "@/lib/matching";
 import { decimalNumber, tradeReference } from "@/lib/trade";
+import { reviewSummaries } from "@/lib/trade-reviews";
 
 export const runtime = "nodejs";
 
@@ -111,6 +112,13 @@ async function rematch(requirementId: string) {
       isListed: r.isListed,
       exportEligible: r.organisation.verificationStatus === "VERIFIED",
     });
+  }
+
+  const ratings = await reviewSummaries(candidates.map((c) => c.supplierOrgId));
+  for (const c of candidates) {
+    const r = ratings.get(c.supplierOrgId);
+    c.reviewAverage = r?.average ?? null;
+    c.reviewCount = r?.count ?? 0;
   }
 
   const reqInput = {
@@ -214,7 +222,13 @@ export async function GET(
       Number(requirement.quantity),
     );
 
-    return ok({ requirement, matches, aggregation: agg });
+    const ratings = await reviewSummaries(matches.map((m) => m.supplierOrgId));
+    const withRatings = matches.map((m) => ({
+      ...m,
+      supplierReviews: ratings.get(m.supplierOrgId) ?? { average: null, count: 0 },
+    }));
+
+    return ok({ requirement, matches: withRatings, aggregation: agg });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Failed";
     return fail(message, message === "Unauthorized" ? 401 : 400);
