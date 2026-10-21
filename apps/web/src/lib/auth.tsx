@@ -6,10 +6,11 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
-import { api } from "./api";
+import { api, AUTH_EXPIRED_EVENT } from "./api";
 
 export type AuthUser = {
   id: string;
@@ -53,6 +54,22 @@ type RegisterInput = {
 
 const STORAGE_KEY = "koridor.auth";
 
+/** Seconds-since-epoch expiry from a JWT, or 0 if unreadable. */
+function tokenExpiry(token: string | null) {
+  if (!token) return 0;
+  try {
+    const part = token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/");
+    return Number(JSON.parse(atob(part)).exp) || 0;
+  } catch {
+    return 0;
+  }
+}
+
+/** True when the token is gone or expires within `marginSec`. */
+function expiresSoon(token: string | null, marginSec = 60) {
+  return tokenExpiry(token) - marginSec <= Date.now() / 1000;
+}
+
 const AuthContext = createContext<AuthState | null>(null);
 
 function loadStored() {
@@ -88,6 +105,40 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.removeItem(STORAGE_KEY);
   }, []);
 
+  // Refresh tokens rotate on every use, so only one renewal may run at a time.
+  const refreshRef = useRef<string | null>(null);
+  const renewing = useRef<Promise<boolean> | null>(null);
+  useEffect(() => {
+    refreshRef.current = refreshToken;
+  }, [refreshToken]);
+
+  const renew = useCallback(async () => {
+    if (renewing.current) return renewing.current;
+    const token = refreshRef.current ?? loadStored()?.tokens.refreshToken ?? null;
+    if (!token) return false;
+    renewing.current = (async () => {
+      try {
+        const result = await api<{
+          user: AuthUser;
+          accessToken: string;
+          refreshToken: string;
+        }>("/auth/refresh", { method: "POST", body: { refreshToken: token } });
+        refreshRef.current = result.refreshToken;
+        setSession(
+          { accessToken: result.accessToken, refreshToken: result.refreshToken },
+          result.user ?? loadStored()?.user,
+        );
+        return true;
+      } catch {
+        clearSession();
+        return false;
+      } finally {
+        renewing.current = null;
+      }
+    })();
+    return renewing.current;
+  }, [setSession, clearSession]);
+
   const refreshProfile = useCallback(async () => {
     if (!accessToken) return;
     const profile = await api<AuthUser>("/users/me", { token: accessToken });
@@ -103,13 +154,43 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const stored = loadStored();
-    if (stored) {
-      setAccessToken(stored.tokens.accessToken);
-      setRefreshToken(stored.tokens.refreshToken);
-      setUser(stored.user);
+    if (!stored) {
+      setLoading(false);
+      return;
     }
-    setLoading(false);
-  }, []);
+    setRefreshToken(stored.tokens.refreshToken);
+    refreshRef.current = stored.tokens.refreshToken;
+    setUser(stored.user);
+    if (!expiresSoon(stored.tokens.accessToken, 30)) {
+      setAccessToken(stored.tokens.accessToken);
+      setLoading(false);
+      return;
+    }
+    // Stale session from an earlier visit: renew before pages load data.
+    renew().finally(() => setLoading(false));
+  }, [renew]);
+
+  // Renew a minute before expiry, when the tab regains focus (timers are
+  // throttled in background tabs), and whenever a request comes back 401.
+  useEffect(() => {
+    if (!accessToken) return;
+    const ms = Math.max(5_000, (tokenExpiry(accessToken) - 60) * 1000 - Date.now());
+    const timer = window.setTimeout(() => void renew(), ms);
+    const onVisible = () => {
+      if (document.visibilityState === "visible" && expiresSoon(accessToken)) void renew();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      window.clearTimeout(timer);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
+  }, [accessToken, renew]);
+
+  useEffect(() => {
+    const onExpired = () => void renew();
+    window.addEventListener(AUTH_EXPIRED_EVENT, onExpired);
+    return () => window.removeEventListener(AUTH_EXPIRED_EVENT, onExpired);
+  }, [renew]);
 
   const login = useCallback(
     async (email: string, password: string) => {

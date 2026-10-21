@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import {
   Activity,
   BadgeCheck,
@@ -19,6 +19,8 @@ import {
   Handshake,
   LayoutDashboard,
   LogOut,
+  Menu,
+  X,
   Package,
   ScrollText,
   Search,
@@ -43,7 +45,7 @@ type NavItem = { href: string; label: string; icon: typeof LayoutDashboard };
 /** Five things a buyer does. Everything else lives under "More". */
 const BUYER_NAV: NavItem[] = [
   { href: "/dashboard", label: "Home", icon: LayoutDashboard },
-  { href: "/dashboard/requirements", label: "My requests", icon: Target },
+  { href: "/dashboard/requirements", label: "Requests", icon: Target },
   { href: "/dashboard/deals", label: "Deals", icon: Handshake },
   { href: "/dashboard/logistics", label: "Shipments", icon: Ship },
   { href: "/dashboard/finance", label: "Payments", icon: Wallet },
@@ -52,8 +54,8 @@ const BUYER_NAV: NavItem[] = [
 /** Five things a farm / exporter does. */
 const SELLER_NAV: NavItem[] = [
   { href: "/dashboard", label: "Home", icon: LayoutDashboard },
-  { href: "/dashboard/demand", label: "Buyers for you", icon: Search },
-  { href: "/dashboard/supply", label: "My produce", icon: Sprout },
+  { href: "/dashboard/demand", label: "Buyers", icon: Search },
+  { href: "/dashboard/supply", label: "Produce", icon: Sprout },
   { href: "/dashboard/deals", label: "Deals", icon: Handshake },
   { href: "/dashboard/finance", label: "Payments", icon: Wallet },
 ];
@@ -103,11 +105,14 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
   const { user, loading, logout, accessToken } = useAuth();
   const pathname = usePathname();
   const router = useRouter();
+  const [sheetOpen, setSheetOpen] = useState(false);
   const isAdmin = Boolean(user?.roles.includes("SYSTEM_ADMIN"));
   const canReviewCompliance =
     isAdmin ||
     user?.permissions?.includes("compliance:review") ||
     user?.permissions?.includes("admin:all");
+
+  useEffect(() => setSheetOpen(false), [pathname]);
 
   useEffect(() => {
     if (loading) return;
@@ -140,7 +145,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="min-h-screen lg:grid lg:grid-cols-[256px_1fr]">
-      <aside className="relative flex flex-col bg-[var(--sidebar)] text-[var(--sidebar-fg)] lg:sticky lg:top-0 lg:h-screen lg:overflow-y-auto">
+      <aside className="relative hidden flex-col bg-[var(--sidebar)] lg:flex text-[var(--sidebar-fg)] lg:sticky lg:top-0 lg:h-screen lg:overflow-y-auto">
         <div
           aria-hidden
           className="pointer-events-none absolute inset-x-0 top-0 h-64 bg-[radial-gradient(ellipse_at_top_left,rgba(180,138,62,0.18),transparent_70%)]"
@@ -186,25 +191,121 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
         </div>
       </aside>
       <div className="min-w-0">
-        <header className="glass sticky top-0 z-30 flex h-16 items-center justify-between border-b border-[var(--border)]/70 px-6">
+        <header className="glass sticky top-0 z-30 flex h-16 items-center justify-between gap-3 border-b border-[var(--border)]/70 px-4 sm:px-6">
+          <Link href="/dashboard" aria-label="Workspace home" className="lg:hidden">
+            <Logo />
+          </Link>
           <Link
             href={isSeller ? "/dashboard/supply" : "/dashboard/requirements/new"}
+            className="hidden lg:block"
           >
             <Button size="sm">
               {isSeller ? "List produce" : "New request"}
             </Button>
           </Link>
           <div className="flex items-center gap-2">
-            <Link href="/dashboard/notifications">
+            <Link
+              href={isSeller ? "/dashboard/supply" : "/dashboard/requirements/new"}
+              className="lg:hidden"
+            >
+              <Button size="sm">{isSeller ? "List" : "Request"}</Button>
+            </Link>
+            <Link href="/dashboard/notifications" aria-label="Alerts">
               <Button variant="secondary" size="sm">
                 <Bell className="h-4 w-4" />
-                Alerts
+                <span className="hidden sm:inline">Alerts</span>
               </Button>
             </Link>
           </div>
         </header>
-        <main className="mx-auto max-w-6xl px-6 py-10">{children}</main>
+        <main className="mx-auto max-w-6xl px-4 pb-28 pt-8 sm:px-6 lg:pb-10 lg:pt-10">
+          {children}
+        </main>
       </div>
+
+      {/* Phone: bottom tab bar with the five main places, everything else in a sheet. */}
+      <nav
+        aria-label="Main"
+        className="fixed inset-x-0 bottom-0 z-40 border-t border-white/10 bg-[var(--sidebar)] pb-[env(safe-area-inset-bottom)] text-[var(--sidebar-muted)] lg:hidden"
+      >
+        <ul className="grid grid-cols-6">
+          {primary.slice(0, 5).map((item) => {
+            const active =
+              pathname === item.href ||
+              (item.href !== "/dashboard" && pathname.startsWith(item.href));
+            const Icon = item.icon;
+            return (
+              <li key={item.href}>
+                <Link
+                  href={item.href}
+                  className={cn(
+                    "flex flex-col items-center gap-1 px-1 py-2.5 text-[10px] font-medium",
+                    active ? "text-white" : "hover:text-white",
+                  )}
+                >
+                  <Icon className={cn("h-5 w-5", active && "text-[#d4b06a]")} />
+                  <span className="max-w-full truncate">{item.label}</span>
+                </Link>
+              </li>
+            );
+          })}
+          <li>
+            <button
+              type="button"
+              onClick={() => setSheetOpen(true)}
+              className={cn(
+                "flex w-full flex-col items-center gap-1 px-1 py-2.5 text-[10px] font-medium hover:text-white",
+                moreActive && "text-white",
+              )}
+            >
+              <Menu className="h-5 w-5" />
+              More
+            </button>
+          </li>
+        </ul>
+      </nav>
+
+      {sheetOpen ? (
+        <div className="fixed inset-0 z-50 lg:hidden" role="dialog" aria-modal="true" aria-label="More">
+          <button
+            type="button"
+            aria-label="Close menu"
+            className="absolute inset-0 bg-black/50"
+            onClick={() => setSheetOpen(false)}
+          />
+          <div className="absolute inset-x-0 bottom-0 max-h-[80vh] overflow-y-auto rounded-t-3xl bg-[var(--sidebar)] pb-[env(safe-area-inset-bottom)] text-[var(--sidebar-fg)]">
+            <div className="flex items-center justify-between px-6 pb-2 pt-5">
+              <div className="min-w-0">
+                <p className="truncate text-sm font-medium">
+                  {user.firstName} {user.lastName}
+                </p>
+                <p className="truncate text-xs text-[var(--sidebar-muted)]">{user.email}</p>
+              </div>
+              <button
+                type="button"
+                aria-label="Close menu"
+                onClick={() => setSheetOpen(false)}
+                className="rounded-full p-2 text-[var(--sidebar-muted)] hover:bg-white/10 hover:text-white"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <NavGroup items={MORE} pathname={pathname} />
+            {extras.length ? <NavGroup label="Ops" items={extras} pathname={pathname} /> : null}
+            <div className="border-t border-white/10 px-4 py-4">
+              <Button
+                variant="secondary"
+                size="sm"
+                className="w-full border-white/15 bg-white/5 text-white shadow-none hover:bg-white/10"
+                onClick={() => logout().then(() => router.push("/login"))}
+              >
+                <LogOut className="h-4 w-4" />
+                Sign out
+              </Button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

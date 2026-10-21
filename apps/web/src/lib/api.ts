@@ -9,6 +9,9 @@ export class ApiError extends Error {
   }
 }
 
+/** Fired when an authenticated request is rejected; AuthProvider renews the session. */
+export const AUTH_EXPIRED_EVENT = "koridor:auth-expired";
+
 type RequestOptions = {
   method?: string;
   body?: unknown;
@@ -65,6 +68,9 @@ export async function api<T>(
   const payload = await res.json().catch(() => null);
 
   if (!res.ok) {
+    if (res.status === 401 && token && typeof window !== "undefined") {
+      window.dispatchEvent(new Event(AUTH_EXPIRED_EVENT));
+    }
     throw new ApiError(
       payload?.error?.message ?? payload?.message ?? "Request failed",
       res.status,

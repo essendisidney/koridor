@@ -89,8 +89,14 @@ export default function DashboardPage() {
         ) : null}
         {journey?.org ? (
           <p className="mt-3 text-xs text-[var(--fg-muted)]">
-            {journey.org.name} · {journey.org.type.replaceAll("_", " ")} ·{" "}
-            {journey.org.countryCode} · {journey.org.verificationStatus}
+            {journey.org.name} ·{" "}
+            {journey.org.verificationStatus === "VERIFIED" ? (
+              <span className="font-medium text-[var(--accent)]">Verified business</span>
+            ) : (
+              <Link href="/dashboard/verification" className="font-medium text-[var(--gold)] underline">
+                Not verified yet
+              </Link>
+            )}
           </p>
         ) : null}
       </div>
@@ -98,7 +104,7 @@ export default function DashboardPage() {
       {error ? <p className="text-sm text-[var(--danger)]">{error}</p> : null}
 
       {workspace?.metrics.length ? (
-        <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <section className="grid grid-cols-2 gap-3 lg:grid-cols-4">
           {workspace.metrics.map((m) => {
             const inner = (
               <>
@@ -133,7 +139,7 @@ export default function DashboardPage() {
       {workspace?.highlights.length ? (
         <section className="space-y-3">
           <h2 className="text-sm font-semibold uppercase tracking-[0.12em] text-[var(--fg-muted)]">
-            {journey?.persona === "buyer" ? "Your requirements" : "Live buyer demand"}
+            {journey?.persona === "buyer" ? "Your requests" : "Buyers looking now"}
           </h2>
           <ul className="divide-y divide-[var(--border)] overflow-hidden rounded-2xl border border-[var(--border)] bg-white shadow-[var(--shadow-card)]">
             {workspace.highlights.map((h) => (
@@ -195,7 +201,7 @@ export default function DashboardPage() {
       {journey?.trades?.length ? (
         <section className="space-y-3 border-t border-[var(--border)] pt-8">
           <h2 className="font-[family-name:var(--font-display)] text-xl font-semibold">
-            Open trades
+            Your trades
           </h2>
           {journey.trades.map((t) => (
             <Link

@@ -50,7 +50,7 @@ export default function BuyerDemandPage() {
           Buyers looking for your products
         </h1>
         <p className="mt-2 text-sm text-[var(--fg-muted)]">
-          Verified international demand. Respond through open RFQs.
+          Real buyers abroad who need what you grow. Reply to their quote requests to win the order.
         </p>
       </div>
       {error ? <p className="text-sm text-[var(--danger)]">{error}</p> : null}
@@ -70,7 +70,7 @@ export default function BuyerDemandPage() {
                     {r.commodity} · {r.quantity} {r.unit}
                     {r.match ? (
                       <span className="ml-2 text-xs text-[var(--fg-muted)]">
-                        {r.match.score}% fit
+                        {r.match.score}% match
                       </span>
                     ) : null}
                   </p>
@@ -90,7 +90,7 @@ export default function BuyerDemandPage() {
                   </Link>
                 ) : (
                   <span className="text-xs text-[var(--fg-muted)]">
-                    Buyer is shortlisting — you&apos;ll be notified when the RFQ opens
+                    The buyer is choosing farms. We&apos;ll text you when they ask you for a quote.
                   </span>
                 )}
               </li>
@@ -119,7 +119,7 @@ export default function BuyerDemandPage() {
               </p>
             </div>
             <Link href="/dashboard/rfqs?scope=open">
-              <Button variant="secondary">Open RFQs</Button>
+              <Button variant="secondary">Quote requests</Button>
             </Link>
           </li>
         ))}

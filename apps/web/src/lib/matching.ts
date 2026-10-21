@@ -1,4 +1,4 @@
-import { freightUsdPerKg } from "@/lib/corridors";
+import { countryName, freightUsdPerKg } from "@/lib/corridors";
 
 export type MatchCandidate = {
   supplierOrgId: string;
@@ -148,27 +148,31 @@ export function scoreMatch(
 
   if (commodityHit(req.commodity, cand.commodity)) {
     score += 25;
-    reasons.push("Product match");
+    reasons.push("Same product");
   }
 
   const qtyFit = Math.min(1, cand.availableQty / Math.max(req.quantity, 0.001));
   const qtyPts = Math.round(15 * qtyFit);
   score += qtyPts;
-  if (qtyPts >= 10) reasons.push("Quantity capacity");
+  if (qtyPts >= 10) reasons.push("Enough volume");
 
   const reqCerts = req.certifications.map((c) => c.toLowerCase());
   const candCerts = cand.certifications.map((c) => c.toLowerCase());
-  const overlap = reqCerts.filter((c) => candCerts.some((x) => x.includes(c) || c.includes(x)));
+  const overlapIdx = reqCerts
+    .map((c, i) => (candCerts.some((x) => x.includes(c) || c.includes(x)) ? i : -1))
+    .filter((i) => i >= 0);
+  // Keep the buyer's own spelling ("GlobalG.A.P.") for display.
+  const overlap = overlapIdx.map((i) => req.certifications[i].trim());
   if (!reqCerts.length) {
     score += 10;
   } else if (overlap.length) {
     score += Math.min(15, 5 + overlap.length * 5);
-    reasons.push(`Cert overlap: ${overlap.slice(0, 2).join(", ")}`);
+    reasons.push(`Has ${overlap.slice(0, 2).join(", ")}`);
   }
 
   if (req.grade && cand.grade && req.grade.toLowerCase() === cand.grade.toLowerCase()) {
     score += 5;
-    reasons.push("Grade match");
+    reasons.push("Same grade");
   } else if (!req.grade) {
     score += 3;
   }
@@ -178,7 +182,7 @@ export function scoreMatch(
       cand.harvestStart <= req.deliveryEnd && cand.harvestEnd >= req.deliveryStart;
     if (overlaps) {
       score += 10;
-      reasons.push("Harvest window covers delivery");
+      reasons.push("Harvest fits your dates");
     }
   } else {
     score += 5;
@@ -187,16 +191,16 @@ export function scoreMatch(
   const origin = (req.originPreference ?? "KE").toUpperCase();
   if (cand.originCountry.toUpperCase() === origin) {
     score += 5;
-    reasons.push(`Origin ${origin}`);
+    reasons.push(`From ${countryName(origin) || origin}`);
   }
 
   const trustPts = Math.min(10, Math.round(cand.trustScore / 10));
   score += trustPts;
-  if (trustPts >= 7) reasons.push(`Trust ${cand.trustScore}`);
+  if (trustPts >= 7) reasons.push(`Trust score ${cand.trustScore}`);
 
   if ((cand.yearsInOperation ?? 0) >= 3) {
     score += 10;
-    reasons.push("Export experience");
+    reasons.push("Already exports");
   } else if ((cand.yearsInOperation ?? 0) > 0) {
     score += 5;
   }
@@ -209,13 +213,13 @@ export function scoreMatch(
 
   if (cand.isListed) {
     score += 10;
-    reasons.push("Listed registry profile");
+    reasons.push("Public company profile");
   } else {
     score += 4;
   }
 
   if (cand.capacityDeclared === false) {
-    reasons.push("Capacity not declared — invite to confirm volume");
+    reasons.push("Capacity not declared yet. Ask them to confirm volume");
   }
 
   const quantityMatched = Math.min(cand.availableQty, req.quantity);

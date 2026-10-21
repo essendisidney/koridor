@@ -175,19 +175,19 @@ export function buyerWorkspace(
   return {
     headline: "What are you looking to source?",
     subhead:
-      "Tell Koridor what you need — product, quantity, destination, and delivery window.",
+      "Tell us the product, quantity and where it should go. Verified farms send you offers.",
     primaryCta: {
-      label: "+ Post buying requirement",
+      label: "New request",
       href: "/dashboard/requirements/new",
     },
     secondaryCta: {
-      label: "View my requirements",
+      label: "My requests",
       href: "/dashboard/requirements",
     },
     metrics: [
-      { label: "Active requirements", value: stats.requirements, href: "/dashboard/requirements" },
-      { label: "Matched supply", value: stats.matches, href: "/dashboard/requirements" },
-      { label: "Open RFQs", value: stats.openRfqs, href: "/dashboard/rfqs" },
+      { label: "Open requests", value: stats.requirements, href: "/dashboard/requirements" },
+      { label: "Farms matched", value: stats.matches, href: "/dashboard/requirements" },
+      { label: "Waiting for offers", value: stats.openRfqs, href: "/dashboard/rfqs" },
       { label: "Active deals", value: stats.deals, href: "/dashboard/deals" },
     ],
     highlights,
@@ -206,18 +206,18 @@ export function supplierWorkspace(
   return {
     headline: "What are buyers looking for?",
     subhead:
-      "Verified demand from GCC and global buyers. Declare capacity and respond to RFQs.",
+      "Buyers around the world who need what you grow. List your harvest and reply to their quote requests.",
     primaryCta: {
-      label: "+ Add supply",
+      label: "List produce",
       href: "/dashboard/supply",
     },
     secondaryCta: {
-      label: "See all buyer demand",
+      label: "See buyers",
       href: "/dashboard/demand",
     },
     metrics: [
-      { label: "Supply lots", value: stats.supplyLots, href: "/dashboard/supply" },
-      { label: "Live buyer demand", value: stats.openDemand, href: "/dashboard/demand" },
+      { label: "Your listings", value: stats.supplyLots, href: "/dashboard/supply" },
+      { label: "Buyers looking", value: stats.openDemand, href: "/dashboard/demand" },
       { label: "Your offers", value: stats.offers, href: "/dashboard/rfqs" },
       { label: "Active deals", value: stats.deals, href: "/dashboard/deals" },
     ],
@@ -236,9 +236,9 @@ export function adminWorkspace(
 ): WorkspaceView {
   return {
     headline: "What needs attention?",
-    subhead: "Corridor pipeline, verification queue, and operational exceptions.",
+    subhead: "Live trades, businesses waiting for verification, and anything stuck.",
     primaryCta: {
-      label: "Open Control Tower",
+      label: "Open control tower",
       href: "/dashboard/admin",
     },
     secondaryCta: {
@@ -247,8 +247,8 @@ export function adminWorkspace(
     },
     metrics: [
       { label: "Live requirements", value: stats.requirements, href: "/dashboard/requirements" },
-      { label: "Open RFQs", value: stats.openRfqs, href: "/dashboard/rfqs" },
-      { label: "Deal rooms", value: stats.deals, href: "/dashboard/deals" },
+      { label: "Open quote requests", value: stats.openRfqs, href: "/dashboard/rfqs" },
+      { label: "Deals", value: stats.deals, href: "/dashboard/deals" },
       {
         label: "Verification queue",
         value: stats.verificationQueue,
