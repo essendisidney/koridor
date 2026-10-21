@@ -97,16 +97,10 @@ function RegisterForm() {
 
   return (
     <div>
-      <Link
-        href="/start"
-        className="mb-8 inline-block font-[family-name:var(--font-display)] text-xl font-semibold text-[var(--fg)] lg:hidden"
-      >
-        Koridor
-      </Link>
-      <p className="text-xs uppercase tracking-[0.14em] text-[var(--accent)]">
+      <p className="eyebrow">
         Step 1 of 4 · Connect
       </p>
-      <h1 className="mt-1 font-[family-name:var(--font-display)] text-3xl font-semibold text-[var(--fg)]">
+      <h1 className="mt-1 font-[family-name:var(--font-display)] text-4xl tracking-[-0.02em] text-[var(--fg)]">
         Create account
       </h1>
       <p className="mt-2 text-sm text-[var(--fg-muted)]">{blurb}</p>
@@ -127,7 +121,7 @@ function RegisterForm() {
         />
         <Input label="Phone" name="phone" type="tel" />
         {roleFromQuery ? (
-          <div className="rounded-md border border-[var(--border)] bg-[var(--accent-soft)] px-3 py-2 text-sm">
+          <div className="rounded-xl border border-[var(--accent)]/20 bg-[var(--accent-soft)] px-4 py-3 text-sm">
             <p>
               <span className="font-medium">{roleLabel}</span>
               {country ? ` · ${countryName(country) || country}` : ""}

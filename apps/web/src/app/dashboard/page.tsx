@@ -49,10 +49,10 @@ export default function DashboardPage() {
   if (!journey && !error) {
     return (
       <div className="space-y-4">
-        <div className="h-8 w-64 animate-pulse bg-[var(--border)]" />
+        <div className="h-9 w-72 animate-pulse rounded-xl bg-[var(--border)]/70" />
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {[1, 2, 3, 4].map((n) => (
-            <div key={n} className="h-20 animate-pulse bg-[var(--border)]" />
+            <div key={n} className="h-24 animate-pulse rounded-2xl bg-[var(--border)]/70" />
           ))}
         </div>
       </div>
@@ -66,10 +66,10 @@ export default function DashboardPage() {
   return (
     <div className="mx-auto max-w-4xl space-y-10">
       <div>
-        <p className="text-xs uppercase tracking-[0.14em] text-[var(--accent)]">
-          {user?.firstName ? `Welcome, ${user.firstName}` : "Workspace"}
+        <p className="eyebrow">
+          {user?.firstName ? `${greeting()}, ${user.firstName}` : "Workspace"}
         </p>
-        <h1 className="mt-1 font-[family-name:var(--font-display)] text-3xl font-semibold text-[var(--fg)]">
+        <h1 className="mt-2 font-[family-name:var(--font-display)] text-4xl tracking-[-0.02em] text-[var(--fg)]">
           {headline}
         </h1>
         <p className="mt-2 max-w-2xl text-sm leading-relaxed text-[var(--fg-muted)]">
@@ -102,10 +102,10 @@ export default function DashboardPage() {
           {workspace.metrics.map((m) => {
             const inner = (
               <>
-                <p className="text-xs uppercase tracking-[0.12em] text-[var(--fg-muted)]">
+                <p className="text-xs font-medium text-[var(--fg-muted)]">
                   {m.label}
                 </p>
-                <p className="mt-1 font-[family-name:var(--font-display)] text-2xl font-semibold text-[var(--fg)]">
+                <p className="mt-2 font-[family-name:var(--font-display)] text-3xl tracking-[-0.02em] text-[var(--fg)]">
                   {m.value}
                 </p>
               </>
@@ -114,14 +114,14 @@ export default function DashboardPage() {
               <Link
                 key={m.label}
                 href={m.href}
-                className="rounded-2xl border border-[var(--border)] bg-white shadow-[var(--shadow-card)] px-4 py-3 transition hover:border-[var(--accent)]"
+                className="rounded-2xl border border-[var(--border)] bg-white shadow-[var(--shadow-card)] px-5 py-4 transition hover:-translate-y-0.5 hover:border-[var(--accent)]/40 hover:shadow-[var(--shadow-lift)]"
               >
                 {inner}
               </Link>
             ) : (
               <div
                 key={m.label}
-                className="rounded-2xl border border-[var(--border)] bg-white shadow-[var(--shadow-card)] px-4 py-3"
+                className="rounded-2xl border border-[var(--border)] bg-white shadow-[var(--shadow-card)] px-5 py-4"
               >
                 {inner}
               </div>
@@ -172,22 +172,22 @@ export default function DashboardPage() {
       {journey ? <JourneyStepper phases={journey.phases} /> : null}
 
       {journey?.next ? (
-        <section className="rounded-2xl border border-[var(--border)] bg-white shadow-[var(--shadow-card)] p-6">
-          <p className="text-xs uppercase tracking-[0.14em] text-[var(--accent)]">
+        <section className="hero-surface overflow-hidden rounded-[1.5rem] p-8">
+          <p className="eyebrow">
             {(() => {
               const idx = journey.phases.findIndex((p) => p.status === "current");
               const phase = journey.phases[idx] ?? journey.phases[0];
               return `Step ${Math.max(1, idx + 1)} of ${journey.phases.length} · ${phase.title}`;
             })()}
           </p>
-          <h2 className="mt-2 font-[family-name:var(--font-display)] text-2xl font-semibold">
+          <h2 className="mt-3 font-[family-name:var(--font-display)] text-3xl tracking-[-0.02em]">
             {journey.next.title}
           </h2>
-          <p className="mt-2 text-sm leading-relaxed text-[var(--fg-muted)]">
+          <p className="mt-2 max-w-xl text-sm leading-relaxed text-white/70">
             {journey.next.body}
           </p>
-          <Link href={journey.next.href} className="mt-5 inline-block">
-            <Button>{journey.next.cta}</Button>
+          <Link href={journey.next.href} className="mt-6 inline-block">
+            <Button variant="gold">{journey.next.cta}</Button>
           </Link>
         </section>
       ) : null}
@@ -218,4 +218,11 @@ export default function DashboardPage() {
       ) : null}
     </div>
   );
+}
+
+function greeting() {
+  const h = new Date().getHours();
+  if (h < 12) return "Good morning";
+  if (h < 17) return "Good afternoon";
+  return "Good evening";
 }

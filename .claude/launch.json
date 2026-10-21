@@ -1,0 +1,28 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "web",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": [
+        "--filter",
+        "@koridor/web",
+        "dev"
+      ],
+      "port": 3000
+    },
+    {
+      "name": "web-3010",
+      "runtimeExecutable": "node",
+      "runtimeArgs": [
+        "node_modules/next/dist/bin/next",
+        "dev",
+        "--turbopack",
+        "--port",
+        "3010"
+      ],
+      "port": 3010,
+      "cwd": "apps/web"
+    }
+  ]
+}

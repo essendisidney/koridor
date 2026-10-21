@@ -53,7 +53,7 @@ function LoginForm() {
       >
         Koridor
       </Link>
-      <h1 className="font-[family-name:var(--font-display)] text-3xl font-semibold text-[var(--fg)]">
+      <h1 className="font-[family-name:var(--font-display)] text-4xl tracking-[-0.02em] text-[var(--fg)]">
         Sign in
       </h1>
       <p className="mt-2 text-sm text-[var(--fg-muted)]">
