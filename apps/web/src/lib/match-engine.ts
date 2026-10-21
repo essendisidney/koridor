@@ -7,6 +7,7 @@ import {
 } from "@/lib/matching";
 import { reviewSummaries } from "@/lib/trade-reviews";
 import { createDispatchNotifications } from "@/lib/messaging";
+import { countryName } from "@/lib/corridors";
 
 /** Requirement states where buyers are still sourcing and new supply should be matched. */
 export const OPEN_DEMAND_STATUSES: RequirementStatus[] = [
@@ -74,7 +75,11 @@ export async function rematchRequirement(requirementId: string) {
     trustScore: lot.supplierOrg.trustProfile?.trustScore ?? 50,
     yearsInOperation: lot.supplierOrg.registryProfile?.yearsInOperation ?? null,
     isListed: lot.supplierOrg.registryProfile?.isListed ?? false,
-    exportEligible: ["VERIFIED", "EXPORT_ELIGIBLE"].includes(lot.status),
+    // A lot can be matched once its farm has passed business verification
+    // (KYB) or the lot itself has been verified.
+    exportEligible:
+      ["VERIFIED", "EXPORT_ELIGIBLE"].includes(lot.status) ||
+      lot.supplierOrg.verificationStatus === "VERIFIED",
     capacityDeclared: true,
   }));
 
@@ -235,7 +240,7 @@ async function notifyMatchedSuppliers(
       userId: m.userId,
       organisationId: m.organisationId,
       title: `New buyer match: ${r.commodity}`,
-      body: `A buyer in ${r.destinationCountry} needs ${r.quantity} ${r.unit} of ${r.commodity} (${r.reference}). Your supply fits — respond before other farms do.`,
+      body: `A buyer in ${countryName(r.destinationCountry) || r.destinationCountry} needs ${r.quantity} ${r.unit} of ${r.commodity} (${r.reference}). Your supply fits — respond before other farms do.`,
       link: "/dashboard/demand",
       metadata: {
         kind: "REQUIREMENT_MATCH",

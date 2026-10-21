@@ -57,8 +57,8 @@ function LoginForm() {
         Sign in
       </h1>
       <p className="mt-2 text-sm text-[var(--fg-muted)]">
-        You land on the next incomplete step — organisation setup, verification,
-        RFQ, or the open Trade Passport.
+        Welcome back. We&apos;ll take you straight to your requests, offers and
+        shipments.
       </p>
       <form onSubmit={onSubmit} className="mt-8 space-y-4">
         <Input
@@ -89,13 +89,8 @@ function LoginForm() {
       <p className="mt-6 text-sm text-[var(--fg-muted)]">
         New to Koridor?{" "}
         <Link href="/start" className="font-medium text-[var(--accent)]">
-          Begin the corridor
+          Create a free account
         </Link>
-      </p>
-      <p className="mt-4 rounded-md bg-[var(--accent-soft)] px-3 py-2 text-xs text-[var(--fg)]">
-        Demo supplier: exporter@demo.koridor.io / Demo123!
-        <br />
-        Demo GCC buyer: oman@demo.koridor.io / Demo123!
       </p>
     </div>
   );

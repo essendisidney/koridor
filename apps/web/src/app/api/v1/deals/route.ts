@@ -65,6 +65,14 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    // Accepting an offer already opens its deal; return that one.
+    if (offer) {
+      const existing = await prisma.deal.findFirst({
+        where: { deletedAt: null, offerId: offer.id },
+      });
+      if (existing) return ok(existing);
+    }
+
     const sellerOrgId = offer
       ? offer.sellerOrgId
       : String(body.sellerOrgId ?? "");

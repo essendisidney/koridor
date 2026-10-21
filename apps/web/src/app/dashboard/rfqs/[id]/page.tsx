@@ -159,18 +159,22 @@ export default function RfqDetailPage() {
     if (!accessToken || !id) return;
     setBusy(true);
     try {
-      await api<{ id?: string }>(`/rfqs/${id}/offers`, {
+      const res = await api<{ id?: string; dealId?: string }>(`/rfqs/${id}/offers`, {
         method: "PATCH",
         token: accessToken,
         body: { offerId, decision },
       });
       if (decision === "ACCEPTED") {
-        const deal = await api<{ id: string }>("/deals", {
-          method: "POST",
-          token: accessToken,
-          body: { offerId },
-        });
-        window.location.href = `/dashboard/deals/${deal.id}`;
+        const dealId =
+          res.dealId ??
+          (
+            await api<{ id: string }>("/deals", {
+              method: "POST",
+              token: accessToken,
+              body: { offerId },
+            })
+          ).id;
+        window.location.href = `/dashboard/deals/${dealId}`;
         return;
       }
       load();

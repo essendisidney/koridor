@@ -8,7 +8,7 @@ import { JOURNEY_PHASES } from "@/lib/journey";
 export const metadata: Metadata = {
   title: "Get started",
   description:
-    "Choose buyer, Kenyan cooperative, or chamber — then connect, verify, negotiate, and execute on one Trade Passport.",
+    "Create a Koridor account as a buyer, a Kenyan farm, or a cooperative.",
 };
 
 const phases = JOURNEY_PHASES.map((p, i) => ({
@@ -18,19 +18,17 @@ const phases = JOURNEY_PHASES.map((p, i) => ({
 
 export default function StartPage() {
   return (
-    <div className="min-h-screen bg-[var(--bg)]">
+    <div className="min-h-screen">
       <PublicNav ctaHref="/login" ctaLabel="Sign in" />
       <main className="mx-auto max-w-5xl space-y-12 px-6 py-12">
         <section>
-          <p className="text-xs uppercase tracking-[0.16em] text-[var(--accent)]">
-            Step 1 of 4 · Connect
-          </p>
-          <h1 className="mt-2 font-[family-name:var(--font-display)] text-4xl font-semibold md:text-5xl">
-            Who are you on this corridor?
+          <p className="eyebrow">Get started</p>
+          <h1 className="mt-2 font-[family-name:var(--font-display)] text-4xl md:text-5xl">
+            How will you use Koridor?
           </h1>
-          <p className="mt-4 max-w-2xl text-[var(--fg-muted)] leading-relaxed">
-            Account, then organisation. After you sign in, Home names the single
-            next action — verification, a dated RFQ, or the open passport.
+          <p className="mt-4 max-w-2xl leading-relaxed text-[var(--fg-muted)]">
+            Pick one to create your account. After you sign in, your home page
+            always shows the next thing to do.
           </p>
         </section>
 

@@ -47,12 +47,10 @@ function RegisterForm() {
 
   const blurb =
     defaultRole === "BUYER"
-      ? "Step 1 of 4 — Connect. After this account, you register the importing organisation, then publish a dated Kenya offtake."
+      ? "Takes a minute. Next you add your company, then post what you want to buy."
       : defaultRole === "COOPERATIVE" || defaultRole === "FARMER"
-        ? "Step 1 of 4 — Connect. After this account, you register the Kenyan organisation (cooperative or factory, not 700k farmers)."
-        : defaultRole === "CHAMBER_OF_COMMERCE"
-          ? "Step 1 of 4 — Connect. After this account, register the chamber so producer groups can be vetted on the corridor."
-          : "Step 1 of 4 — Connect. Create the account, then the organisation. The workspace will name the next action.";
+        ? "Takes a minute. Next you add your farm or co-op, then list your harvest."
+        : "Takes a minute. Next you add your organisation.";
 
   async function onSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -97,9 +95,7 @@ function RegisterForm() {
 
   return (
     <div>
-      <p className="eyebrow">
-        Step 1 of 4 · Connect
-      </p>
+      <p className="eyebrow">Step 1 of 4 · Sign up</p>
       <h1 className="mt-1 font-[family-name:var(--font-display)] text-4xl tracking-[-0.02em] text-[var(--fg)]">
         Create account
       </h1>

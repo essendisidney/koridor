@@ -10,9 +10,9 @@ export function PathCards() {
       {START_PATHS.map((path) => (
         <div
           key={path.id}
-          className="flex flex-col border border-[var(--border)] bg-white p-5"
+          className="card flex flex-col p-6"
         >
-          <p className="font-[family-name:var(--font-display)] text-xl font-semibold">
+          <p className="font-[family-name:var(--font-display)] text-2xl">
             {path.title}
           </p>
           <p className="mt-2 flex-1 text-sm leading-relaxed text-[var(--fg-muted)]">

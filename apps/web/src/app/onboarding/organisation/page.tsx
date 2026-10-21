@@ -107,22 +107,19 @@ function OnboardingForm() {
       >
         Koridor
       </Link>
-      <p className="mt-8 text-xs uppercase tracking-[0.14em] text-[var(--accent)]">
-        Connect · organisation
-      </p>
-      <h1 className="mt-2 font-[family-name:var(--font-display)] text-3xl font-semibold">
-        Register your organisation
+      <p className="eyebrow mt-8">Step 1 of 4 · Your company</p>
+      <h1 className="mt-2 font-[family-name:var(--font-display)] text-4xl">
+        Tell us about your business
       </h1>
       <p className="mt-2 text-sm text-[var(--fg-muted)]">
-        Account is done. Next is the legal entity on the corridor. After this,
-        the workspace opens on verification or your first offtake — one next
-        button, not a toolkit.
+        Your account is ready. Add the business you trade as. Buyers and farms
+        see this name on offers and contracts.
       </p>
       <div className="mt-6">
         <JourneyStepper phases={phases} compact />
       </div>
       <form onSubmit={onSubmit} className="mt-8 space-y-4">
-        <Input label="Legal name" name="name" required />
+        <Input label="Registered business name" name="name" required />
         <Select
           label="Organisation type"
           name="type"

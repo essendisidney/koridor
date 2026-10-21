@@ -20,53 +20,50 @@ export const JOURNEY_PHASES: {
 }[] = [
   {
     id: "connect",
-    title: "Connect",
-    caption: "Account and organisation on the Kenya–GCC corridor",
+    title: "Sign up",
+    caption: "Create your account and company profile",
   },
   {
     id: "verify",
-    title: "Verify",
-    caption: "KYB so the lot can be contracted and financed",
+    title: "Get verified",
+    caption: "We check your business so others can trade with you",
   },
   {
     id: "negotiate",
-    title: "Negotiate",
-    caption: "Dated offtake — order before Kenyan farmers plant",
+    title: "Agree a deal",
+    caption: "Request, compare offers and accept the best one",
   },
   {
     id: "execute",
-    title: "Execute",
-    caption: "One Trade Passport through shipping and settlement",
+    title: "Ship & get paid",
+    caption: "Escrow, export documents and tracked delivery",
   },
 ];
 
 export const START_PATHS = [
   {
     id: "buyer",
-    href: "/register?role=BUYER&country=OM",
+    href: "/register?role=BUYER",
     role: "BUYER",
-    country: "OM",
-    title: "I buy from Kenya",
-    body: "GCC importer. Publish a dated offtake, then Kenyan cooperatives fulfil it.",
-    cta: "Continue as buyer",
+    title: "I want to buy",
+    body: "Importers, wholesalers and retailers anywhere. Post what you need and get offers from verified Kenyan farms.",
+    cta: "Continue as a buyer",
   },
   {
-    id: "supplier",
+    id: "farm",
+    href: "/register?role=FARMER&country=KE",
+    role: "FARMER",
+    title: "I sell from my farm",
+    body: "Large farms, estates and exporters in Kenya. List your harvest once and get matched to buyers by SMS.",
+    cta: "Continue as a seller",
+  },
+  {
+    id: "cooperative",
     href: "/register?role=COOPERATIVE&country=KE",
     role: "COOPERATIVE",
-    country: "KE",
-    title: "I supply from Kenya",
-    body: "Cooperative, exporter, or producer group. Verify, list, and answer a locked Gulf order.",
-    cta: "Continue as cooperative",
-  },
-  {
-    id: "chamber",
-    href: "/register?role=CHAMBER_OF_COMMERCE&country=KE",
-    role: "CHAMBER_OF_COMMERCE",
-    country: "KE",
-    title: "I am a chamber partner",
-    body: "Vet Kenyan producer groups county by county. You are not 700,000 individual farmers.",
-    cta: "Continue as chamber",
+    title: "I run a cooperative",
+    body: "Pool your members' volume to fill container-sized orders you couldn't win alone.",
+    cta: "Continue as a co-op",
   },
 ] as const;
 
@@ -135,7 +132,7 @@ export function personaCopy(persona: Persona, isAdmin = false) {
     return {
       headline: "What needs attention?",
       blurb:
-        "Live demand, open RFQs, deal rooms, and verification queues across the corridor.",
+        "Live demand, open quote requests, deals and businesses waiting for verification.",
     };
   }
   switch (persona) {
@@ -143,25 +140,25 @@ export function personaCopy(persona: Persona, isAdmin = false) {
       return {
         headline: "What are you looking to source?",
         blurb:
-          "Post a structured buying requirement. Koridor will match Kenyan supply, aggregate capacity, and issue RFQs.",
+          "Tell us what you need. We match you with verified Kenyan farms, combine several farms for big orders, and collect their offers for you.",
       };
     case "chamber":
       return {
         headline: "Your chamber workspace",
         blurb:
-          "Verify this chamber, then list so Kenyan cooperatives can be found by Gulf buyers.",
+          "Get your chamber verified, then list it so buyers can find the producer groups you vouch for.",
       };
     case "funder":
       return {
-        headline: "Your corridor finance desk",
+        headline: "Your finance desk",
         blurb:
-          "Read bankability and fund or issue in-kind credit against a locked passport — not a side transfer.",
+          "See which trades are ready to finance and fund them against a signed contract.",
       };
     default:
       return {
         headline: "What are buyers looking for?",
         blurb:
-          "Browse verified international demand, declare supply lots, and respond to RFQs from one mobile-first workspace.",
+          "See buyers looking for what you grow, list your harvest, and reply to quote requests, all from your phone.",
       };
   }
 }

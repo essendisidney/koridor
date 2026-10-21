@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import {
   ActivityType,
   ContractStatus,
+  DealStatus,
   MilestoneStatus,
   OfferStatus,
   RfqStatus,
@@ -16,6 +17,7 @@ import {
 } from "@/lib/org-access";
 import { Permission } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
+import { dealReference } from "@/lib/matching";
 import { decimalNumber, recordTradeEvent, tradeReference } from "@/lib/trade";
 import {
   createTradePassport,
@@ -401,6 +403,44 @@ export async function PATCH(req: NextRequest, ctx: Ctx) {
       data: { tradeId: trade.id, contractId: result.id, updatedBy: user.id },
     });
 
+    // Every accepted offer gets a deal room, created here so it never depends
+    // on a second request from the browser.
+    let deal = await prisma.deal.findFirst({
+      where: { deletedAt: null, offerId },
+      select: { id: true },
+    });
+    if (!deal) {
+      const count = await prisma.deal.count();
+      deal = await prisma.deal.create({
+        data: {
+          reference: dealReference(count + 1),
+          requirementId: rfq.requirementId ?? null,
+          rfqId,
+          offerId,
+          contractId: result.id,
+          tradeId: trade.id,
+          buyerOrgId: rfq.buyerOrgId,
+          sellerOrgId: offer.sellerOrgId,
+          title: `${rfq.commodity} deal`,
+          commodity: rfq.commodity,
+          quantity: offer.quantity,
+          unit: offer.unit,
+          value: totalValue,
+          currency: offer.currency,
+          status: DealStatus.PENDING_CONTRACT,
+          createdBy: user.id,
+        },
+        select: { id: true },
+      });
+      await prisma.dealMessage.create({
+        data: {
+          dealId: deal.id,
+          authorUserId: user.id,
+          body: "Offer accepted. Review and sign the contract to start the trade.",
+        },
+      });
+    }
+
     await prisma.activity.create({
       data: {
         type: ActivityType.CONTRACT_CREATED,
@@ -413,7 +453,12 @@ export async function PATCH(req: NextRequest, ctx: Ctx) {
       },
     });
 
-    return ok({ ...result, tradeId: trade.id, tradeNumber: trade.tradeNumber });
+    return ok({
+      ...result,
+      tradeId: trade.id,
+      tradeNumber: trade.tradeNumber,
+      dealId: deal.id,
+    });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Failed";
     return fail(message, message === "Unauthorized" ? 401 : 400);
