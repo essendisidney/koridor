@@ -13,6 +13,7 @@ import {
 } from "@/lib/org-access";
 import { Permission } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
+import { advanceTradeLifecycle } from "@/lib/trade-lifecycle";
 import { recordTrackingEvent } from "@/lib/logistics";
 import { getCarrierProvider, carriersProviderName } from "@/lib/carriers";
 import { recordTradeEvent } from "@/lib/trade";
@@ -416,6 +417,7 @@ export async function POST(req: NextRequest, ctx: Ctx) {
         },
       });
 
+      await advanceTradeLifecycle(shipment.contractId, "delivered", user.id);
       return ok(updated);
     }
 

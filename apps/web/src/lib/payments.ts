@@ -158,11 +158,32 @@ export function paymentsProviderName() {
   return "demo";
 }
 
+/**
+ * Demo top-ups credit wallets with money that was never paid. They are only
+ * allowed on local/preview builds, or when PAYMENTS_ALLOW_DEMO=true is set on
+ * purpose. On the live site without a real provider, top-ups are refused.
+ */
+export function demoPaymentsAllowed() {
+  if (process.env.PAYMENTS_ALLOW_DEMO?.trim().toLowerCase() === "true") return true;
+  if (process.env.VERCEL_ENV) return process.env.VERCEL_ENV !== "production";
+  return process.env.NODE_ENV !== "production";
+}
+
+export const PAYMENTS_NOT_LIVE =
+  "Online payments aren't switched on yet. Contact Koridor to pay into escrow by bank transfer.";
+
+const disabledProvider: PaymentProvider = {
+  name: "disabled",
+  async createTopUp() {
+    throw new Error(PAYMENTS_NOT_LIVE);
+  },
+};
+
 export function getPaymentProvider(): PaymentProvider {
   const name = paymentsProviderName();
   if (name === "stripe") return stripeProvider;
   if (name === "mpesa") return mpesaProvider;
-  return demoProvider;
+  return demoPaymentsAllowed() ? demoProvider : disabledProvider;
 }
 
 export function parseStripeCheckoutCompleted(session: {

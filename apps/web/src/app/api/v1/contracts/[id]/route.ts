@@ -13,6 +13,7 @@ import {
 } from "@/lib/org-access";
 import { Permission } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
+import { advanceTradeLifecycle } from "@/lib/trade-lifecycle";
 import { decimalNumber, recordTradeEvent } from "@/lib/trade";
 import {
   recomputeTradeScores,
@@ -145,6 +146,9 @@ export async function POST(req: NextRequest, ctx: Ctx) {
         });
         await syncMilestonesFromWorld(contract.tradeId, user.id);
         await recomputeTradeScores(contract.tradeId, user.id);
+      }
+      if (data.status === ContractStatus.ACTIVE) {
+        await advanceTradeLifecycle(id, "signed", user.id);
       }
 
       await prisma.activity.create({

@@ -14,6 +14,7 @@ import {
 } from "@/lib/org-access";
 import { Permission } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
+import { advanceTradeLifecycle } from "@/lib/trade-lifecycle";
 import {
   decimalStr,
   ensureWallet,
@@ -209,10 +210,27 @@ export async function POST(req: NextRequest) {
         return ok({ ...updated, amount: decimalStr(updated.amount) });
       }
 
-      // release
-      if (!isSeller && !operate) return fail("Forbidden", 403);
+      // release: escrow protects the buyer, so the seller can never release
+      // it. The buyer releases after delivery; Koridor finance can override.
+      if (!isBuyer && !operate) {
+        return fail(
+          isSeller
+            ? "Payment is released by the buyer once they confirm delivery."
+            : "Forbidden",
+          403,
+        );
+      }
       if (account.status !== EscrowAccountStatus.FUNDED) {
         return fail("Escrow must be funded before release", 400);
+      }
+      if (!operate) {
+        const delivered = await prisma.shipment.findFirst({
+          where: { contractId: account.contractId, status: "DELIVERED", deletedAt: null },
+          select: { id: true },
+        });
+        if (!delivered) {
+          return fail("Payment can be released once the shipment is marked delivered.", 400);
+        }
       }
 
       const sellerWallet = await ensureWallet({
@@ -246,6 +264,8 @@ export async function POST(req: NextRequest) {
           updatedBy: user.id,
         },
       });
+
+      await advanceTradeLifecycle(account.contractId, "paid", user.id);
 
       await recordTradeEvent({
         type: "ESCROW_RELEASED",

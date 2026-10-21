@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { FormEvent, useCallback, useEffect, useState } from "react";
+import { label } from "@/lib/labels";
 import { api, ApiError } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { formatDate } from "@/lib/utils";
@@ -43,8 +44,8 @@ type EscrowAccount = {
   status: string;
   fundedAt?: string | null;
   releasedAt?: string | null;
-  buyerOrg: { name: string };
-  sellerOrg: { name: string };
+  buyerOrg: { id?: string; name: string };
+  sellerOrg: { id?: string; name: string };
 };
 
 type CreditFacility = {
@@ -82,7 +83,9 @@ type CreditPayload = {
 };
 
 export default function FinancePage() {
-  const { accessToken } = useAuth();
+  const { accessToken, user } = useAuth();
+  const isAdmin = Boolean(user?.roles.includes("SYSTEM_ADMIN"));
+  const [bankRefs, setBankRefs] = useState<Record<string, string>>({});
   const [wallet, setWallet] = useState<WalletPayload | null>(null);
   const [escrows, setEscrows] = useState<EscrowAccount[]>([]);
   const [credit, setCredit] = useState<CreditPayload | null>(null);
@@ -157,6 +160,44 @@ export default function FinancePage() {
       load();
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Escrow action failed");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  // Admin: a buyer's bank transfer has arrived. Credit their wallet with the
+  // bank reference, then move it into this escrow.
+  async function recordBankTransfer(e: EscrowAccount) {
+    if (!accessToken) return;
+    const reference = (bankRefs[e.id] ?? "").trim();
+    if (!reference) {
+      setError("Enter the bank reference first.");
+      return;
+    }
+    setLoading(true);
+    setError(null);
+    try {
+      await api("/finance/wallet", {
+        method: "POST",
+        token: accessToken,
+        body: {
+          action: "top_up",
+          mode: "bank_transfer",
+          organisationId: e.buyerOrg.id,
+          amount: e.amount,
+          currency: e.currency,
+          reference,
+          notes: `Bank transfer ${reference} for ${e.reference}`,
+        },
+      });
+      await api("/finance/escrow", {
+        method: "POST",
+        token: accessToken,
+        body: { id: e.id, action: "fund" },
+      });
+      load();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Could not record the transfer");
     } finally {
       setLoading(false);
     }
@@ -253,116 +294,125 @@ export default function FinancePage() {
         </section>
       ) : null}
 
-      <form
-        onSubmit={topUp}
-        className="space-y-3 border-t border-[var(--border)] pt-6"
-      >
-        <h2 className="font-[family-name:var(--font-display)] text-xl font-semibold">
-          Top up wallet
-        </h2>
-        <p className="text-sm text-[var(--fg-muted)]">
-          Provider: <span className="text-[var(--fg)]">{wallet?.provider ?? "…"}</span>
-          . Stripe Checkout when configured; otherwise demo credit. Escrow stays
-          on-ledger.
-        </p>
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <Input
-            label="Amount"
-            name="amount"
-            type="number"
-            step="0.01"
-            required
-          />
-          <Input label="Currency" name="currency" defaultValue="USD" />
-          <Input label="Notes" name="notes" />
-          <label className="text-sm">
-            <span className="mb-1.5 block font-medium">Mode</span>
-            <select
-              name="mode"
-              className="h-11 w-full rounded-xl border border-[var(--border)] bg-white px-3"
-              defaultValue="provider"
-            >
-              <option value="provider">Configured provider</option>
-              <option value="demo">Force demo credit</option>
-            </select>
-          </label>
-        </div>
-        <Button type="submit" disabled={loading}>
-          {loading ? "Working…" : "Top up"}
-        </Button>
-      </form>
+      {wallet?.provider === "disabled" ? (
+        <section className="rounded-2xl border border-[var(--gold)]/30 bg-[var(--gold-soft)] p-5">
+          <p className="font-semibold">Online payments aren&apos;t switched on yet</p>
+          <p className="mt-1 text-sm text-[var(--fg-muted)]">
+            To pay into escrow, contact Koridor for bank transfer details. We
+            confirm the money here once it arrives, and it&apos;s only released
+            to the farm after delivery.
+          </p>
+        </section>
+      ) : (
+        <form onSubmit={topUp} className="card space-y-4 p-6">
+          <h2 className="font-[family-name:var(--font-display)] text-2xl">
+            Add money
+          </h2>
+          <p className="text-sm text-[var(--fg-muted)]">
+            {wallet?.provider === "demo"
+              ? "Test mode: money added here is not real."
+              : "You'll be taken to a secure payment page."}
+          </p>
+          <div className="grid gap-3 sm:grid-cols-3">
+            <Input label="Amount" name="amount" type="number" step="0.01" min={1} required />
+            <Input label="Currency" name="currency" defaultValue="USD" />
+            <Input label="Note (optional)" name="notes" />
+          </div>
+          {wallet?.provider === "demo" ? <input type="hidden" name="mode" value="demo" /> : null}
+          <Button type="submit" disabled={loading}>
+            {loading ? "Working…" : "Add money"}
+          </Button>
+        </form>
+      )}
 
-      <section className="space-y-2 border-t border-[var(--border)] pt-6">
-        <h2 className="font-[family-name:var(--font-display)] text-xl font-semibold">
-          Escrow accounts
-        </h2>
+      <section className="space-y-3">
+        <h2 className="font-[family-name:var(--font-display)] text-2xl">Escrow</h2>
         <p className="text-sm text-[var(--fg-muted)]">
-          Open an account from a contract escrow request, then fund (buyer) and
-          release (seller / bank).
+          The buyer&apos;s payment is held here and only released to the farm after
+          the buyer confirms delivery.
         </p>
         {escrows.length === 0 ? (
-          <p className="text-sm text-[var(--fg-muted)]">
-            No escrow accounts yet. Request escrow on a{" "}
+          <p className="card p-6 text-sm text-[var(--fg-muted)]">
+            Nothing in escrow yet. Escrow is set up from a signed{" "}
             <Link href="/dashboard/contracts" className="underline">
               contract
             </Link>
-            , then open it here with the request id from the contract page.
+            .
           </p>
         ) : (
-          escrows.map((e) => (
-            <div
-              key={e.id}
-              className="border-b border-[var(--border)] py-3"
-            >
-              <div className="flex flex-wrap items-baseline justify-between gap-2">
-                <p className="font-medium">
-                  {e.reference} · {e.amount} {e.currency}
+          escrows.map((e) => {
+            const mine = user?.organisationId;
+            const isBuyerSide = e.buyerOrg.id === mine;
+            return (
+              <div key={e.id} className="card space-y-3 p-5">
+                <div className="flex flex-wrap items-baseline justify-between gap-2">
+                  <p className="font-semibold">
+                    {Number(e.amount).toLocaleString()} {e.currency}
+                  </p>
+                  <span className="rounded-full bg-[var(--bg)] px-2.5 py-1 text-xs font-semibold">
+                    {e.status === "OPEN"
+                      ? "Waiting for payment"
+                      : e.status === "FUNDED"
+                        ? "Held safely"
+                        : e.status === "RELEASED"
+                          ? "Paid to farm"
+                          : label(e.status)}
+                  </span>
+                </div>
+                <p className="text-xs text-[var(--fg-muted)]">
+                  {e.buyerOrg.name} → {e.sellerOrg.name} · {e.reference}
+                  {e.fundedAt ? ` · paid in ${formatDate(e.fundedAt)}` : ""}
+                  {e.releasedAt ? ` · released ${formatDate(e.releasedAt)}` : ""}
                 </p>
-                <p className="text-xs text-[var(--fg-muted)]">{e.status}</p>
+                <div className="flex flex-wrap items-center gap-2">
+                  {e.status === "OPEN" && isBuyerSide && wallet?.provider !== "disabled" ? (
+                    <Button size="sm" disabled={loading} onClick={() => actEscrow(e.id, "fund")}>
+                      Pay into escrow
+                    </Button>
+                  ) : null}
+                  {e.status === "OPEN" && isAdmin ? (
+                    <>
+                      <input
+                        placeholder="Bank reference"
+                        value={bankRefs[e.id] ?? ""}
+                        onChange={(ev) => setBankRefs((r) => ({ ...r, [e.id]: ev.target.value }))}
+                        className="h-9 rounded-full border border-[var(--border)] bg-white px-4 text-sm outline-none focus:border-[var(--accent)]"
+                      />
+                      <Button size="sm" variant="secondary" disabled={loading} onClick={() => recordBankTransfer(e)}>
+                        Bank transfer received
+                      </Button>
+                    </>
+                  ) : null}
+                  {e.status === "FUNDED" && (isBuyerSide || isAdmin) ? (
+                    <Button size="sm" disabled={loading} onClick={() => actEscrow(e.id, "release")}>
+                      {isAdmin && !isBuyerSide ? "Release to farm (admin)" : "Confirm delivery & release payment"}
+                    </Button>
+                  ) : null}
+                  {e.status === "FUNDED" && !isBuyerSide && !isAdmin ? (
+                    <p className="text-xs text-[var(--fg-muted)]">
+                      Released to you when the buyer confirms delivery.
+                    </p>
+                  ) : null}
+                </div>
               </div>
-              <p className="text-xs text-[var(--fg-muted)]">
-                {e.buyerOrg.name} → {e.sellerOrg.name}
-                {e.fundedAt ? ` · funded ${formatDate(e.fundedAt)}` : ""}
-                {e.releasedAt ? ` · released ${formatDate(e.releasedAt)}` : ""}
-              </p>
-              <div className="mt-2 flex flex-wrap gap-2">
-                {e.status === "OPEN" ? (
-                  <Button
-                    size="sm"
-                    disabled={loading}
-                    onClick={() => actEscrow(e.id, "fund")}
-                  >
-                    Fund
-                  </Button>
-                ) : null}
-                {e.status === "FUNDED" ? (
-                  <Button
-                    size="sm"
-                    disabled={loading}
-                    onClick={() => actEscrow(e.id, "release")}
-                  >
-                    Release
-                  </Button>
-                ) : null}
-              </div>
-            </div>
-          ))
-        )}
-        <form
-          className="flex flex-wrap items-end gap-2 pt-2"
-          onSubmit={(ev) => {
-            ev.preventDefault();
-            const id = String(
-              new FormData(ev.currentTarget).get("escrowRequestId") || "",
             );
-            if (id) openEscrow(id);
-          }}
-        >
-          <Input label="Escrow request id" name="escrowRequestId" required />
-          <Button type="submit" size="sm" disabled={loading}>
-            Open escrow account
-          </Button>
-        </form>
+          })
+        )}
+        {isAdmin ? (
+          <form
+            className="flex flex-wrap items-end gap-2 pt-2"
+            onSubmit={(ev) => {
+              ev.preventDefault();
+              const id = String(new FormData(ev.currentTarget).get("escrowRequestId") || "");
+              if (id) openEscrow(id);
+            }}
+          >
+            <Input label="Escrow request ID (admin)" name="escrowRequestId" required />
+            <Button type="submit" size="sm" variant="secondary" disabled={loading}>
+              Open escrow
+            </Button>
+          </form>
+        ) : null}
       </section>
 
       <section className="space-y-3 border-t border-[var(--border)] pt-6">

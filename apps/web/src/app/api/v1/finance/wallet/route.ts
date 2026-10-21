@@ -15,7 +15,12 @@ import {
   decimalStr,
   ensureWallet,
 } from "@/lib/finance";
-import { getPaymentProvider, paymentsProviderName } from "@/lib/payments";
+import {
+  demoPaymentsAllowed,
+  getPaymentProvider,
+  PAYMENTS_NOT_LIVE,
+  paymentsProviderName,
+} from "@/lib/payments";
 import { decimalNumber } from "@/lib/trade";
 
 export const runtime = "nodejs";
@@ -41,7 +46,10 @@ export async function GET(req: NextRequest) {
     });
 
     return ok({
-      provider: paymentsProviderName(),
+      provider:
+        paymentsProviderName() === "demo" && !demoPaymentsAllowed()
+          ? "disabled"
+          : paymentsProviderName(),
       wallet: {
         ...wallet,
         availableBalance: decimalStr(wallet.availableBalance),
@@ -98,8 +106,32 @@ export async function POST(req: NextRequest) {
       actorId: user.id,
     });
 
-    const forceDemo = Boolean(body.demo) || String(body.mode ?? "") === "demo";
-    const provider = forceDemo
+    // Admin records a real bank transfer that has arrived (no online provider).
+    const bankTransfer = String(body.mode ?? "") === "bank_transfer";
+    if (bankTransfer) {
+      if (!canOperateFinance(user)) return fail("Only Koridor admins can record bank transfers", 403);
+      if (!String(body.reference ?? "").trim()) {
+        return fail("Enter the bank reference of the transfer", 400);
+      }
+    }
+    const wantsDemo = Boolean(body.demo) || String(body.mode ?? "") === "demo";
+    if (wantsDemo && !demoPaymentsAllowed()) {
+      return fail(PAYMENTS_NOT_LIVE, 403);
+    }
+    const forceDemo = wantsDemo;
+    const provider = bankTransfer
+      ? {
+          name: "bank_transfer",
+          createTopUp: async () => ({
+            id: String(body.reference).trim(),
+            status: "succeeded" as const,
+            amount,
+            currency,
+            provider: "bank_transfer",
+            reference: `BANK-${String(body.reference).trim()}`,
+          }),
+        }
+      : forceDemo
       ? {
           name: "demo",
           createTopUp: async () => ({
