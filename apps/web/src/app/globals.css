@@ -62,8 +62,7 @@
     background: var(--surface-pattern);
     color: var(--fg);
     font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
-    font-feature-settings: "ss01", "cv11";
-    -webkit-font-smoothing: antialiased;
+      -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
   }
 
@@ -213,3 +212,10 @@
 .no-scrollbar::-webkit-scrollbar { display: none; }
 
 details > summary::-webkit-details-marker { display: none; }
+
+/* Headings: bold and upright. Overrides font-normal/italic set on display text. */
+[class*="font-display"] {
+  font-weight: 700;
+  font-style: normal;
+  letter-spacing: -0.035em;
+}

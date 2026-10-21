@@ -91,7 +91,7 @@ export function PublicFooter() {
         </div>
         <div className="mt-12 flex flex-col gap-2 border-t border-white/10 pt-6 text-xs text-white/45 sm:flex-row sm:justify-between">
           <span>© {new Date().getFullYear()} {BRAND.name}</span>
-          <span>Nairobi · Mombasa</span>
+          <span>Nairobi · Mombasa · Photos via Unsplash</span>
         </div>
       </div>
     </footer>

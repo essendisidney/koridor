@@ -1,18 +1,21 @@
 import type { Metadata } from "next";
-import { Fraunces, Geist } from "next/font/google";
+import { Plus_Jakarta_Sans } from "next/font/google";
 import { AuthProvider } from "@/lib/auth";
 import { BRAND } from "@/lib/brand";
 import "./globals.css";
 
-const sans = Geist({
+// One clear, confident typeface for buyers and farmers alike: very legible
+// on phones, with strong bold weights for headings.
+const sans = Plus_Jakarta_Sans({
   variable: "--font-sans",
   subsets: ["latin"],
+  weight: ["400", "500", "600", "700", "800"],
 });
 
-const display = Fraunces({
+const display = Plus_Jakarta_Sans({
   variable: "--font-display",
   subsets: ["latin"],
-  axes: ["opsz", "SOFT"],
+  weight: ["600", "700", "800"],
 });
 
 export const metadata: Metadata = {

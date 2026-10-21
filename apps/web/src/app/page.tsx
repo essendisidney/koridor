@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import {
   ArrowRight,
@@ -23,6 +24,7 @@ import { PRODUCTS } from "@/lib/products";
 const AUDIENCES = [
   {
     icon: Store,
+    image: "/images/port-containers.jpg",
     title: "Importers & retailers",
     body: "Source direct from estates, compare offers side by side, and pay through escrow.",
     href: "/register?role=BUYER",
@@ -30,6 +32,7 @@ const AUDIENCES = [
   },
   {
     icon: Sprout,
+    image: "/images/farmer-field.jpg",
     title: "Large farms & estates",
     body: "List your harvest once. Buyers that fit your crop, grade and volume come to you.",
     href: "/register?role=FARMER",
@@ -37,6 +40,7 @@ const AUDIENCES = [
   },
   {
     icon: Users,
+    image: "/images/grain-hands.jpg",
     title: "Cooperatives",
     body: "Pool members' volume to win container-sized orders you couldn't fill alone.",
     href: "/register?role=COOPERATIVE",
@@ -84,7 +88,17 @@ export default function LandingPage() {
       <PublicNav />
 
       {/* Hero: copy + search on the left, product preview on the right */}
-      <section className="hero-surface overflow-hidden">
+      <section className="relative isolate overflow-hidden bg-[#0a1f18] text-[#f7f5ef]">
+        <Image
+          src="/images/farmers-harvest.jpg"
+          alt="Farmers harvesting in Kenya"
+          fill
+          priority
+          sizes="100vw"
+          className="-z-20 object-cover object-[70%_40%]"
+        />
+        <div className="absolute inset-0 -z-10 bg-[linear-gradient(90deg,rgba(8,26,20,0.94)_0%,rgba(8,26,20,0.82)_45%,rgba(8,26,20,0.35)_100%)]" />
+        <div className="absolute inset-x-0 bottom-0 -z-10 h-40 bg-gradient-to-t from-[#0a1f18]/80 to-transparent" />
         <div className="mx-auto grid max-w-6xl items-center gap-14 px-4 pb-20 pt-16 sm:px-6 md:pb-28 md:pt-24 lg:grid-cols-[1.1fr_1fr]">
           <div>
             <span className="animate-fade-in inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-3 py-1 text-xs text-white/75 backdrop-blur">
@@ -291,18 +305,29 @@ export default function LandingPage() {
           Both sides of the trade
         </h2>
         <ul className="mt-10 grid gap-4 md:grid-cols-3">
-          {AUDIENCES.map(({ icon: Icon, title, body, href, cta }) => (
+          {AUDIENCES.map(({ icon: Icon, image, title, body, href, cta }) => (
             <li key={title}>
-              <Link href={href} className="card card-hover group flex h-full flex-col p-6">
-                <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-[var(--gold-soft)] text-[var(--gold)]">
-                  <Icon className="h-5 w-5" />
-                </span>
-                <p className="mt-6 text-lg font-medium tracking-[-0.01em]">{title}</p>
+              <Link href={href} className="card card-hover group flex h-full flex-col overflow-hidden">
+                <div className="relative h-44 overflow-hidden">
+                  <Image
+                    src={image}
+                    alt=""
+                    fill
+                    sizes="(min-width: 768px) 33vw, 100vw"
+                    className="object-cover transition duration-500 group-hover:scale-105"
+                  />
+                  <span className="absolute bottom-3 left-3 flex h-10 w-10 items-center justify-center rounded-xl bg-white/95 text-[var(--accent)] shadow">
+                    <Icon className="h-5 w-5" />
+                  </span>
+                </div>
+                <div className="flex flex-1 flex-col p-6 pt-5">
+                <p className="text-lg font-semibold tracking-[-0.01em]">{title}</p>
                 <p className="mt-2 flex-1 text-sm leading-relaxed text-[var(--fg-muted)]">{body}</p>
-                <span className="mt-6 inline-flex items-center gap-1 text-sm font-medium text-[var(--accent)]">
+                <span className="mt-6 inline-flex items-center gap-1 text-sm font-semibold text-[var(--accent)]">
                   {cta}
                   <ArrowRight className="h-4 w-4 transition group-hover:translate-x-0.5" />
                 </span>
+                </div>
               </Link>
             </li>
           ))}
@@ -334,7 +359,15 @@ export default function LandingPage() {
 
       {/* Closing CTA */}
       <section className="mx-auto max-w-6xl px-4 py-20 sm:px-6">
-        <div className="hero-surface overflow-hidden rounded-[1.75rem] px-6 py-14 text-center sm:px-12">
+        <div className="relative isolate overflow-hidden rounded-[1.75rem] bg-[#0a1f18] px-6 py-16 text-center text-[#f7f5ef] sm:px-12">
+          <Image
+            src="/images/port-containers.jpg"
+            alt=""
+            fill
+            sizes="(min-width: 1152px) 1152px, 100vw"
+            className="-z-20 object-cover"
+          />
+          <div className="absolute inset-0 -z-10 bg-[#081a14]/80" />
           <p className="eyebrow">Ready when you are</p>
           <p className="mx-auto mt-3 max-w-2xl font-[family-name:var(--font-display)] text-4xl leading-tight tracking-[-0.02em] md:text-5xl">
             Your next container, direct from the farm.

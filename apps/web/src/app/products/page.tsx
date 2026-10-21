@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { PublicFooter, PublicNav } from "@/components/public-nav";
@@ -21,8 +22,17 @@ export default async function ProductsPage({
   return (
     <div className="min-h-screen">
       <PublicNav />
-      <section className="hero-surface">
-        <div className="mx-auto max-w-6xl space-y-6 px-4 pb-14 pt-14 sm:px-6">
+      <section className="relative isolate overflow-hidden bg-[#0a1f18] text-[#f7f5ef]">
+        <Image
+          src="/images/misty-tea.jpg"
+          alt="Tea estates in the Kenyan highlands"
+          fill
+          priority
+          sizes="100vw"
+          className="-z-20 object-cover"
+        />
+        <div className="absolute inset-0 -z-10 bg-[#081a14]/75" />
+        <div className="mx-auto max-w-6xl space-y-6 px-4 pb-16 pt-16 sm:px-6">
           <p className="eyebrow">Catalogue</p>
           <h1 className="font-[family-name:var(--font-display)] text-4xl tracking-[-0.03em] md:text-5xl">
             {q ? `Results for “${q}”` : "Kenya’s finest exports"}

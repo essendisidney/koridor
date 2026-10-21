@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { BadgeCheck, FileCheck2, Lock } from "lucide-react";
 import { HeroVisual } from "@/components/hero-visual";
@@ -21,7 +22,16 @@ export default function AuthLayout({
           Verified farms · Escrow payment · Export documents handled
         </p>
       </div>
-      <div className="hero-surface relative hidden overflow-hidden lg:flex lg:flex-col lg:justify-between lg:p-12">
+      <div className="relative isolate hidden overflow-hidden bg-[#0a1f18] text-[#f7f5ef] lg:flex lg:flex-col lg:justify-between lg:p-12">
+        <Image
+          src="/images/misty-tea.jpg"
+          alt=""
+          fill
+          priority
+          sizes="50vw"
+          className="-z-20 object-cover"
+        />
+        <div className="absolute inset-0 -z-10 bg-gradient-to-b from-[#081a14]/90 via-[#081a14]/70 to-[#081a14]/95" />
         <div>
           <p className="eyebrow">Direct from Kenya</p>
           <p className="mt-4 max-w-md font-[family-name:var(--font-display)] text-4xl leading-tight tracking-[-0.02em]">

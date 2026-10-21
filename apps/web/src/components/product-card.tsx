@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
 import { MONTHS, type Product } from "@/lib/products";
@@ -18,6 +19,11 @@ function tone(slug: string): [string, string] {
   return TONES[slug] ?? ["#0f2e24", "#1d6b4f"];
 }
 
+/** Photos live in /public/images/products (Unsplash licence, self-hosted). */
+export function productImage(slug: string) {
+  return `/images/products/${slug}.jpg`;
+}
+
 function seasonLabel(p: Product, month: number) {
   if (p.seasonMonths.length === 12) return "Year-round";
   if (p.seasonMonths.includes(month)) return "In season";
@@ -27,7 +33,7 @@ function seasonLabel(p: Product, month: number) {
 }
 
 export function ProductCard({ product: p, detailed }: { product: Product; detailed?: boolean }) {
-  const [from, to] = tone(p.slug);
+  const [from] = tone(p.slug);
   const month = new Date().getMonth() + 1;
   const live = p.seasonMonths.includes(month);
   return (
@@ -35,15 +41,17 @@ export function ProductCard({ product: p, detailed }: { product: Product; detail
       href={`/products/${p.slug}`}
       className="card card-hover group flex h-full flex-col overflow-hidden"
     >
-      <div
-        className="relative flex h-28 items-end justify-between p-4"
-        style={{ background: `linear-gradient(135deg, ${from} 0%, ${to} 100%)` }}
-      >
-        <span className="font-[family-name:var(--font-display)] text-5xl leading-none text-white/90">
-          {p.name.charAt(0)}
-        </span>
+      <div className="relative h-40 overflow-hidden" style={{ background: from }}>
+        <Image
+          src={productImage(p.slug)}
+          alt={`${p.name} from Kenya`}
+          fill
+          sizes="(min-width: 768px) 25vw, 50vw"
+          className="object-cover transition duration-500 group-hover:scale-105"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/35 via-transparent to-transparent" />
         <span
-          className={`rounded-full px-2.5 py-1 text-[11px] font-medium backdrop-blur ${live ? "bg-white/90 text-[var(--accent)]" : "bg-black/20 text-white/90"}`}
+          className={`absolute right-3 top-3 rounded-full px-2.5 py-1 text-[11px] font-semibold backdrop-blur ${live ? "bg-white/95 text-[var(--accent)]" : "bg-black/40 text-white"}`}
         >
           {live ? "● " : ""}
           {seasonLabel(p, month)}
@@ -51,7 +59,7 @@ export function ProductCard({ product: p, detailed }: { product: Product; detail
       </div>
       <div className="flex flex-1 flex-col p-4">
         <div className="flex items-start justify-between gap-2">
-          <p className="font-medium tracking-[-0.01em]">{p.name}</p>
+          <p className="font-semibold tracking-[-0.01em]">{p.name}</p>
           <ArrowUpRight className="h-4 w-4 shrink-0 text-[var(--fg-muted)] transition group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-[var(--accent)]" />
         </div>
         {detailed ? (

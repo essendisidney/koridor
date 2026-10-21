@@ -1,9 +1,11 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { notFound } from "next/navigation";
 import { ArrowLeft, BadgeCheck } from "lucide-react";
 import { PublicFooter, PublicNav } from "@/components/public-nav";
+import { productImage } from "@/components/product-card";
 import { OPEN_DEMAND_STATUSES } from "@/lib/match-engine";
 import { prisma } from "@/lib/prisma";
 import { countryName } from "@/lib/corridors";
@@ -84,8 +86,17 @@ export default async function ProductPage({
   return (
     <div className="min-h-screen">
       <PublicNav ctaHref={buyHref} />
-      <section className="hero-surface">
-        <div className="mx-auto flex max-w-6xl flex-col gap-8 px-4 pb-14 pt-12 sm:px-6 md:flex-row md:items-end md:justify-between">
+      <section className="relative isolate overflow-hidden bg-[#0a1f18] text-[#f7f5ef]">
+        <Image
+          src={productImage(p.slug)}
+          alt={`Kenyan ${p.name}`}
+          fill
+          priority
+          sizes="100vw"
+          className="-z-20 object-cover"
+        />
+        <div className="absolute inset-0 -z-10 bg-[linear-gradient(90deg,rgba(8,26,20,0.92)_0%,rgba(8,26,20,0.7)_55%,rgba(8,26,20,0.35)_100%)]" />
+        <div className="mx-auto flex max-w-6xl flex-col gap-8 px-4 pb-20 pt-16 sm:px-6 md:flex-row md:items-end md:justify-between">
           <div>
             <Link
               href="/products"
