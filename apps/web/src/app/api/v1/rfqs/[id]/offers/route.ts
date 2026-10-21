@@ -27,6 +27,16 @@ import {
 
 export const runtime = "nodejs";
 
+/**
+ * Prices for tonne-based RFQs are per tonne. Anything under $20/t is almost
+ * certainly a per-kg figure typed into the per-tonne field (×1000 error).
+ */
+function perTonnePriceProblem(unitPrice: number, unit: string) {
+  if (!["MT", "TONNE", "TON"].includes(unit.toUpperCase())) return null;
+  if (unitPrice >= 20) return null;
+  return `That looks like a price per kg. Enter the price per tonne — for $${unitPrice}/kg that is $${Math.round(unitPrice * 1000).toLocaleString()} per tonne.`;
+}
+
 type Ctx = { params: Promise<{ id: string }> };
 
 export async function GET(req: NextRequest, ctx: Ctx) {
@@ -90,6 +100,8 @@ export async function POST(req: NextRequest, ctx: Ctx) {
       if (unitPrice <= 0 || quantity <= 0) {
         return fail("unitPrice and quantity must be positive", 400);
       }
+      const priceProblem = perTonnePriceProblem(unitPrice, String(body.unit ?? rfq.unit));
+      if (priceProblem) return fail(priceProblem, 400);
       const offerFields = {
         unitPrice,
         currency: String(body.currency ?? rfq.currency).slice(0, 3).toUpperCase(),
@@ -147,6 +159,8 @@ export async function POST(req: NextRequest, ctx: Ctx) {
     if (unitPrice <= 0 || quantity <= 0) {
       return fail("unitPrice and quantity must be positive", 400);
     }
+    const priceProblem = perTonnePriceProblem(unitPrice, String(body.unit ?? rfq.unit));
+    if (priceProblem) return fail(priceProblem, 400);
 
     const offerFields = {
       unitPrice,

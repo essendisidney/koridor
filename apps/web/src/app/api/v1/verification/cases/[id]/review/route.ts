@@ -13,6 +13,7 @@ import { isAdmin, requireAuth, requirePermission } from "@/lib/org-access";
 import { Permission } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
 import { recomputeTrustScore } from "@/lib/trust-score";
+import { matchOpenDemandForLot } from "@/lib/match-engine";
 import { screenCounterparty, screeningBlocksApproval } from "@/lib/screening";
 
 export const runtime = "nodejs";
@@ -174,7 +175,7 @@ export async function POST(req: NextRequest, ctx: Ctx) {
             userId: existing.submittedById,
             title: approved ? "Organisation verified" : "Verification rejected",
             body: approved
-              ? "Your organisation has been verified on Koridor."
+              ? "Your business is verified. Buyers can now be matched to your produce."
               : reviewNotes ||
                 "Your verification package was rejected. Please update documents and resubmit.",
             link: "/dashboard/verification",
@@ -184,6 +185,27 @@ export async function POST(req: NextRequest, ctx: Ctx) {
     });
 
     await recomputeTrustScore(existing.organisationId, user.id);
+
+    // Lots listed while waiting for verification can now be matched to buyers.
+    if (approved) {
+      const lots = await prisma.supplyLot.findMany({
+        where: {
+          supplierOrgId: existing.organisationId,
+          deletedAt: null,
+          availableQuantity: { gt: 0 },
+        },
+        select: { commodity: true, originCountry: true },
+      });
+      const seen = new Set<string>();
+      for (const lot of lots) {
+        const key = `${lot.commodity.toLowerCase()}|${lot.originCountry}`;
+        if (seen.has(key)) continue;
+        seen.add(key);
+        await matchOpenDemandForLot(lot).catch((err) =>
+          console.error("[verification] post-approval matching failed", err),
+        );
+      }
+    }
 
     const updated = await prisma.verificationCase.findUnique({
       where: { id },

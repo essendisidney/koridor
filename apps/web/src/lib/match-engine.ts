@@ -215,6 +215,32 @@ export async function rematchRequirement(requirementId: string) {
     });
   }
 
+  // Farms that turn up after the buyer posted: tell the buyer too. (At publish
+  // time the buyer is looking at the results already.)
+  const postedAgoMs = req.publishedAt ? Date.now() - req.publishedAt.getTime() : 0;
+  if (
+    OPEN_DEMAND_STATUSES.includes(req.status) &&
+    newSupplierOrgIds.length &&
+    postedAgoMs > 5 * 60_000
+  ) {
+    const buyers = await prisma.organisationMember.findMany({
+      where: { organisationId: req.buyerOrgId, deletedAt: null },
+      select: { userId: true },
+    });
+    if (buyers.length) {
+      const n = newSupplierOrgIds.length;
+      await prisma.notification.createMany({
+        data: buyers.map((b) => ({
+          userId: b.userId,
+          title: `${n} new ${n === 1 ? "farm" : "farms"} for your ${req.commodity}`,
+          body: `New verified supply matches ${req.reference}. Pick farms and ask them for a quote.`,
+          link: `/dashboard/requirements/${requirementId}/matches`,
+          metadata: { kind: "NEW_MATCHES", requirementId, supplierOrgIds: newSupplierOrgIds },
+        })),
+      });
+    }
+  }
+
   return { matches: scored, aggregation: agg };
 }
 

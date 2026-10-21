@@ -1,14 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { FormEvent, useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { label } from "@/lib/labels";
+import { countryName } from "@/lib/corridors";
 import { api, ApiError } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { CountrySelect } from "@/components/country-select";
-import { Select } from "@/components/ui/select";
-import { KENYA_PRODUCE, GULF_INCOTERMS } from "@/lib/corridors";
 import { RestrictedMarketNotice } from "@/components/restricted-market-notice";
 
 type Rfq = {
@@ -28,18 +26,20 @@ type Rfq = {
 };
 
 export default function RfqsPage() {
-  const { accessToken } = useAuth();
+  const { accessToken, user } = useAuth();
+  const isSeller = Boolean(
+    user?.roles.some((r) => ["FARMER", "COOPERATIVE", "EXPORTER"].includes(r)),
+  );
   const [tab, setTab] = useState<"mine" | "open">("mine");
   const [items, setItems] = useState<Rfq[]>([]);
   const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
 
   const load = useCallback(() => {
     if (!accessToken) return;
     api<Rfq[]>(`/rfqs?scope=${tab}`, { token: accessToken })
       .then(setItems)
       .catch((err) =>
-        setError(err instanceof ApiError ? err.message : "Failed to load RFQs"),
+        setError(err instanceof ApiError ? err.message : "Could not load quote requests"),
       );
   }, [accessToken, tab]);
 
@@ -47,49 +47,14 @@ export default function RfqsPage() {
     load();
   }, [load]);
 
-  async function createRfq(e: FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    if (!accessToken) return;
-    setLoading(true);
-    setError(null);
-    const form = new FormData(e.currentTarget);
-    try {
-      const rfq = await api<Rfq>("/rfqs", {
-        method: "POST",
-        token: accessToken,
-        body: {
-          title: String(form.get("title")),
-          commodity: String(form.get("commodity")),
-          quantity: String(form.get("quantity")),
-          unit: String(form.get("unit") || "MT"),
-          targetPrice: String(form.get("targetPrice") || ""),
-          currency: String(form.get("currency") || "USD"),
-          originCountry: String(form.get("originCountry") || ""),
-          destinationCountry: String(form.get("destinationCountry") || ""),
-          incoterm: String(form.get("incoterm") || ""),
-          neededBy: String(form.get("neededBy") || "") || undefined,
-          notes: String(form.get("notes") || ""),
-          publish: form.get("publish") === "on",
-        },
-      });
-      window.location.href = `/dashboard/rfqs/${rfq.id}`;
-    } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Create failed");
-    } finally {
-      setLoading(false);
-    }
-  }
-
   return (
     <div className="mx-auto max-w-3xl space-y-8">
       <div>
-        <h1 className="font-[family-name:var(--font-display)] text-3xl font-semibold">
-          RFQs
+        <h1 className="font-[family-name:var(--font-display)] text-4xl">
+          Quote requests
         </h1>
         <p className="mt-1 text-sm text-[var(--fg-muted)]">
-          GCC buyers: this is Negotiate. Origin Kenya, destination
-          Oman / Saudi Arabia / Iraq, with a needed-by date so farmers
-          plant against a sold order.
+          Requests for prices between buyers and farms, and the offers on each.
         </p>
         <RestrictedMarketNotice className="mt-3" />
       </div>
@@ -100,7 +65,7 @@ export default function RfqsPage() {
           variant={tab === "mine" ? "primary" : "secondary"}
           onClick={() => setTab("mine")}
         >
-          My RFQs
+          Mine
         </Button>
         <Button
           size="sm"
@@ -115,114 +80,38 @@ export default function RfqsPage() {
 
       <div className="space-y-2">
         {items.length === 0 ? (
-          <p className="text-sm text-[var(--fg-muted)]">No RFQs in this view.</p>
+          <p className="card p-6 text-sm text-[var(--fg-muted)]">Nothing here yet.</p>
         ) : (
           items.map((r) => (
             <Link
               key={r.id}
               href={`/dashboard/rfqs/${r.id}`}
-              className="block border-b border-[var(--border)] py-3"
+              className="card card-hover block p-4"
             >
               <div className="flex items-baseline justify-between gap-3">
-                <p className="font-medium">{r.title}</p>
-                <p className="text-xs text-[var(--fg-muted)]">{r.status}</p>
+                <p className="font-semibold">{r.title}</p>
+                <p className="text-xs text-[var(--fg-muted)]">{label(r.status)}</p>
               </div>
               <p className="text-xs text-[var(--fg-muted)]">
-                {r.reference} · {r.commodity} · {r.quantity} {r.unit}
-                {r.originCountry && r.destinationCountry
-                  ? ` · ${r.originCountry}→${r.destinationCountry}`
-                  : ""}
+                {Number(r.quantity).toLocaleString()} {r.unit === "MT" ? "t" : r.unit}
+                {r.destinationCountry ? ` to ${countryName(r.destinationCountry)}` : ""}
                 {r.buyerOrg ? ` · ${r.buyerOrg.name}` : ""}
-                {r._count ? ` · ${r._count.offers} offers` : ""}
+                {r._count ? ` · ${r._count.offers} ${r._count.offers === 1 ? "offer" : "offers"}` : ""}
               </p>
             </Link>
           ))
         )}
       </div>
 
-      {tab === "mine" ? (
-        <form
-          onSubmit={createRfq}
-          className="space-y-3 border-t border-[var(--border)] pt-6"
-        >
-          <h2 className="font-[family-name:var(--font-display)] text-xl font-semibold">
-            Create RFQ
-          </h2>
+      {tab === "mine" && !isSeller ? (
+        <div className="card flex flex-col gap-3 p-5 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-sm text-[var(--fg-muted)]">
-            Default corridor is Kenya origin to Oman / Saudi Arabia / Iraq.
+            Need something new? Post a request and we&apos;ll find farms for you.
           </p>
-          <Input label="Title" name="title" required placeholder="Hass avocado — Kenya to Muscat" />
-          <Select label="Commodity" name="commodity" required defaultValue="Avocado">
-            {KENYA_PRODUCE.map((p) => (
-              <option key={p} value={p}>
-                {p}
-              </option>
-            ))}
-            <option value="Other">Other</option>
-          </Select>
-          <div className="grid gap-3 sm:grid-cols-3">
-            <Input
-              label="Quantity"
-              name="quantity"
-              type="number"
-              step="0.01"
-              required
-            />
-            <Input label="Unit" name="unit" defaultValue="MT" />
-            <Input label="Currency" name="currency" defaultValue="USD" />
-          </div>
-          <div className="grid gap-3 sm:grid-cols-2">
-            <Input
-              label="Target price"
-              name="targetPrice"
-              type="number"
-              step="0.01"
-            />
-            <Select
-              label="Incoterm"
-              name="incoterm"
-              defaultValue="FOB Mombasa"
-            >
-              {GULF_INCOTERMS.map((i) => (
-                <option key={i} value={i}>
-                  {i}
-                </option>
-              ))}
-            </Select>
-          </div>
-          <div className="grid gap-3 sm:grid-cols-2">
-            <CountrySelect
-              label="Origin"
-              name="originCountry"
-              defaultValue="KE"
-              required
-            />
-            <CountrySelect
-              label="Destination"
-              name="destinationCountry"
-              defaultValue="OM"
-              required
-            />
-          </div>
-          <Input
-            label="Needed by (delivery window)"
-            name="neededBy"
-            type="date"
-            required
-          />
-          <p className="text-xs text-[var(--fg-muted)]">
-            Order first: Gulf buyer locks volume and date; Kenyan farmers plant
-            against a sold contract.
-          </p>
-          <Input label="Notes" name="notes" />
-          <label className="flex items-center gap-2 text-sm">
-            <input type="checkbox" name="publish" defaultChecked />
-            Publish immediately
-          </label>
-          <Button type="submit" disabled={loading}>
-            {loading ? "Creating…" : "Create RFQ"}
-          </Button>
-        </form>
+          <Link href="/dashboard/requirements/new">
+            <Button size="sm">New request</Button>
+          </Link>
+        </div>
       ) : null}
     </div>
   );

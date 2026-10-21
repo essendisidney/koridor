@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { label } from "@/lib/labels";
 import { api, ApiError } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
@@ -42,7 +43,7 @@ export default function DealsPage() {
           Deal rooms
         </h1>
         <p className="mt-2 text-sm text-[var(--fg-muted)]">
-          Negotiation, contract, and Trade Passport for each lot.
+          Agree terms, sign the contract and follow each order to delivery.
         </p>
       </div>
       {error ? <p className="text-sm text-[var(--danger)]">{error}</p> : null}
@@ -56,7 +57,7 @@ export default function DealsPage() {
               <p className="font-medium">{d.title}</p>
               <p className="text-xs text-[var(--fg-muted)]">
                 {d.reference} · {d.commodity} · {d.quantity} {d.unit} ·{" "}
-                {d.status}
+                {label(d.status)}
               </p>
               <p className="text-xs text-[var(--fg-muted)]">
                 {d.buyerOrg.name} ({countryName(d.buyerOrg.countryCode)}) ↔{" "}

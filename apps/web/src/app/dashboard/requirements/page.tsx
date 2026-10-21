@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { label } from "@/lib/labels";
 import { api, ApiError } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
@@ -39,21 +40,21 @@ export default function RequirementsPage() {
     <div className="mx-auto max-w-4xl space-y-8">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="font-[family-name:var(--font-display)] text-3xl font-semibold">
-            My requirements
+          <h1 className="font-[family-name:var(--font-display)] text-4xl">
+            My requests
           </h1>
           <p className="mt-2 text-sm text-[var(--fg-muted)]">
-            Post what you need. Koridor matches and aggregates African supply.
+            Everything you&apos;ve asked farms for, and how many have matched.
           </p>
         </div>
         <Link href="/dashboard/requirements/new">
-          <Button size="lg">Post a buying requirement</Button>
+          <Button size="lg">New request</Button>
         </Link>
       </div>
       {error ? <p className="text-sm text-[var(--danger)]">{error}</p> : null}
       {!rows.length && !error ? (
         <p className="text-sm text-[var(--fg-muted)]">
-          No requirements yet. Publish your first demand.
+          No requests yet. Tell us what you want to buy and we&apos;ll find farms.
         </p>
       ) : null}
       <ul className="divide-y divide-[var(--border)] border-y border-[var(--border)]">
@@ -74,7 +75,7 @@ export default function RequirementsPage() {
                 </p>
                 <p className="text-xs text-[var(--fg-muted)]">
                   {r.reference} · {countryName(r.destinationCountry)} ·{" "}
-                  {r.quantity} {r.unit} · {r.frequency} · {r.status}
+                  {Number(r.quantity).toLocaleString()} {r.unit === "MT" ? "t" : r.unit} · {label(r.frequency)} · {label(r.status)}
                 </p>
                 <p className="mt-1 text-sm">Match {pct}%</p>
               </div>

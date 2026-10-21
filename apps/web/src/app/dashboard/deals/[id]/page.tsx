@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { FormEvent, useCallback, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
+import { label } from "@/lib/labels";
 import { api, ApiError } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
@@ -268,7 +269,7 @@ export default function DealRoomPage() {
 
       <div>
         <p className="text-xs uppercase tracking-[0.14em] text-[var(--accent)]">
-          {deal.reference} · {deal.status.replaceAll("_", " ")}
+          {deal.reference} · {label(deal.status)}
           {deal.role ? ` · You are ${deal.role}` : ""}
         </p>
         <h1 className="mt-1 font-[family-name:var(--font-display)] text-3xl font-semibold">
@@ -306,7 +307,7 @@ export default function DealRoomPage() {
               Deal summary
             </h2>
             <p>
-              Status: <strong>{deal.status.replaceAll("_", " ")}</strong>
+              Status: <strong>{label(deal.status)}</strong>
             </p>
             <p>
               Value:{" "}
@@ -321,7 +322,7 @@ export default function DealRoomPage() {
             ) : null}
             <p className="text-[var(--fg-muted)]">
               Negotiate in Messages, lock Commercial terms, then advance Contract
-              and Trade Passport.
+              and trade record.
             </p>
           </div>
           <div className="space-y-2 rounded-2xl border border-[var(--border)] bg-white shadow-[var(--shadow-card)] p-5 text-sm">
@@ -340,7 +341,7 @@ export default function DealRoomPage() {
             ) : null}
             {deal.trade ? (
               <Link className="block text-[var(--accent)] underline" href={`/dashboard/trades/${deal.trade.id}`}>
-                Passport {deal.trade.tradeNumber}
+                Trade record {deal.trade.tradeNumber}
               </Link>
             ) : null}
           </div>
@@ -400,7 +401,7 @@ export default function DealRoomPage() {
               </dd>
             </div>
             <div>
-              <dt className="text-[var(--fg-muted)]">Incoterm</dt>
+              <dt className="text-[var(--fg-muted)]">Delivery terms</dt>
               <dd>
                 {deal.offer?.incoterm ??
                   deal.rfq?.incoterm ??
@@ -534,7 +535,7 @@ export default function DealRoomPage() {
           {deal.contract ? (
             <>
               <p className="font-medium">
-                {deal.contract.reference} · {deal.contract.status}
+                {deal.contract.reference} · {label(deal.contract.status)}
               </p>
               <p>
                 {deal.contract.title}
@@ -575,7 +576,7 @@ export default function DealRoomPage() {
                   <div>
                     <p className="font-medium">{d.fileName}</p>
                     <p className="text-xs text-[var(--fg-muted)]">
-                      {d.type.replaceAll("_", " ")} · {d.status}
+                      {label(d.type)} · {label(d.status)}
                     </p>
                   </div>
                 </li>
@@ -601,7 +602,7 @@ export default function DealRoomPage() {
                 className="rounded-2xl border border-[var(--border)] bg-white shadow-[var(--shadow-card)] px-4 py-3 text-sm"
               >
                 <p className="font-medium">
-                  {s.reference} · {s.status}
+                  {s.reference} · {label(s.status)}
                 </p>
                 <p className="text-xs text-[var(--fg-muted)]">
                   {s.origin ?? "—"} → {s.destination ?? "—"}
@@ -642,7 +643,7 @@ export default function DealRoomPage() {
           {deal.trade ? (
             <>
               <p className="font-medium">
-                {deal.trade.tradeNumber} · {deal.trade.status}
+                {deal.trade.tradeNumber} · {label(deal.trade.status)}
               </p>
               <p>
                 Stage: {deal.trade.currentStage}
@@ -658,16 +659,16 @@ export default function DealRoomPage() {
                 href={`/dashboard/trades/${deal.trade.id}`}
                 className="inline-block text-[var(--accent)] underline"
               >
-                Open Trade Passport
+                Open trade record
               </Link>
             </>
           ) : (
             <>
               <p className="text-[var(--fg-muted)]">
-                No Trade Passport linked yet. Accepting an offer mints one.
+                No trade record yet. One is created when an offer is accepted.
               </p>
               <Link href="/dashboard/trade" className="text-[var(--accent)] underline">
-                Open Trade Passports
+                Open trade records
               </Link>
             </>
           )}

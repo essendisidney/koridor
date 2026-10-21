@@ -65,10 +65,25 @@ type Rfq = {
   events: Event[];
 };
 
+const RFQ_STATUS: Record<string, string> = {
+  DRAFT: "Not sent yet",
+  OPEN: "Collecting offers",
+  CLOSED: "Closed",
+  AWARDED: "Offer accepted",
+  CANCELLED: "Cancelled",
+};
+
+const OFFER_STATUS: Record<string, string> = {
+  PENDING: "Waiting for decision",
+  ACCEPTED: "Accepted",
+  REJECTED: "Not chosen",
+  WITHDRAWN: "Withdrawn",
+};
+
 const SORT_OPTIONS: { value: OfferSortKey; label: string }[] = [
   { value: "best_match", label: "Best match" },
-  { value: "lowest_landed_cost", label: "Lowest landed cost" },
-  { value: "highest_trust", label: "Highest trust" },
+  { value: "lowest_landed_cost", label: "Lowest cost delivered" },
+  { value: "highest_trust", label: "Most trusted" },
   { value: "earliest_delivery", label: "Earliest delivery" },
 ];
 
@@ -80,6 +95,8 @@ export default function RfqDetailPage() {
   const [busy, setBusy] = useState(false);
   const [sort, setSort] = useState<OfferSortKey>("best_match");
   const [expandedOffer, setExpandedOffer] = useState<string | null>(null);
+  const [draftPrice, setDraftPrice] = useState("");
+  const [draftQty, setDraftQty] = useState("");
 
   const load = useCallback(() => {
     if (!accessToken || !id) return;
@@ -188,7 +205,7 @@ export default function RfqDetailPage() {
   if (!rfq) {
     return (
       <p className="text-sm text-[var(--fg-muted)]">
-        {error ?? "Loading RFQ…"}
+        {error ?? "Loading quote request…"}
       </p>
     );
   }
@@ -196,32 +213,36 @@ export default function RfqDetailPage() {
   const myOffer = rfq.offers.find(
     (o) => o.sellerOrg.id === user?.organisationId,
   );
+  const perTonne = ["MT", "TONNE", "TON"].includes(String(rfq.unit).toUpperCase());
+  const priceNum = Number(draftPrice || 0);
+  const qtyNum = Number(draftQty || rfq.quantity || 0);
 
   return (
     <div className="mx-auto max-w-5xl space-y-8">
-      <Link href="/dashboard/rfqs" className="text-sm text-[var(--accent)]">
-        ← RFQs
+      <Link href="/dashboard/rfqs" className="text-sm text-[var(--fg-muted)] hover:text-[var(--fg)]">
+        ← Quote requests
       </Link>
       <div>
-        <h1 className="font-[family-name:var(--font-display)] text-3xl font-semibold">
+        <p className="eyebrow">Quote request · {RFQ_STATUS[rfq.status] ?? rfq.status}</p>
+        <h1 className="mt-2 font-[family-name:var(--font-display)] text-4xl">
           {rfq.title}
         </h1>
         <p className="mt-1 text-sm text-[var(--fg-muted)]">
-          {rfq.reference} · {rfq.status} · {rfq.buyerOrg.name}
+          {rfq.buyerOrg.name} · {rfq.reference}
         </p>
       </div>
 
       {error ? <p className="text-sm text-[var(--danger)]">{error}</p> : null}
 
-      <dl className="grid gap-3 text-sm sm:grid-cols-2">
+      <dl className="card grid grid-cols-2 gap-4 p-5 text-sm sm:grid-cols-4">
         <div>
-          <dt className="text-[var(--fg-muted)]">Commodity</dt>
+          <dt className="text-[var(--fg-muted)]">Product</dt>
           <dd>{rfq.commodity}</dd>
         </div>
         <div>
           <dt className="text-[var(--fg-muted)]">Quantity</dt>
           <dd>
-            {rfq.quantity} {rfq.unit}
+            {Number(rfq.quantity).toLocaleString()} {perTonne ? "tonnes" : rfq.unit}
           </dd>
         </div>
         <div>
@@ -233,7 +254,7 @@ export default function RfqDetailPage() {
           </dd>
         </div>
         <div>
-          <dt className="text-[var(--fg-muted)]">Incoterm</dt>
+          <dt className="text-[var(--fg-muted)]">Delivery terms</dt>
           <dd>{rfq.incoterm ?? "—"}</dd>
         </div>
       </dl>
@@ -242,7 +263,7 @@ export default function RfqDetailPage() {
         <div className="flex gap-2">
           {rfq.status === "DRAFT" ? (
             <Button disabled={busy} onClick={() => publishOrClose("publish")}>
-              Publish
+              Send to farms
             </Button>
           ) : null}
           {rfq.status === "OPEN" ? (
@@ -251,7 +272,7 @@ export default function RfqDetailPage() {
               disabled={busy}
               onClick={() => publishOrClose("close")}
             >
-              Close RFQ
+              Stop taking offers
             </Button>
           ) : null}
         </div>
@@ -260,35 +281,38 @@ export default function RfqDetailPage() {
       {!isBuyer && rfq.status === "OPEN" ? (
         <form
           onSubmit={submitOffer}
-          className="space-y-3 border-t border-[var(--border)] pt-6"
+          className="card space-y-4 p-6"
         >
-          <h2 className="font-[family-name:var(--font-display)] text-xl font-semibold">
-            {myOffer ? "Revise offer" : "Submit offer"}
+          <h2 className="font-[family-name:var(--font-display)] text-2xl">
+            {myOffer ? "Update your offer" : "Send your offer"}
           </h2>
           {myOffer ? (
             <p className="text-xs text-[var(--fg-muted)]">
-              Current v{myOffer.currentVersion ?? 1}. Revisions are preserved —
-              commercial history is never overwritten.
+              Version {myOffer.currentVersion ?? 1}. The buyer can see earlier versions.
             </p>
           ) : null}
           <div className="grid gap-3 sm:grid-cols-3">
             <Input
-              label="Unit price"
+              label={perTonne ? "Price per tonne (USD)" : `Price per ${rfq.unit} (USD)`}
               name="unitPrice"
               type="number"
               step="0.01"
+              min={perTonne ? 20 : 0.01}
+              placeholder={perTonne ? "e.g. 1850" : undefined}
               required
               defaultValue={myOffer ? String(myOffer.unitPrice) : undefined}
+              onChange={(e) => setDraftPrice(e.target.value)}
             />
             <Input
-              label="Quantity"
+              label={perTonne ? "Tonnes you can supply" : "Quantity"}
               name="quantity"
               type="number"
               step="0.01"
               defaultValue={String(myOffer?.quantity ?? rfq.quantity)}
+              onChange={(e) => setDraftQty(e.target.value)}
             />
             <Input
-              label="Lead time (days)"
+              label="Ready in (days)"
               name="leadTimeDays"
               type="number"
               defaultValue={
@@ -299,12 +323,19 @@ export default function RfqDetailPage() {
             />
           </div>
           <Input
-            label="Notes"
+            label="Note to the buyer (optional)"
             name="notes"
             defaultValue={myOffer?.notes ?? undefined}
           />
+          {perTonne && priceNum > 0 ? (
+            <p className="rounded-xl bg-[var(--bg)] px-4 py-3 text-sm">
+              ${(priceNum / 1000).toFixed(2)} per kg · total{" "}
+              <strong>${Math.round(priceNum * qtyNum).toLocaleString()}</strong> for{" "}
+              {qtyNum.toLocaleString()} t
+            </p>
+          ) : null}
           <Button type="submit" disabled={busy}>
-            {myOffer ? "Submit revision" : "Submit offer"}
+            {myOffer ? "Send updated offer" : "Send offer"}
           </Button>
         </form>
       ) : null}
@@ -312,11 +343,12 @@ export default function RfqDetailPage() {
       <section className="space-y-4 border-t border-[var(--border)] pt-6">
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
-            <h2 className="font-[family-name:var(--font-display)] text-xl font-semibold">
-              Offer comparison
+            <h2 className="font-[family-name:var(--font-display)] text-2xl">
+              Offers
             </h2>
             <p className="mt-1 text-xs text-[var(--fg-muted)]">
-              Estimated landed costs are indicative — not official quotes.
+              &ldquo;Delivered&rdquo; adds estimated packing, transport, freight and
+              insurance to your port. It&apos;s a guide, not a quote.
             </p>
           </div>
           {isBuyer && rfq.offers.length > 1 ? (
@@ -338,20 +370,20 @@ export default function RfqDetailPage() {
         </div>
 
         {rfq.offers.length === 0 ? (
-          <p className="text-sm text-[var(--fg-muted)]">No offers yet.</p>
+          <p className="card p-6 text-sm text-[var(--fg-muted)]">No offers yet. We&apos;ve notified the farms; offers appear here as they come in.</p>
         ) : isBuyer ? (
           <div className="overflow-x-auto rounded-2xl border border-[var(--border)] bg-white shadow-[var(--shadow-card)]">
             <table className="min-w-full text-left text-sm">
               <thead className="border-b border-[var(--border)] text-xs uppercase tracking-wide text-[var(--fg-muted)]">
                 <tr>
-                  <th className="px-3 py-2">Supplier</th>
-                  <th className="px-3 py-2">Quantity</th>
-                  <th className="px-3 py-2">Unit price</th>
-                  <th className="px-3 py-2">Est. landed</th>
+                  <th className="px-3 py-2">Farm</th>
+                  <th className="px-3 py-2">Volume</th>
+                  <th className="px-3 py-2">Price</th>
+                  <th className="px-3 py-2">Delivered (est.)</th>
                   <th className="px-3 py-2">Trust</th>
                   <th className="px-3 py-2">Match</th>
-                  <th className="px-3 py-2">Delivery</th>
-                  <th className="px-3 py-2">Validity</th>
+                  <th className="px-3 py-2">Ready in</th>
+                  <th className="px-3 py-2">Valid until</th>
                   <th className="px-3 py-2" />
                 </tr>
               </thead>
@@ -373,7 +405,12 @@ export default function RfqDetailPage() {
                           {row.quantity} {row.unit}
                         </td>
                         <td className="px-3 py-3">
-                          {row.currency} {row.unitPrice}
+                          {row.currency} {Number(row.unitPrice).toLocaleString()}/{row.unit === "MT" ? "t" : row.unit}
+                          {row.unit === "MT" ? (
+                            <span className="block text-xs text-[var(--fg-muted)]">
+                              ${(Number(row.unitPrice) / 1000).toFixed(2)}/kg
+                            </span>
+                          ) : null}
                         </td>
                         <td className="px-3 py-3 text-[var(--accent)]">
                           ~${row.estimatedLandedCostPerKg.toFixed(2)}/kg
@@ -384,7 +421,7 @@ export default function RfqDetailPage() {
                         </td>
                         <td className="px-3 py-3">
                           {row.leadTimeDays != null
-                            ? `${row.leadTimeDays}d`
+                            ? `${row.leadTimeDays} days`
                             : "—"}
                         </td>
                         <td className="px-3 py-3">
@@ -413,8 +450,8 @@ export default function RfqDetailPage() {
                                 </Button>
                               </>
                             ) : (
-                              <span className="text-xs text-[var(--fg-muted)]">
-                                {offer.status}
+                              <span className="text-xs font-medium text-[var(--fg-muted)]">
+                                {OFFER_STATUS[offer.status] ?? offer.status}
                               </span>
                             )}
                             {(offer.versions?.length ?? 0) > 1 ? (
@@ -465,10 +502,11 @@ export default function RfqDetailPage() {
               className="border-b border-[var(--border)] py-3"
             >
               <p className="text-sm font-medium">
-                {o.currency} {o.unitPrice}/{o.unit} · v{o.currentVersion ?? 1}
+                {o.currency} {Number(o.unitPrice).toLocaleString()}/{o.unit === "MT" ? "t" : o.unit} · version {o.currentVersion ?? 1}
               </p>
               <p className="text-xs text-[var(--fg-muted)]">
-                {o.quantity} {o.unit} · {o.status}
+                {Number(o.quantity).toLocaleString()} {o.unit === "MT" ? "t" : o.unit} ·{" "}
+                {OFFER_STATUS[o.status] ?? o.status}
               </p>
             </div>
           ))
@@ -481,7 +519,8 @@ export default function RfqDetailPage() {
         </h2>
         {rfq.events.map((ev) => (
           <p key={ev.id} className="text-xs text-[var(--fg-muted)]">
-            {formatDate(ev.createdAt)} — {ev.type.replaceAll("_", " ")}
+            {formatDate(ev.createdAt)} —{" "}
+            {ev.type.charAt(0) + ev.type.slice(1).toLowerCase().replaceAll("_", " ")}
             {ev.message ? `: ${ev.message}` : ""}
           </p>
         ))}
