@@ -18,9 +18,11 @@ export async function GET(req: NextRequest) {
   try {
     const scope = req.nextUrl.searchParams.get("scope") ?? "mine";
     if (scope === "public") {
+      // Public: only what a buyer needs, and only from verified farms.
       const rows = await prisma.supplyLot.findMany({
         where: {
           deletedAt: null,
+          availableQuantity: { gt: 0 },
           status: {
             in: [
               SupplyLotStatus.VERIFIED,
@@ -28,8 +30,24 @@ export async function GET(req: NextRequest) {
               SupplyLotStatus.DECLARED,
             ],
           },
+          supplierOrg: { verificationStatus: "VERIFIED", deletedAt: null },
         },
-        include: {
+        select: {
+          id: true,
+          reference: true,
+          commodity: true,
+          variety: true,
+          originCountry: true,
+          originRegion: true,
+          availableQuantity: true,
+          unit: true,
+          grade: true,
+          certifications: true,
+          packaging: true,
+          harvestStart: true,
+          harvestEnd: true,
+          status: true,
+          updatedAt: true,
           supplierOrg: {
             select: {
               name: true,

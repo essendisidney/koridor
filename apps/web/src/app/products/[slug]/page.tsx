@@ -39,6 +39,7 @@ async function loadMarket(terms: string[]) {
           status: { in: ["DECLARED", "VERIFIED", "EXPORT_ELIGIBLE"] },
           availableQuantity: { gt: 0 },
           OR: commodityOr,
+          supplierOrg: { verificationStatus: "VERIFIED", deletedAt: null },
         },
         include: {
           supplierOrg: {

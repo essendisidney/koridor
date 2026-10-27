@@ -40,7 +40,7 @@ export interface MessagingProvider {
 
 const SEND_TIMEOUT_MS = 8000;
 
-function appUrl() {
+export function appUrl() {
   return (
     process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "") ||
     (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000")

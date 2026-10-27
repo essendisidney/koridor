@@ -24,6 +24,22 @@ export async function PATCH(
     if (!membership) return fail("Insufficient organisation role", 403);
 
     const body = await req.json();
+    // Verified identity can't be edited after the fact; changing it needs a
+    // new review, otherwise the "Verified" badge would vouch for new details.
+    const org = await prisma.organisation.findUnique({
+      where: { id },
+      select: { verificationStatus: true, name: true, registrationNumber: true, taxId: true },
+    });
+    if (org?.verificationStatus === "VERIFIED") {
+      const changes = (key: "name" | "registrationNumber" | "taxId") =>
+        body[key] !== undefined && String(body[key] ?? "").trim() !== String(org[key] ?? "").trim();
+      if (changes("name") || changes("registrationNumber") || changes("taxId")) {
+        return fail(
+          "Your business is verified, so its name, registration and tax numbers are locked. Contact Koridor to change them.",
+          409,
+        );
+      }
+    }
     const updated = await prisma.organisation.update({
       where: { id },
       data: {

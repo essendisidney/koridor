@@ -9,7 +9,7 @@ import { permissionsForRoles } from "./permissions";
 const ACCESS_TTL = process.env.JWT_ACCESS_EXPIRES_IN ?? "15m";
 const REFRESH_TTL = process.env.JWT_REFRESH_EXPIRES_IN ?? "7d";
 
-function secret(kind: "access" | "refresh") {
+export function secret(kind: "access" | "refresh") {
   const value =
     kind === "access"
       ? process.env.JWT_ACCESS_SECRET
@@ -142,6 +142,9 @@ export async function issueTokens(userId: string) {
   };
 }
 
+const LOGIN_WINDOW_MS = 15 * 60 * 1000;
+const MAX_FAILED_LOGINS = 8;
+
 export async function login(email: string, password: string) {
   const user = await prisma.user.findFirst({
     where: { email: email.toLowerCase().trim(), deletedAt: null },
@@ -150,8 +153,32 @@ export async function login(email: string, password: string) {
     },
   });
   if (!user || !user.isActive) throw new Error("Invalid email or password");
+
+  // Slow down password guessing: 8 wrong passwords in 15 minutes locks the
+  // account for the rest of that window. Failures are kept in the audit log.
+  // A password reset clears the lock.
+  const lastReset = await prisma.auditLog.findFirst({
+    where: { action: "PASSWORD_RESET", entityId: user.id },
+    orderBy: { createdAt: "desc" },
+    select: { createdAt: true },
+  });
+  const windowStart = new Date(
+    Math.max(Date.now() - LOGIN_WINDOW_MS, lastReset?.createdAt.getTime() ?? 0),
+  );
+  const recentFailures = await prisma.auditLog.count({
+    where: { action: "USER_LOGIN_FAILED", entityId: user.id, createdAt: { gte: windowStart } },
+  });
+  if (recentFailures >= MAX_FAILED_LOGINS) {
+    throw new Error("Too many attempts. Try again in 15 minutes or reset your password.");
+  }
+
   const valid = await bcrypt.compare(password, user.passwordHash);
-  if (!valid) throw new Error("Invalid email or password");
+  if (!valid) {
+    await prisma.auditLog.create({
+      data: { action: "USER_LOGIN_FAILED", entityType: "User", entityId: user.id, actorId: user.id },
+    });
+    throw new Error("Invalid email or password");
+  }
 
   await prisma.user.update({
     where: { id: user.id },

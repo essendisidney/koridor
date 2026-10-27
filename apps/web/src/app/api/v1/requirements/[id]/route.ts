@@ -56,8 +56,15 @@ export async function GET(
       }
     }
 
+    // Farms browsing a buyer's request see only their own match, never
+    // competitors' names, volumes or listings.
+    const isOwner = requirement.buyerOrgId === membership.organisationId;
     const matches = await prisma.requirementMatch.findMany({
-      where: { requirementId: id, deletedAt: null },
+      where: {
+        requirementId: id,
+        deletedAt: null,
+        ...(isOwner ? {} : { supplierOrgId: membership.organisationId }),
+      },
       include: {
         supplierOrg: {
           select: {
