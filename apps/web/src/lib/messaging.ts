@@ -1,6 +1,14 @@
 import { after } from "next/server";
 import { NotificationChannel, Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
+import {
+  TAIFA_SMS_URL,
+  taifaApiKey,
+  taifaMessageId,
+  taifaMobile,
+  taifaRejection,
+  taifaSenderName,
+} from "@/lib/taifa";
 
 /**
  * Outbound WhatsApp / SMS for dispatch notifications.
@@ -9,7 +17,7 @@ import { prisma } from "@/lib/prisma";
  * invites are pushed to their phone as well as the in-app inbox. Providers are
  * switched by env vars like lib/payments.ts and lib/carriers.ts:
  *   - demo (default)   logs the message, row stays IN_APP
- *   - taifa            SMS via Taifa Mobile (TAIFA_*) — the default SMS route
+ *   - taifa            SMS via Taifa Mobile API v2 (TAIFA_*) — the default SMS route
  *   - africastalking   SMS via Africa's Talking (AFRICASTALKING_*)
  *   - twilio           WhatsApp via Twilio (TWILIO_*) — opt-in only, via MESSAGING_PROVIDER
  * Sending never blocks or fails the request: rows are written first, delivery
@@ -39,6 +47,7 @@ export interface MessagingProvider {
 }
 
 const SEND_TIMEOUT_MS = 8000;
+const TAIFA_TIMEOUT_MS = 20_000;
 
 export function appUrl() {
   return (
@@ -193,42 +202,44 @@ const africasTalkingSmsProvider: MessagingProvider = {
 const taifaSmsProvider: MessagingProvider = {
   name: "taifa",
   channel: NotificationChannel.SMS,
-  configured: () =>
-    Boolean(process.env.TAIFA_API_KEY?.trim() && process.env.TAIFA_SENDER_NAME?.trim()),
+  configured: () => Boolean(taifaApiKey()),
   async send(msg) {
-    // https://www.taifamobile.co.ke/docs — bulk send, service_id 0.
-    const res = await fetch("https://api.taifamobile.co.ke/sms/sendsms", {
-      method: "POST",
-      headers: {
-        "api-key": process.env.TAIFA_API_KEY!.trim(),
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        mobile: msg.to,
-        response_type: "json",
-        sender_name: process.env.TAIFA_SENDER_NAME!.trim(),
-        service_id: 0,
-        message: plainText(msg).slice(0, 920),
-      }),
-      signal: AbortSignal.timeout(SEND_TIMEOUT_MS),
-    });
-    const json = (await res.json().catch(() => null)) as
-      | { status_code?: string; status_desc?: string; message_id?: string | number }[]
-      | null;
-    const row = Array.isArray(json) ? json[0] : undefined;
-    if (!res.ok || row?.status_code !== "1000") {
+    // Taifa Mobile SMS API v2. Always HTTP 200; status_code "1000" = sent.
+    let text: string;
+    try {
+      const res = await fetch(TAIFA_SMS_URL, {
+        method: "POST",
+        headers: {
+          h_api_key: taifaApiKey()!,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          mobile: taifaMobile(msg.to),
+          sender_name: taifaSenderName(),
+          message: plainText(msg).slice(0, 920),
+          response_type: "json",
+        }),
+        signal: AbortSignal.timeout(TAIFA_TIMEOUT_MS),
+      });
+      text = await res.text();
+    } catch (err) {
+      const why = err instanceof Error ? err.message : String(err);
       return {
         ok: false,
         provider: "taifa",
         channel: NotificationChannel.SMS,
-        error: row ? `${row.status_code} ${row.status_desc ?? ""}`.trim() : `HTTP ${res.status}`,
+        error: `Taifa unreachable: ${why}`,
       };
+    }
+    const error = taifaRejection(text);
+    if (error) {
+      return { ok: false, provider: "taifa", channel: NotificationChannel.SMS, error };
     }
     return {
       ok: true,
       provider: "taifa",
       channel: NotificationChannel.SMS,
-      messageId: row.message_id != null ? String(row.message_id) : undefined,
+      messageId: taifaMessageId(text),
     };
   },
 };
