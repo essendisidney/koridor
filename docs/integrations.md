@@ -42,7 +42,7 @@ then pushed to the farm manager's phone **after the response is sent**
 | Provider | Channel | Env | Behaviour |
 |----------|---------|-----|-----------|
 | `demo` (default) | `IN_APP` | — | Logs the message to the server console |
-| `taifa` | `SMS` | `TAIFA_API_KEY`, `TAIFA_SENDER_NAME` (approved sender ID or shortcode) | SMS via Taifa Mobile (`POST https://api.taifamobile.co.ke/sms/sendsms`, status `1000` = sent) |
+| `taifa` | `SMS` | `TAIFA_API_KEY`, optional `TAIFA_SENDER_NAME` or `TAIFA_SENDER_ID` (approved sender; default `SIDNET`) | SMS via Taifa Mobile API v2 (`POST https://api.taifamobile.co.ke/v2/sms/sendsms`, `h_api_key` header, status `1000` = sent) |
 | `africastalking` | `SMS` | `AFRICASTALKING_USERNAME`, `AFRICASTALKING_API_KEY`, optional `AFRICASTALKING_SENDER_ID` | SMS via Africa's Talking (fallback) |
 | `twilio` | `WHATSAPP` | `TWILIO_*` | WhatsApp — **not used unless named in `MESSAGING_PROVIDER`** (WhatsApp provider still to be chosen) |
 

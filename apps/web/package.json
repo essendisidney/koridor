@@ -9,7 +9,8 @@
     "start": "next start",
     "lint": "eslint",
     "prisma:generate": "prisma generate",
-    "test:matching": "node --import tsx --test src/lib/matching.test.ts"
+    "test:matching": "node --import tsx --test src/lib/matching.test.ts",
+    "test:taifa": "node --import tsx --test src/lib/taifa.test.ts"
   },
   "dependencies": {
     "@prisma/client": "^6.19.3",
